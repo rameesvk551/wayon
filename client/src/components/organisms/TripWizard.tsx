@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, ArrowRight, Sparkles, Plane } from 'lucide-react';
 import { TripWizardProvider, useTripWizard } from '../../store/TripWizardContext';
-import { FreeTimeStep, CompanionsStep, DatesStep, InterestsStep } from './wizard';
+import { DestinationStep, FreeTimeStep, CompanionsStep, DatesStep, InterestsStep } from './wizard';
 
 interface TripWizardProps {
     onComplete: (summary: string) => void;
@@ -20,10 +20,11 @@ const WizardContent: React.FC<TripWizardProps> = ({ onComplete }) => {
 
     const canProceed = () => {
         switch (currentStep) {
-            case 0: return wizardData.freeTime !== null;
-            case 1: return wizardData.companions !== null;
-            case 2: return wizardData.dates !== null;
-            case 3: return wizardData.interests.length >= 2;
+            case 0: return wizardData.destination !== null && wizardData.destination.trim() !== '';
+            case 1: return wizardData.freeTime !== null;
+            case 2: return wizardData.companions !== null;
+            case 3: return wizardData.dates !== null;
+            case 4: return wizardData.interests.length >= 2;
             default: return false;
         }
     };
@@ -38,6 +39,7 @@ const WizardContent: React.FC<TripWizardProps> = ({ onComplete }) => {
     };
 
     const steps = [
+        <DestinationStep key="destination" />,
         <FreeTimeStep key="freetime" />,
         <CompanionsStep key="companions" />,
         <DatesStep key="dates" />,

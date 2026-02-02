@@ -1,7 +1,8 @@
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, type ReactNode } from 'react';
 
 // Wizard step data types
 export interface WizardData {
+    destination: string | null;
     freeTime: string | null;
     companions: string | null;
     dates: { month: string; year: string; flexible: boolean } | null;
@@ -16,6 +17,7 @@ interface TripWizardContextType {
     goToStep: (step: number) => void;
     nextStep: () => void;
     prevStep: () => void;
+    setDestination: (value: string) => void;
     setFreeTime: (value: string) => void;
     setCompanions: (value: string) => void;
     setDates: (dates: { month: string; year: string; flexible: boolean }) => void;
@@ -28,6 +30,7 @@ interface TripWizardContextType {
 const TripWizardContext = createContext<TripWizardContextType | undefined>(undefined);
 
 const initialData: WizardData = {
+    destination: null,
     freeTime: null,
     companions: null,
     dates: null,
@@ -38,7 +41,7 @@ export const TripWizardProvider = ({ children }: { children: ReactNode }) => {
     const [currentStep, setCurrentStep] = useState(0);
     const [wizardData, setWizardData] = useState<WizardData>(initialData);
     const [isComplete, setIsComplete] = useState(false);
-    const totalSteps = 4;
+    const totalSteps = 5;
 
     const goToStep = (step: number) => {
         if (step >= 0 && step < totalSteps) {
@@ -56,6 +59,10 @@ export const TripWizardProvider = ({ children }: { children: ReactNode }) => {
         if (currentStep > 0) {
             setCurrentStep(prev => prev - 1);
         }
+    };
+
+    const setDestination = (value: string) => {
+        setWizardData(prev => ({ ...prev, destination: value }));
     };
 
     const setFreeTime = (value: string) => {
@@ -90,9 +97,12 @@ export const TripWizardProvider = ({ children }: { children: ReactNode }) => {
     };
 
     const getSummary = (): string => {
-        const { freeTime, companions, dates, interests } = wizardData;
+        const { destination, freeTime, companions, dates, interests } = wizardData;
         let summary = "I want to plan a trip";
-        
+
+        if (destination) {
+            summary += ` to ${destination}`;
+        }
         if (freeTime) {
             summary += ` for ${freeTime}`;
         }
@@ -100,14 +110,14 @@ export const TripWizardProvider = ({ children }: { children: ReactNode }) => {
             summary += `, traveling ${companions}`;
         }
         if (dates) {
-            summary += dates.flexible 
+            summary += dates.flexible
                 ? `, around ${dates.month} ${dates.year} (flexible dates)`
                 : `, in ${dates.month} ${dates.year}`;
         }
         if (interests.length > 0) {
             summary += `. I'm interested in ${interests.join(', ')}`;
         }
-        
+
         return summary + ".";
     };
 
@@ -120,6 +130,7 @@ export const TripWizardProvider = ({ children }: { children: ReactNode }) => {
             goToStep,
             nextStep,
             prevStep,
+            setDestination,
             setFreeTime,
             setCompanions,
             setDates,
