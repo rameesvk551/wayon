@@ -5,3 +5,10 @@ export { ItineraryPanel } from './ItineraryPanel';
 export { TripHeader } from './TripHeader';
 export { DayTimeline } from './DayTimeline';
 export { RouteOverview } from './RouteOverview';
+export { HeroSection } from './HeroSection';
+export { CategoryCarousel } from './CategoryCarousel';
+export { TripTopBar } from './TripTopBar';
+export { PlanItineraryPanel } from './PlanItineraryPanel';
+export { CompactMapPanel } from './CompactMapPanel';
+export { BookingSection } from './BookingSection';
+

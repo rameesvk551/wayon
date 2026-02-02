@@ -9,3 +9,7 @@ export { MapBlock } from './MapBlock';
 export { AlertBlock } from './AlertBlock';
 export { ActionsBlock } from './ActionsBlock';
 export { DividerBlock } from './DividerBlock';
+export { WeatherBlock } from './WeatherBlock';
+export { HotelCarouselBlock } from './HotelCarouselBlock';
+export { FlightCarouselBlock } from './FlightCarouselBlock';
+export { AttractionCarouselBlock } from './AttractionCarouselBlock';

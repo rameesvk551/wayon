@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Bot, User } from 'lucide-react';
+import { Bot } from 'lucide-react';
 import type { ChatMessage } from '../../types';
 import { Avatar } from '../atoms';
 

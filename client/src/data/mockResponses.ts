@@ -336,3 +336,307 @@ export const mockResponses = {
     flightSearch: mockFlightSearchResponse,
     destinationGuide: mockDestinationGuideResponse
 };
+
+// New premium mock responses demonstrating new blocks
+export const mockHotelResponse: UIResponse = {
+    blocks: [
+        {
+            type: 'text',
+            content: "✨ I found some amazing hotels in Paris based on your preferences! Here are my top picks:",
+            format: 'markdown'
+        },
+        {
+            type: 'hotel_carousel',
+            title: 'Recommended Hotels in Paris',
+            hotels: [
+                {
+                    id: 'hotel-1',
+                    name: 'Le Meurice',
+                    image: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=600',
+                    rating: 4.9,
+                    reviewCount: 2847,
+                    price: '€450',
+                    originalPrice: '€520',
+                    location: 'Jardin des Tuileries, Paris',
+                    amenities: ['WiFi', 'Breakfast', 'Spa'],
+                    badge: 'Luxury Pick',
+                    badgeType: 'luxury'
+                },
+                {
+                    id: 'hotel-2',
+                    name: 'Hôtel Plaza Athénée',
+                    image: 'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=600',
+                    rating: 4.8,
+                    reviewCount: 1923,
+                    price: '€380',
+                    location: 'Avenue Montaigne, Paris',
+                    amenities: ['WiFi', 'Pool', 'Restaurant'],
+                    badge: 'Best Value',
+                    badgeType: 'best_value'
+                },
+                {
+                    id: 'hotel-3',
+                    name: 'Hôtel de Crillon',
+                    image: 'https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=600',
+                    rating: 4.7,
+                    reviewCount: 1456,
+                    price: '€290',
+                    location: 'Place de la Concorde, Paris',
+                    amenities: ['WiFi', 'Gym', 'Bar'],
+                    badge: 'Popular',
+                    badgeType: 'popular'
+                }
+            ]
+        },
+        {
+            type: 'alert',
+            level: 'info',
+            text: 'Prices shown are per night. Book early for the best rates!',
+            dismissible: true
+        }
+    ]
+};
+
+export const mockWeatherResponse: UIResponse = {
+    blocks: [
+        {
+            type: 'text',
+            content: "Here's the current weather for your destination! 🌤️",
+            format: 'markdown'
+        },
+        {
+            type: 'weather',
+            location: 'Bali, Indonesia',
+            temperature: 28,
+            condition: 'partly_cloudy',
+            humidity: 75,
+            wind: '12 km/h',
+            uvIndex: 'High',
+            feelsLike: 32
+        },
+        {
+            type: 'alert',
+            level: 'warning',
+            title: 'Pack accordingly!',
+            text: 'Expect some tropical showers in the afternoon. Bring a light rain jacket.',
+            dismissible: true
+        }
+    ]
+};
+
+export const mockFullTripResponse: UIResponse = {
+    blocks: [
+        {
+            type: 'title',
+            text: '🌸 Your 5-Day Tokyo Adventure',
+            level: 1
+        },
+        {
+            type: 'text',
+            content: "I've crafted the perfect itinerary for your Japan trip! Here's everything you need to know.",
+            format: 'plain'
+        },
+        {
+            type: 'weather',
+            location: 'Tokyo, Japan',
+            temperature: 18,
+            condition: 'sunny',
+            humidity: 55,
+            wind: '8 km/h',
+            uvIndex: 'Medium',
+            feelsLike: 20
+        },
+        {
+            type: 'divider',
+            spacing: 'md'
+        },
+        {
+            type: 'hotel_carousel',
+            title: 'Where to Stay',
+            hotels: [
+                {
+                    id: 'tokyo-1',
+                    name: 'Park Hyatt Tokyo',
+                    image: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=600',
+                    rating: 4.9,
+                    reviewCount: 3241,
+                    price: '¥45,000',
+                    location: 'Shinjuku, Tokyo',
+                    amenities: ['WiFi', 'Pool', 'Spa'],
+                    badge: 'Top Choice',
+                    badgeType: 'luxury'
+                },
+                {
+                    id: 'tokyo-2',
+                    name: 'Aman Tokyo',
+                    image: 'https://images.unsplash.com/photo-1564501049412-61c2a3083791?w=600',
+                    rating: 4.8,
+                    reviewCount: 1876,
+                    price: '¥38,000',
+                    location: 'Otemachi, Tokyo',
+                    amenities: ['WiFi', 'Restaurant', 'Concierge'],
+                    badge: 'Great Views',
+                    badgeType: 'popular'
+                }
+            ]
+        },
+        {
+            type: 'divider',
+            spacing: 'md'
+        },
+        {
+            type: 'timeline',
+            title: 'Daily Itinerary',
+            items: [
+                {
+                    id: 'day-1',
+                    title: 'Day 1: Arrival & Shibuya',
+                    subtitle: 'Welcome to Tokyo!',
+                    time: 'Day 1',
+                    description: 'Arrive at Narita Airport, take the Narita Express to Shinjuku. Explore Shibuya Crossing and Harajuku in the evening.',
+                    status: 'upcoming' as const,
+                    meta: [
+                        { label: 'Transport', value: 'Narita Express' },
+                        { label: 'Duration', value: '90 min to city' }
+                    ]
+                },
+                {
+                    id: 'day-2',
+                    title: 'Day 2: Traditional Tokyo',
+                    subtitle: 'Temples & Gardens',
+                    time: 'Day 2',
+                    description: 'Visit Senso-ji Temple in Asakusa, explore Ueno Park, and enjoy a traditional tea ceremony.',
+                    status: 'upcoming' as const
+                },
+                {
+                    id: 'day-3',
+                    title: 'Day 3: Day Trip to Mt. Fuji',
+                    subtitle: 'Iconic views await',
+                    time: 'Day 3',
+                    description: 'Take the Shinkansen to Kawaguchiko for stunning views of Mt. Fuji and the Five Lakes region.',
+                    status: 'upcoming' as const
+                }
+            ]
+        },
+        {
+            type: 'actions',
+            items: [
+                { id: 'book', label: 'Book This Trip', variant: 'primary' },
+                { id: 'modify', label: 'Customize', variant: 'secondary' },
+                { id: 'share', label: 'Share', variant: 'ghost' }
+            ],
+            layout: 'horizontal'
+        }
+    ]
+};
+
+export const mockFlightCarouselResponse: UIResponse = {
+    blocks: [
+        {
+            type: 'text',
+            content: "✈️ I found great flight options for your trip! Here are the best deals:",
+            format: 'markdown'
+        },
+        {
+            type: 'flight_carousel',
+            title: 'Flights: Delhi → Bangkok',
+            flights: [
+                {
+                    id: 'flight-1',
+                    airline: 'Emirates',
+                    flightNumber: 'EK-512',
+                    departure: '10:30 AM',
+                    arrival: '4:00 PM',
+                    departureAirport: 'DEL',
+                    arrivalAirport: 'BKK',
+                    departureCity: 'Delhi',
+                    arrivalCity: 'Bangkok',
+                    duration: '5h 30m',
+                    price: '$450',
+                    stops: 0,
+                    gate: 'A12',
+                    seat: '24A'
+                },
+                {
+                    id: 'flight-2',
+                    airline: 'Qatar Airways',
+                    flightNumber: 'QR-556',
+                    departure: '2:15 PM',
+                    arrival: '8:45 PM',
+                    departureAirport: 'DEL',
+                    arrivalAirport: 'BKK',
+                    departureCity: 'Delhi',
+                    arrivalCity: 'Bangkok',
+                    duration: '6h 30m',
+                    price: '$380',
+                    stops: 1,
+                    gate: 'B7',
+                    seat: '15C'
+                },
+                {
+                    id: 'flight-3',
+                    airline: 'Singapore Airlines',
+                    flightNumber: 'SQ-421',
+                    departure: '11:45 PM',
+                    arrival: '7:15 AM',
+                    departureAirport: 'DEL',
+                    arrivalAirport: 'BKK',
+                    departureCity: 'Delhi',
+                    arrivalCity: 'Bangkok',
+                    duration: '7h 30m',
+                    price: '$520',
+                    stops: 0,
+                    gate: 'C3',
+                    seat: '8F'
+                },
+                {
+                    id: 'flight-4',
+                    airline: 'Air India',
+                    flightNumber: 'AI-302',
+                    departure: '6:00 AM',
+                    arrival: '2:30 PM',
+                    departureAirport: 'DEL',
+                    arrivalAirport: 'BKK',
+                    departureCity: 'Delhi',
+                    arrivalCity: 'Bangkok',
+                    duration: '8h 30m',
+                    price: '$280',
+                    stops: 2,
+                    gate: 'D9',
+                    seat: '32B'
+                },
+                {
+                    id: 'flight-5',
+                    airline: 'IndiGo',
+                    flightNumber: '6E-1234',
+                    departure: '8:15 AM',
+                    arrival: '12:45 PM',
+                    departureAirport: 'DEL',
+                    arrivalAirport: 'BKK',
+                    departureCity: 'Delhi',
+                    arrivalCity: 'Bangkok',
+                    duration: '4h 30m',
+                    price: '$220',
+                    stops: 0,
+                    gate: 'E5',
+                    seat: '19D'
+                }
+            ]
+        },
+        {
+            type: 'alert',
+            level: 'info',
+            text: 'Prices shown are per person. Baggage fees may apply.',
+            dismissible: true
+        },
+        {
+            type: 'actions',
+            items: [
+                { id: 'filter', label: 'Filter Results', variant: 'secondary' },
+                { id: 'sort-price', label: 'Sort by Price', variant: 'ghost' },
+                { id: 'sort-duration', label: 'Sort by Duration', variant: 'ghost' }
+            ],
+            layout: 'horizontal'
+        }
+    ]
+};

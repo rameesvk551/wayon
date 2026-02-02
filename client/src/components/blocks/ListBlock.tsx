@@ -43,7 +43,7 @@ const ListItemComponent: React.FC<{ item: ListItem; index: number; ordered: bool
                 {/* Sub Items */}
                 {item.subItems && item.subItems.length > 0 && (
                     <ul className="mt-2 ml-2 space-y-2">
-                        {item.subItems.map((subItem, subIndex) => (
+                        {item.subItems.map((subItem) => (
                             <li key={subItem.id} className="flex items-start gap-2 text-sm text-[var(--color-text-muted)]">
                                 <Check size={14} className="text-[var(--color-success)] mt-0.5" />
                                 <span>{subItem.text}</span>

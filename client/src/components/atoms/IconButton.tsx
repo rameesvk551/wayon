@@ -1,10 +1,9 @@
-import { motion } from 'framer-motion';
-import { forwardRef } from 'react';
+import { motion, type HTMLMotionProps } from 'framer-motion';
 
 type IconButtonSize = 'sm' | 'md' | 'lg';
 type IconButtonVariant = 'default' | 'primary' | 'ghost';
 
-interface IconButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+interface IconButtonProps extends Omit<HTMLMotionProps<'button'>, 'children'> {
     icon: React.ReactNode;
     size?: IconButtonSize;
     variant?: IconButtonVariant;
@@ -40,25 +39,23 @@ const variantStyles: Record<IconButtonVariant, string> = {
   `
 };
 
-export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
-    ({
-        icon,
-        size = 'md',
-        variant = 'default',
-        tooltip,
-        className = '',
-        disabled,
-        ...props
-    }, ref) => {
-        return (
-            <motion.button
-                ref={ref}
-                whileHover={{ scale: disabled ? 1 : 1.05 }}
-                whileTap={{ scale: disabled ? 1 : 0.95 }}
-                transition={{ duration: 0.15 }}
-                disabled={disabled}
-                title={tooltip}
-                className={`
+export const IconButton: React.FC<IconButtonProps> = ({
+    icon,
+    size = 'md',
+    variant = 'default',
+    tooltip,
+    className = '',
+    disabled,
+    ...props
+}) => {
+    return (
+        <motion.button
+            whileHover={{ scale: disabled ? 1 : 1.05 }}
+            whileTap={{ scale: disabled ? 1 : 0.95 }}
+            transition={{ duration: 0.15 }}
+            disabled={disabled}
+            title={tooltip}
+            className={`
           inline-flex items-center justify-center
           rounded-xl
           transition-all duration-200 ease-out
@@ -67,12 +64,9 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
           ${variantStyles[variant]}
           ${className}
         `}
-                {...props}
-            >
-                {icon}
-            </motion.button>
-        );
-    }
-);
-
-IconButton.displayName = 'IconButton';
+            {...props}
+        >
+            {icon}
+        </motion.button>
+    );
+};

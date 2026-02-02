@@ -10,7 +10,11 @@ import {
     MapBlock,
     AlertBlock,
     ActionsBlock,
-    DividerBlock
+    DividerBlock,
+    WeatherBlock,
+    HotelCarouselBlock,
+    FlightCarouselBlock,
+    AttractionCarouselBlock
 } from '../blocks';
 
 interface ChatRendererProps {
@@ -28,6 +32,7 @@ interface BlockRendererProps {
  * Gracefully ignores unknown block types.
  */
 const BlockRenderer: React.FC<BlockRendererProps> = ({ block, onAction }) => {
+    console.log('🧱 Rendering block:', block.type, block);
     switch (block.type) {
         case 'title':
             return <TitleBlock text={block.text} level={block.level} />;
@@ -95,6 +100,49 @@ const BlockRenderer: React.FC<BlockRendererProps> = ({ block, onAction }) => {
 
         case 'divider':
             return <DividerBlock spacing={block.spacing} />;
+
+        case 'weather':
+            return (
+                <WeatherBlock
+                    location={block.location}
+                    temperature={block.temperature}
+                    condition={block.condition}
+                    humidity={block.humidity}
+                    wind={block.wind}
+                    uvIndex={block.uvIndex}
+                    feelsLike={block.feelsLike}
+                />
+            );
+
+        case 'hotel_carousel':
+            return (
+                <HotelCarouselBlock
+                    title={block.title}
+                    hotels={block.hotels}
+                    onHotelClick={(id) => onAction?.(`hotel-view-${id}`)}
+                    onBookClick={(id) => onAction?.(`hotel-book-${id}`)}
+                />
+            );
+
+        case 'flight_carousel':
+            return (
+                <FlightCarouselBlock
+                    title={block.title}
+                    flights={block.flights}
+                    onFlightClick={(id) => onAction?.(`flight-view-${id}`)}
+                    onBookClick={(id) => onAction?.(`flight-book-${id}`)}
+                />
+            );
+
+        case 'attraction_carousel':
+            return (
+                <AttractionCarouselBlock
+                    title={block.title}
+                    destination={block.destination}
+                    attractions={block.attractions}
+                    onAttractionClick={(attr) => onAction?.(`attraction-view-${attr.id}`)}
+                />
+            );
 
         default:
             // Gracefully ignore unknown block types

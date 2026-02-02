@@ -6,7 +6,7 @@ import { trips } from '../data/trips';
 
 const ItineraryPage: React.FC = () => {
     const { tripId } = useParams<{ tripId: string }>();
-    const { loadTrip, currentTrip, selectedDay, setSelectedDay } = useTripStore();
+    const { loadTrip, selectedDay, setSelectedDay } = useTripStore();
     const [trip, setTrip] = useState(trips[0]); // Default to first trip
 
     useEffect(() => {

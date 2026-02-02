@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Search, Filter, Grid, List, Calendar, MapPin, Sparkles } from 'lucide-react';
+import { Search, Filter, Grid, List, MapPin, Sparkles } from 'lucide-react';
 import { Sidebar } from '../components/organisms';
 import { DestinationCard } from '../components/molecules';
 import { Button, IconButton, Chip } from '../components/atoms';

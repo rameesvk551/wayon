@@ -1,9 +1,9 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { useState } from 'react';
+
 import { ChevronDown, Clock, MapPin, Hotel, Utensils, Camera, Ticket, Waves, ShoppingBag } from 'lucide-react';
 import type { DayItinerary, Activity } from '../../types';
 import { TransportBadge, PriceTag, RatingStars } from '../molecules';
-import { Badge } from '../atoms';
+
 
 interface DayTimelineProps {
     day: DayItinerary;
@@ -196,7 +196,7 @@ export const DayTimeline: React.FC<DayTimelineProps> = ({
 
                             {/* Activities */}
                             <div className="space-y-2">
-                                {day.activities.map((activity, index) => (
+                                {day.activities.map((activity) => (
                                     <ActivityCard key={activity.id} activity={activity} />
                                 ))}
                             </div>

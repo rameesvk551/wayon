@@ -1,11 +1,11 @@
 import { motion } from 'framer-motion';
 import { useState, useRef, useEffect } from 'react';
 import { Send, Mic, Paperclip, Sparkles, Bot } from 'lucide-react';
-import { ChatBubble, SuggestionChip } from '../molecules';
+import { SuggestionChip } from '../molecules';
 import { IconButton, Avatar } from '../atoms';
 import { ChatRenderer } from '../renderer';
 import { mockResponses } from '../../data/mockResponses';
-import type { ChatMessage } from '../../types';
+
 import type { UIResponse } from '../../types/ui-schema';
 
 // Extended message type that supports both plain text and schema responses
@@ -44,25 +44,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ onTripCreated }) => {
         scrollToBottom();
     }, [messages]);
 
-    const getAIResponse = (userMessage: string): UIResponse => {
-        // Simple keyword matching for demo purposes
-        const lowerMessage = userMessage.toLowerCase();
-
-        if (lowerMessage.includes('flight') || lowerMessage.includes('fly')) {
-            return mockResponses.flightSearch;
-        }
-        if (lowerMessage.includes('greece') || lowerMessage.includes('santorini')) {
-            return mockResponses.destinationGuide;
-        }
-        if (lowerMessage.includes('plan') || lowerMessage.includes('trip') || lowerMessage.includes('itinerary') || lowerMessage.includes('thailand')) {
-            return mockResponses.tripPlan;
-        }
-
-        // Default welcome response
-        return mockResponses.welcome;
-    };
-
-    const handleSend = () => {
+    const handleSend = async () => {
         if (!inputValue.trim()) return;
 
         const userMessage: ExtendedMessage = {
@@ -73,23 +55,43 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ onTripCreated }) => {
         };
 
         setMessages(prev => [...prev, userMessage]);
+        const messageToSend = inputValue;
         setInputValue('');
         setIsTyping(true);
 
-        // Simulate AI response with schema-based blocks
-        setTimeout(() => {
-            const aiResponse = getAIResponse(inputValue);
+        try {
+            // Call the backend API
+            const response = await fetch('http://localhost:4000/api/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ message: messageToSend }),
+            });
+
+            const data = await response.json();
 
             const aiMessage: ExtendedMessage = {
                 id: `msg-${Date.now() + 1}`,
                 type: 'ai',
-                blocks: aiResponse,
+                blocks: data,  // data is already { blocks: [...] }
                 timestamp: new Date().toISOString()
             };
 
             setMessages(prev => [...prev, aiMessage]);
+        } catch (error) {
+            console.error('Failed to get AI response:', error);
+            // Fallback to local mock if API fails
+            const aiMessage: ExtendedMessage = {
+                id: `msg-${Date.now() + 1}`,
+                type: 'ai',
+                blocks: mockResponses.welcome,
+                timestamp: new Date().toISOString()
+            };
+            setMessages(prev => [...prev, aiMessage]);
+        } finally {
             setIsTyping(false);
-        }, 1500);
+        }
     };
 
     const handleActionClick = (actionId: string) => {
@@ -105,10 +107,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ onTripCreated }) => {
         }
     };
 
-    const handleSuggestionClick = (suggestion: string) => {
-        setInputValue(suggestion);
-        inputRef.current?.focus();
-    };
+
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === 'Enter' && !e.shiftKey) {

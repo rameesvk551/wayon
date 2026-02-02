@@ -9,7 +9,7 @@ type MapBlockProps = Omit<MapBlockType, 'type'>;
 export const MapBlock: React.FC<MapBlockProps> = ({
     markers,
     routes,
-    center,
+    center: _center,
     zoom: initialZoom = 1
 }) => {
     const [zoom, setZoom] = useState(initialZoom);

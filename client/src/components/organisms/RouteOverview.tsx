@@ -16,8 +16,8 @@ interface RouteSegment {
 }
 
 interface RouteOverviewProps {
-    stops: RouteStop[];
-    segments: RouteSegment[];
+    stops?: RouteStop[];
+    segments?: RouteSegment[];
     activeStop?: number;
     onStopClick?: (dayNumber: number) => void;
 }

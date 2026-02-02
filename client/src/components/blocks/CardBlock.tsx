@@ -27,33 +27,40 @@ export const CardBlock: React.FC<CardBlockProps> = ({
 }) => {
     return (
         <motion.div
-            whileHover={{ scale: 1.01, x: 4 }}
+            whileHover={{ scale: 1.01, y: -2 }}
             whileTap={{ scale: 0.99 }}
             transition={{ duration: 0.2 }}
             onClick={onClick}
             className={`
-        flex items-start gap-4
-        p-4
-        bg-white
-        border border-[var(--color-border)]
-        rounded-2xl
-        ${onClick ? 'cursor-pointer' : ''}
-        hover:border-[var(--color-text-muted)]
-        hover:shadow-lg
-        transition-all duration-200
-        group
-        backdrop-blur-sm
-      `}
+                flex items-start gap-4
+                p-4
+                bg-white
+                border border-[var(--color-border-light)]
+                rounded-2xl
+                ${onClick ? 'cursor-pointer' : ''}
+                hover:border-[var(--color-primary)]/30
+                hover:shadow-[var(--shadow-card-hover)]
+                transition-all duration-300
+                group
+            `}
         >
             {/* Image */}
             {image && (
-                <div className="relative flex-shrink-0 w-20 h-20 rounded-xl overflow-hidden">
+                <div className="relative flex-shrink-0 w-24 h-24 rounded-xl overflow-hidden shadow-sm">
                     <img
                         src={image}
                         alt={title}
                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                     />
-                    <div className="absolute inset-0 bg-black/5" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+                    {/* Badge on image */}
+                    {badge && (
+                        <div className="absolute top-2 left-2">
+                            <Badge variant={badgeVariants[badgeVariant]} size="sm">
+                                {badge}
+                            </Badge>
+                        </div>
+                    )}
                 </div>
             )}
 

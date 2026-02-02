@@ -10,7 +10,7 @@ const levelStyles = {
 };
 
 export const TitleBlock: React.FC<TitleBlockProps> = ({ text, level = 1 }) => {
-    const Tag = `h${level}` as keyof JSX.IntrinsicElements;
+    const Tag = `h${level}` as 'h1' | 'h2' | 'h3';
 
     return (
         <motion.div

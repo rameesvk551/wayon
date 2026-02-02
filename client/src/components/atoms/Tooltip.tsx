@@ -15,7 +15,7 @@ export const Tooltip: React.FC<TooltipProps> = ({
     delay = 300
 }) => {
     const [isVisible, setIsVisible] = useState(false);
-    const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const positionStyles: Record<string, string> = {
         top: 'bottom-full left-1/2 -translate-x-1/2 mb-2',

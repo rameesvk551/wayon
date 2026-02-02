@@ -123,6 +123,106 @@ export interface DividerBlock {
     spacing?: 'sm' | 'md' | 'lg';
 }
 
+export interface WeatherBlock {
+    type: 'weather';
+    location: string;
+    temperature: number;
+    condition: 'sunny' | 'cloudy' | 'rainy' | 'snowy' | 'partly_cloudy';
+    humidity: number;
+    wind: string;
+    uvIndex: string;
+    feelsLike?: number;
+}
+
+export interface HotelItem {
+    id: string;
+    name: string;
+    image: string;
+    rating: number;
+    reviewCount?: number;
+    price: string;
+    originalPrice?: string;
+    location: string;
+    amenities: string[];
+    badge?: string;
+    badgeType?: 'best_value' | 'luxury' | 'budget' | 'popular';
+}
+
+export interface HotelCarouselBlock {
+    type: 'hotel_carousel';
+    title?: string;
+    hotels: HotelItem[];
+}
+
+export interface FlightItem {
+    id: string;
+    airline: string;
+    airlineLogo?: string;
+    flightNumber: string;
+    departure: string;
+    arrival: string;
+    departureAirport: string;
+    arrivalAirport: string;
+    departureCity?: string;
+    arrivalCity?: string;
+    duration: string;
+    price: string;
+    stops: number;
+    aircraft?: string;
+    class?: string;
+    route?: string;
+    gate?: string;
+    seat?: string;
+}
+
+export interface FlightCarouselBlock {
+    type: 'flight_carousel';
+    title?: string;
+    flights: FlightItem[];
+}
+
+// ===== ATTRACTION TYPES =====
+export interface AttractionItem {
+    id: string;
+    name: string;
+    category: string;
+    description?: string;
+    rating: number;
+    image?: string;
+    duration?: string;
+    price?: string;
+    lat: number;
+    lng: number;
+}
+
+export interface AttractionCarouselBlock {
+    type: 'attraction_carousel';
+    title?: string;
+    destination: string;
+    attractions: AttractionItem[];
+}
+
+// ===== MAP INSTRUCTION TYPES =====
+export interface MapMarkerInstruction {
+    id: string;
+    title: string;
+    lat: number;
+    lng: number;
+    category: string;
+    image?: string;
+}
+
+export interface MapInstruction {
+    action: 'zoom';
+    location: {
+        city: string;
+        lat: number;
+        lng: number;
+        zoom: number;
+    };
+    markers: MapMarkerInstruction[];
+}
+
 // ===== UNION TYPE =====
 export type UIBlock =
     | TitleBlock
@@ -134,11 +234,16 @@ export type UIBlock =
     | AlertBlock
     | ImageBlock
     | ActionsBlock
-    | DividerBlock;
+    | DividerBlock
+    | WeatherBlock
+    | HotelCarouselBlock
+    | FlightCarouselBlock
+    | AttractionCarouselBlock;
 
 // ===== RESPONSE TYPE =====
 export interface UIResponse {
     blocks: UIBlock[];
+    map?: MapInstruction;
 }
 
 // ===== TYPE GUARDS =====
@@ -152,3 +257,7 @@ export const isAlertBlock = (block: UIBlock): block is AlertBlock => block.type 
 export const isImageBlock = (block: UIBlock): block is ImageBlock => block.type === 'image';
 export const isActionsBlock = (block: UIBlock): block is ActionsBlock => block.type === 'actions';
 export const isDividerBlock = (block: UIBlock): block is DividerBlock => block.type === 'divider';
+export const isWeatherBlock = (block: UIBlock): block is WeatherBlock => block.type === 'weather';
+export const isHotelCarouselBlock = (block: UIBlock): block is HotelCarouselBlock => block.type === 'hotel_carousel';
+export const isFlightCarouselBlock = (block: UIBlock): block is FlightCarouselBlock => block.type === 'flight_carousel';
+export const isAttractionCarouselBlock = (block: UIBlock): block is AttractionCarouselBlock => block.type === 'attraction_carousel';

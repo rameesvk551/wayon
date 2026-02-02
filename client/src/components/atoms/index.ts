@@ -5,3 +5,5 @@ export { Avatar } from './Avatar';
 export { Chip } from './Chip';
 export { Divider } from './Divider';
 export { Tooltip } from './Tooltip';
+export { AIChip } from './AIChip';
+
