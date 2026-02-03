@@ -22,9 +22,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#00C9A7"
       },
-      "package": "com.travelai.app",
-      "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "package": "com.travelai.app"
     },
     "web": {
       "favicon": "./assets/favicon.png",
