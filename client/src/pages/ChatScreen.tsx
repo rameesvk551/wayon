@@ -7,6 +7,8 @@ import {
     X, Ticket, Info, CheckCircle2
 } from 'lucide-react';
 import { ItineraryDisplay, ItinerarySkeleton } from '../components/organisms/ItineraryDisplay';
+import { ChatRenderer } from '../components/renderer/ChatRenderer';
+import type { UIResponse } from '../types/ui-schema';
 
 // API configuration
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
@@ -43,6 +45,7 @@ interface Message {
     id: string;
     type: 'ai' | 'user' | 'interactive';
     content?: string;
+    blocks?: UIResponse;
     interactiveType?: 'destination' | 'companions' | 'budget' | 'dates' | 'location' | 'transport' | 'attractions' | 'interests' | 'summary' | 'itinerary';
     timestamp: Date;
     itineraryData?: ItineraryOutput;
@@ -1034,11 +1037,19 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onNavigate }) => {
             );
         }
 
-        // Text messages (ai or user)
+        // Text + schema blocks (ai or user)
         return (
             <>
                 <div className={`mobile-chat-bubble ${message.type}`}>
-                    <p>{message.content}</p>
+                    {message.content && <p>{message.content}</p>}
+                    {message.type === 'ai' && message.blocks && (
+                        <div className="mt-3">
+                            <ChatRenderer
+                                response={message.blocks}
+                                onAction={(actionId) => console.log('Action:', actionId)}
+                            />
+                        </div>
+                    )}
                 </div>
                 <span className="mobile-chat-time">
                     {formatTime(message.timestamp)}

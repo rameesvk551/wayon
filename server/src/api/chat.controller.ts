@@ -27,7 +27,7 @@ const MOCK_RESPONSES: Record<string, UIResponse> = {
         blocks: [
             {
                 type: 'text',
-                content: "👋 Hello! I'm your AI travel assistant. I can help you plan trips, find hotels, check visa requirements, and more!\n\n**Try asking me:**\n- Plan a trip to Paris\n- Find hotels in Tokyo\n- What's the weather in Bali?\n- Do I need a visa for Thailand?",
+                content: "👋 Hello! I'm your AI travel assistant. I can help you plan trips, find hotels, check visas, discover tours, and more!\n\n**Try asking me:**\n- Plan a trip to Paris\n- Find hotels in Tokyo\n- Show tours in Rome\n- What's the weather in Bali?\n- Do I need a visa for Thailand?",
                 format: 'markdown',
             },
         ],
@@ -366,6 +366,59 @@ const MOCK_RESPONSES: Record<string, UIResponse> = {
             ],
         },
     } as UIResponse & { map: unknown },
+    tours: {
+        blocks: [
+            {
+                type: 'title',
+                text: '🚶 Top Tours in Rome',
+                level: 1,
+            },
+            {
+                type: 'text',
+                content: 'Found **3 tours** that match your interests:',
+                format: 'markdown',
+            },
+            {
+                type: 'card',
+                title: 'Colosseum Skip-the-Line Tour',
+                subtitle: 'Historical • 2.5 hours',
+                image: 'https://images.unsplash.com/photo-1506806732259-39c2d0268443?w=400',
+                meta: [
+                    { label: 'Price', value: '€49/person' },
+                    { label: 'Rating', value: '4.8 ★' },
+                ],
+                badge: 'Popular',
+                badgeVariant: 'primary',
+                actions: [{ id: 'tour-colosseum', label: 'View Details', variant: 'primary' }],
+            },
+            {
+                type: 'card',
+                title: 'Vatican Museums & Sistine Chapel',
+                subtitle: 'Art & Culture • 3 hours',
+                image: 'https://images.unsplash.com/photo-1529260830199-42c24126f198?w=400',
+                meta: [
+                    { label: 'Price', value: '€59/person' },
+                    { label: 'Rating', value: '4.7 ★' },
+                ],
+                badge: 'Best Seller',
+                badgeVariant: 'success',
+                actions: [{ id: 'tour-vatican', label: 'View Details', variant: 'primary' }],
+            },
+            {
+                type: 'card',
+                title: 'Rome Food & Market Walk',
+                subtitle: 'Food Tour • 3 hours',
+                image: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400',
+                meta: [
+                    { label: 'Price', value: '€45/person' },
+                    { label: 'Rating', value: '4.9 ★' },
+                ],
+                badge: 'Top Rated',
+                badgeVariant: 'default',
+                actions: [{ id: 'tour-food', label: 'View Details', variant: 'primary' }],
+            },
+        ],
+    },
 };
 
 function getMockResponse(message: string): UIResponse {
@@ -388,6 +441,9 @@ function getMockResponse(message: string): UIResponse {
     }
     if (lowerMsg.includes('attraction') || lowerMsg.includes('things to do') || lowerMsg.includes('places') || lowerMsg.includes('visit') || lowerMsg.includes('see in')) {
         return MOCK_RESPONSES.attraction;
+    }
+    if (lowerMsg.includes('tour') || lowerMsg.includes('experience')) {
+        return MOCK_RESPONSES.tours;
     }
 
     return MOCK_RESPONSES.default;

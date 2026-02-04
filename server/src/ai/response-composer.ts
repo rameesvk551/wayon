@@ -29,6 +29,9 @@ export function composeResponse(
         case 'attraction_discovery':
             return composeAttractionResponse(toolResults, destination);
 
+        case 'tour_search':
+            return composeTourResponse(toolResults);
+
         case 'itinerary_generation':
             return composeItineraryResponse(toolResults);
 
@@ -79,6 +82,20 @@ interface WeatherData {
     location: string;
     current: { temp: string; condition: string };
     forecast: Array<{ date: string; high: string; low: string; condition: string }>;
+}
+
+interface TourData {
+    id: string;
+    name: string;
+    category: string;
+    duration: string;
+    price: string;
+    rating: number;
+    groupSize?: string;
+    includes?: string[];
+    highlights?: string[];
+    image?: string;
+    location?: string;
 }
 
 // AttractionData is imported from attraction.tool.ts
@@ -370,6 +387,59 @@ function composeAttractionResponse(
     };
 
     return { blocks, map: mapInstruction };
+}
+
+/**
+ * Compose tour search response
+ */
+function composeTourResponse(toolResults: Map<string, ToolResult>): UIResponse {
+    const blocks: UIBlock[] = [];
+    const tourData = toolResults.get('search_tours');
+
+    if (!tourData?.success || !tourData.data) {
+        return {
+            blocks: [
+                {
+                    type: 'alert',
+                    level: 'error',
+                    text: 'Unable to fetch tour information. Please try again.',
+                },
+            ],
+        };
+    }
+
+    const tours = tourData.data as TourData[];
+    const location = tours[0]?.location || 'your destination';
+
+    blocks.push({
+        type: 'title',
+        text: `Tours in ${location}`,
+        level: 1,
+    });
+
+    blocks.push({
+        type: 'text',
+        content: `Found **${tours.length} tours**. Here are the top options:`,
+        format: 'markdown',
+    });
+
+    for (const tour of tours.slice(0, 5)) {
+        const card: CardBlock = {
+            type: 'card',
+            title: tour.name,
+            subtitle: tour.category,
+            image: tour.image,
+            meta: [
+                { label: 'Duration', value: tour.duration },
+                { label: 'Price', value: tour.price },
+                { label: 'Rating', value: `${tour.rating} ★` },
+            ],
+            actions: [{ id: `tour-${tour.id}`, label: 'View Details', variant: 'primary' }],
+        };
+        blocks.push(card);
+    }
+
+    return { blocks };
 }
 
 /**
