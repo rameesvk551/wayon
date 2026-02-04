@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bot, Sparkles } from 'lucide-react';
+import { Bot, Sparkles, MapPin, Train, Car, Plane, Bus } from 'lucide-react';
 import { ChatRenderer } from '../components/renderer/ChatRenderer';
 import { TopNavBar } from '../components/organisms/TopNavBar';
 import { InteractiveMap } from '../components/organisms/InteractiveMap';
@@ -9,13 +9,30 @@ import { QuickActionsChips } from '../components/molecules/QuickActionsChips';
 import { MapProvider, useMapContext } from '../store/MapContext';
 import type { UIResponse, MapInstruction } from '../types/ui-schema';
 
+// Conversation flow states
+type ConversationState = 
+    | 'initial'
+    | 'asking_location'
+    | 'asking_transport'
+    | 'showing_attractions'
+    | 'normal';
+
 interface Message {
     id: string;
     type: 'ai' | 'user';
     content?: string;
     blocks?: UIResponse;
     timestamp: Date;
+    inputType?: 'text' | 'location' | 'transport-options';
 }
+
+// Transport options
+const transportOptions = [
+    { id: 'public', label: 'Public Transport', icon: Bus, color: 'bg-green-500' },
+    { id: 'train', label: 'Train', icon: Train, color: 'bg-blue-500' },
+    { id: 'private', label: 'Private Vehicle', icon: Car, color: 'bg-purple-500' },
+    { id: 'flight', label: 'Flight', icon: Plane, color: 'bg-orange-500' },
+];
 
 // Welcome message with rich blocks
 const welcomeBlocks: UIResponse = {

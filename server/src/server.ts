@@ -4,6 +4,7 @@ import { env } from './config/env.js';
 import { initRedis, closeRedis } from './cache/redis.js';
 import { initRetriever } from './rag/retriever.js';
 import { chatHandler, streamChatHandler, healthHandler } from './api/chat.controller.js';
+import { itineraryHandler, fetchAttractionsHandler } from './api/itinerary.controller.js';
 
 // Import tools to register them
 import './tools/index.js';
@@ -28,6 +29,8 @@ app.use((req, _res, next) => {
 app.get('/health', healthHandler);
 app.post('/api/chat', chatHandler);
 app.post('/api/chat/stream', streamChatHandler);
+app.post('/api/itinerary', itineraryHandler);
+app.get('/api/attractions', fetchAttractionsHandler);
 
 // Error handling middleware
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
@@ -74,6 +77,8 @@ async function start(): Promise<void> {
         console.log(`\n📡 Endpoints:`);
         console.log(`   POST /api/chat         - Main chat endpoint`);
         console.log(`   POST /api/chat/stream  - SSE streaming endpoint`);
+        console.log(`   POST /api/itinerary    - Generate itinerary`);
+        console.log(`   GET  /api/attractions  - Fetch attractions`);
         console.log(`   GET  /health           - Health check\n`);
     });
 }

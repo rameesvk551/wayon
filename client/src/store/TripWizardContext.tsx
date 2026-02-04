@@ -5,6 +5,8 @@ export interface WizardData {
     destination: string | null;
     freeTime: string | null;
     companions: string | null;
+    budget: number | null;
+    travelStyle: string | null;
     dates: { month: string; year: string; flexible: boolean } | null;
     interests: string[];
 }
@@ -20,6 +22,8 @@ interface TripWizardContextType {
     setDestination: (value: string) => void;
     setFreeTime: (value: string) => void;
     setCompanions: (value: string) => void;
+    setBudget: (value: number | null) => void;
+    setTravelStyle: (value: string) => void;
     setDates: (dates: { month: string; year: string; flexible: boolean }) => void;
     toggleInterest: (interest: string) => void;
     completeWizard: () => void;
@@ -33,6 +37,8 @@ const initialData: WizardData = {
     destination: null,
     freeTime: null,
     companions: null,
+    budget: null,
+    travelStyle: null,
     dates: null,
     interests: []
 };
@@ -41,7 +47,7 @@ export const TripWizardProvider = ({ children }: { children: ReactNode }) => {
     const [currentStep, setCurrentStep] = useState(0);
     const [wizardData, setWizardData] = useState<WizardData>(initialData);
     const [isComplete, setIsComplete] = useState(false);
-    const totalSteps = 5;
+    const totalSteps = 7;
 
     const goToStep = (step: number) => {
         if (step >= 0 && step < totalSteps) {
@@ -73,6 +79,14 @@ export const TripWizardProvider = ({ children }: { children: ReactNode }) => {
         setWizardData(prev => ({ ...prev, companions: value }));
     };
 
+    const setBudget = (value: number | null) => {
+        setWizardData(prev => ({ ...prev, budget: value }));
+    };
+
+    const setTravelStyle = (value: string) => {
+        setWizardData(prev => ({ ...prev, travelStyle: value }));
+    };
+
     const setDates = (dates: { month: string; year: string; flexible: boolean }) => {
         setWizardData(prev => ({ ...prev, dates }));
     };
@@ -97,7 +111,7 @@ export const TripWizardProvider = ({ children }: { children: ReactNode }) => {
     };
 
     const getSummary = (): string => {
-        const { destination, freeTime, companions, dates, interests } = wizardData;
+        const { destination, freeTime, companions, budget, travelStyle, dates, interests } = wizardData;
         let summary = "I want to plan a trip";
 
         if (destination) {
@@ -108,6 +122,12 @@ export const TripWizardProvider = ({ children }: { children: ReactNode }) => {
         }
         if (companions) {
             summary += `, traveling ${companions}`;
+        }
+        if (budget) {
+            summary += ` with a budget of $${budget.toLocaleString()}`;
+        }
+        if (travelStyle) {
+            summary += `, ${travelStyle} style`;
         }
         if (dates) {
             summary += dates.flexible
@@ -133,6 +153,8 @@ export const TripWizardProvider = ({ children }: { children: ReactNode }) => {
             setDestination,
             setFreeTime,
             setCompanions,
+            setBudget,
+            setTravelStyle,
             setDates,
             toggleInterest,
             completeWizard,

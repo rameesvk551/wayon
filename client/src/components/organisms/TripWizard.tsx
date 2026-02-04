@@ -1,13 +1,14 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, ArrowRight, Sparkles, Plane } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Sparkles, Plane, X } from 'lucide-react';
 import { TripWizardProvider, useTripWizard } from '../../store/TripWizardContext';
-import { DestinationStep, FreeTimeStep, CompanionsStep, DatesStep, InterestsStep } from './wizard';
+import { DestinationStep, FreeTimeStep, CompanionsStep, BudgetStep, TravelStyleStep, DatesStep, InterestsStep } from './wizard';
 
 interface TripWizardProps {
     onComplete: (summary: string) => void;
+    onClose?: () => void;
 }
 
-const WizardContent: React.FC<TripWizardProps> = ({ onComplete }) => {
+const WizardContent: React.FC<TripWizardProps> = ({ onComplete, onClose }) => {
     const {
         currentStep,
         totalSteps,
@@ -23,8 +24,10 @@ const WizardContent: React.FC<TripWizardProps> = ({ onComplete }) => {
             case 0: return wizardData.destination !== null && wizardData.destination.trim() !== '';
             case 1: return wizardData.freeTime !== null;
             case 2: return wizardData.companions !== null;
-            case 3: return wizardData.dates !== null;
-            case 4: return wizardData.interests.length >= 2;
+            case 3: return wizardData.budget !== null;
+            case 4: return wizardData.travelStyle !== null;
+            case 5: return wizardData.dates !== null;
+            case 6: return wizardData.interests.length >= 2;
             default: return false;
         }
     };
@@ -42,32 +45,34 @@ const WizardContent: React.FC<TripWizardProps> = ({ onComplete }) => {
         <DestinationStep key="destination" />,
         <FreeTimeStep key="freetime" />,
         <CompanionsStep key="companions" />,
+        <BudgetStep key="budget" />,
+        <TravelStyleStep key="travelstyle" />,
         <DatesStep key="dates" />,
         <InterestsStep key="interests" />
     ];
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-[var(--color-bg-primary)] via-white to-[var(--color-primary-subtle)] flex flex-col">
+        <div className="mobile-app-container">
             {/* Header with Logo */}
-            <header className="px-8 py-6">
+            <header className="wizard-header">
                 <div className="flex items-center gap-3">
-                    <div className="
-                        w-12 h-12 rounded-xl
-                        bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-secondary)]
-                        flex items-center justify-center
-                        shadow-md
-                    ">
+                    <div className="wizard-logo-icon">
                         <Plane size={24} className="text-white" />
                     </div>
                     <div>
-                        <h1 className="text-xl font-bold text-[var(--color-text-primary)]">
+                        <h1 className="wizard-header-title">
                             AI Trip Planner
                         </h1>
-                        <p className="text-sm text-[var(--color-text-muted)]">
+                        <p className="wizard-header-subtitle">
                             Let's plan your dream trip
                         </p>
                     </div>
                 </div>
+                {onClose && (
+                    <button onClick={onClose} className="wizard-close-btn">
+                        <X size={24} />
+                    </button>
+                )}
             </header>
 
             {/* Progress Indicator */}

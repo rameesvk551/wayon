@@ -14,7 +14,133 @@ const ReviewPage: React.FC = () => {
         navigate(`/plan/${tripId || 'trip-1'}`);
     };
 
-    const handleExportPDF = () => console.log('Export PDF');
+    const handleExportPDF = async () => {
+        const pdfServiceUrl =
+            import.meta.env.VITE_PDF_SERVICE_URL || 'http://localhost:4010';
+
+        const cityCoordinates: Record<string, { lat: number; lng: number }> = {
+            Athens: { lat: 37.9838, lng: 23.7275 },
+            Mykonos: { lat: 37.4467, lng: 25.3289 },
+            Santorini: { lat: 36.3932, lng: 25.4615 }
+        };
+
+        const markers = cities
+            .map((city, index) => {
+                const coords = cityCoordinates[city];
+                if (!coords) return null;
+                return {
+                    id: `${city}-${index}`,
+                    label: String.fromCharCode(65 + index),
+                    lat: coords.lat,
+                    lng: coords.lng,
+                    title: city,
+                    category: 'sightseeing'
+                };
+            })
+            .filter(Boolean) as Array<{
+                id: string;
+                label: string;
+                lat: number;
+                lng: number;
+                title: string;
+                category?: string;
+            }>;
+
+        const center = markers.length
+            ? {
+                  lat: markers.reduce((sum, marker) => sum + marker.lat, 0) / markers.length,
+                  lng: markers.reduce((sum, marker) => sum + marker.lng, 0) / markers.length
+              }
+            : { lat: 37.9838, lng: 23.7275 };
+
+        const payload = {
+            trip: {
+                title: greekItinerary.name,
+                destination: 'Greece',
+                dateRange: { start: '2026-03-15', end: '2026-03-21' },
+                totalDays
+            },
+            branding: {
+                primaryColor: '#1d4ed8',
+                accentColor: '#0ea5e9'
+            },
+            map: {
+                style: 'goa-infographic',
+                center,
+                zoom: 5.8,
+                markers,
+                route: {
+                    coordinates: markers.map((marker) => [marker.lng, marker.lat])
+                }
+            },
+            days: greekItineraryDays.map((day) => ({
+                dayNumber: day.dayNumber,
+                date: day.date,
+                city: day.city,
+                heroImageUrl: day.cityImage,
+                transport: day.transport
+                    ? {
+                          type: day.transport.type,
+                          from: day.transport.from,
+                          to: day.transport.to,
+                          departureTime: day.transport.departureTime,
+                          arrivalTime: day.transport.arrivalTime,
+                          duration: day.transport.duration,
+                          price: day.transport.price,
+                          carrier: day.transport.carrier
+                      }
+                    : undefined,
+                activities: day.activities.map((activity) => ({
+                    name: activity.name,
+                    description: activity.description,
+                    duration: activity.duration,
+                    startTime: activity.startTime,
+                    endTime: activity.endTime,
+                    location: activity.location,
+                    category: activity.category,
+                    imageUrl: activity.image,
+                    price: activity.price
+                })),
+                hotel: day.hotel
+                    ? {
+                          name: day.hotel.name,
+                          imageUrl: day.hotel.image,
+                          rating: day.hotel.rating,
+                          pricePerNight: day.hotel.pricePerNight
+                      }
+                    : undefined
+            })),
+            output: { format: 'A4', includeInfographicCover: true }
+        };
+
+        try {
+            const response = await fetch(`${pdfServiceUrl}/api/v1/generate-itinerary-pdf`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Accept: 'application/pdf'
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                throw new Error(`PDF generation failed (${response.status})`);
+            }
+
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'trip-itinerary.pdf';
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error('Export PDF failed:', error);
+        }
+    };
+
     const handleCopyLink = () => console.log('Copy link');
 
     // Calculate totals

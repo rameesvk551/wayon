@@ -11,4 +11,4 @@ export { TripTopBar } from './TripTopBar';
 export { PlanItineraryPanel } from './PlanItineraryPanel';
 export { CompactMapPanel } from './CompactMapPanel';
 export { BookingSection } from './BookingSection';
-
+export { ItineraryDisplay, ItinerarySkeleton } from './ItineraryDisplay';
