@@ -832,17 +832,10 @@ p {
 .mobile-chat-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 12px;
   padding: 16px;
   background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
   color: white;
-}
-
-.mobile-chat-header-left {
-  display: flex;
-  align-items: center;
-  gap: 12px;
 }
 
 .mobile-chat-avatar {
@@ -863,31 +856,6 @@ p {
 .mobile-chat-header p {
   font-size: 12px;
   opacity: 0.8;
-}
-
-.mobile-chat-header-actions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.chat-header-action {
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(255, 255, 255, 0.18);
-  border: 1px solid rgba(255, 255, 255, 0.28);
-  border-radius: 12px;
-  color: white;
-  transition: transform 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
-}
-
-.chat-header-action:hover {
-  transform: translateY(-1px);
-  background: rgba(255, 255, 255, 0.26);
-  border-color: rgba(255, 255, 255, 0.36);
 }
 
 .mobile-chat-messages {
