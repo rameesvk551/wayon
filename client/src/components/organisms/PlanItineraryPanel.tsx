@@ -2,9 +2,7 @@ import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import { useState } from 'react';
 import { Plus } from 'lucide-react';
 import { DayTimeline } from './DayTimeline';
-import { AISuggestionCard } from '../molecules/AISuggestionCard';
 import type { DayItinerary } from '../../types';
-import { greekItineraryDays } from '../../data/itinerary';
 
 interface PlanItineraryPanelProps {
     days?: DayItinerary[];
@@ -14,14 +12,14 @@ interface PlanItineraryPanelProps {
 }
 
 export const PlanItineraryPanel: React.FC<PlanItineraryPanelProps> = ({
-    days = greekItineraryDays,
+    days = [],
     onDayClick,
     onReorder,
-    showAISuggestion = true
+    showAISuggestion = false
 }) => {
     const [expandedDay, setExpandedDay] = useState<number>(1);
     const [orderedDays, setOrderedDays] = useState(days);
-    const [showSuggestion, setShowSuggestion] = useState(showAISuggestion);
+    const showSuggestion = showAISuggestion;
 
     const handleDayToggle = (dayNumber: number) => {
         setExpandedDay(expandedDay === dayNumber ? -1 : dayNumber);
@@ -62,53 +60,50 @@ export const PlanItineraryPanel: React.FC<PlanItineraryPanelProps> = ({
 
             {/* Scrollable Days List */}
             <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                <Reorder.Group
-                    axis="y"
-                    values={orderedDays}
-                    onReorder={handleReorder}
-                    className="space-y-3"
-                >
-                    {orderedDays.map((day, index) => (
-                        <Reorder.Item
-                            key={day.id}
-                            value={day}
-                            className="cursor-grab active:cursor-grabbing"
-                        >
-                            <motion.div
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: index * 0.05 }}
+                {orderedDays.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-12 text-center text-[var(--color-text-muted)]">
+                        <p className="text-sm font-medium">No itinerary yet</p>
+                        <p className="text-xs">Start planning to see your days here.</p>
+                    </div>
+                ) : (
+                    <Reorder.Group
+                        axis="y"
+                        values={orderedDays}
+                        onReorder={handleReorder}
+                        className="space-y-3"
+                    >
+                        {orderedDays.map((day, index) => (
+                            <Reorder.Item
+                                key={day.id}
+                                value={day}
+                                className="cursor-grab active:cursor-grabbing"
                             >
-                                <DayTimeline
-                                    day={day}
-                                    isActive={expandedDay === day.dayNumber}
-                                    onToggle={() => handleDayToggle(day.dayNumber)}
-                                />
-                            </motion.div>
+                                <motion.div
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: index * 0.05 }}
+                                >
+                                    <DayTimeline
+                                        day={day}
+                                        isActive={expandedDay === day.dayNumber}
+                                        onToggle={() => handleDayToggle(day.dayNumber)}
+                                    />
+                                </motion.div>
 
-                            {/* AI Suggestion (show after first day) */}
-                            <AnimatePresence>
-                                {showSuggestion && index === 0 && expandedDay === day.dayNumber && (
-                                    <motion.div
-                                        initial={{ opacity: 0, height: 0 }}
-                                        animate={{ opacity: 1, height: 'auto' }}
-                                        exit={{ opacity: 0, height: 0 }}
-                                        className="mt-3"
-                                    >
-                                        <AISuggestionCard
-                                            title="Acropolis Museum"
-                                            description="Perfect addition after your Acropolis visit - just 5 min walk. World-class ancient Greek artifacts."
-                                            type="attraction"
-                                            image="https://images.unsplash.com/photo-1555993539-1732b0258235?w=400&q=80"
-                                            onAccept={() => setShowSuggestion(false)}
-                                            onDismiss={() => setShowSuggestion(false)}
+                                <AnimatePresence>
+                                    {showSuggestion && index === 0 && expandedDay === day.dayNumber && (
+                                        <motion.div
+                                            initial={{ opacity: 0, height: 0 }}
+                                            animate={{ opacity: 1, height: 'auto' }}
+                                            exit={{ opacity: 0, height: 0 }}
+                                            className="mt-3"
                                         />
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
-                        </Reorder.Item>
-                    ))}
-                </Reorder.Group>
+                                    )}
+                                </AnimatePresence>
+                            </Reorder.Item>
+                        ))}
+                    </Reorder.Group>
+                )}
 
                 {/* Add More Section */}
                 <motion.div

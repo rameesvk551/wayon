@@ -63,7 +63,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
             case 'transport':
                 return <TransportCard onSelect={onTransportSelect} selected={preferences.transportMode} />;
             case 'attractions':
-                return <AttractionsCard destination={preferences.destination || 'Paris'} onContinue={onAttractionsContinue} />;
+                return <AttractionsCard destination={preferences.destination || ''} onContinue={onAttractionsContinue} />;
             case 'interests':
                 return <InterestsCard onSelect={onInterestsSelect} selectedInterests={preferences.interests} />;
             case 'summary':

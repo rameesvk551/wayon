@@ -77,7 +77,7 @@ export const AlertBlock: React.FC<AlertBlockProps> = ({
                     </h4>
                 )}
                 <p className={`text-sm ${styles.textColor}`}>
-                    {text}
+                    {typeof text === 'string' ? text : JSON.stringify(text)}
                 </p>
             </div>
 

@@ -2,19 +2,33 @@ import { useState, useRef, useEffect } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { ChatHeader } from '../components/chat/ChatHeader';
 import { ChatMessage } from '../components/chat/ChatMessage';
+import { InlineAIInput } from '../components/molecules/InlineAIInput';
 import type { TripPreferences, Message, Attraction } from '../types/chat';
 import { TRANSPORT_LABELS } from '../types/chat';
 import type { UIResponse } from '../types/ui-schema';
 
 // API configuration
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4333';
 
 interface ChatScreenProps {
     onNavigate?: (tab: string) => void;
 }
 
 export const ChatScreen: React.FC<ChatScreenProps> = ({ onNavigate }) => {
-    const [messages, setMessages] = useState<Message[]>([]);
+    const [messages, setMessages] = useState<Message[]>(() => ([
+        {
+            id: '1',
+            type: 'ai',
+            content: "Hey there! ✨ I'm your AI travel companion. Let's plan your perfect trip together!",
+            timestamp: new Date()
+        },
+        {
+            id: '2',
+            type: 'interactive',
+            interactiveType: 'destination',
+            timestamp: new Date()
+        }
+    ]));
     const [sessionId, setSessionId] = useState<string | null>(null);
     const [preferences, setPreferences] = useState<TripPreferences>({
         destination: null,
@@ -25,6 +39,11 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onNavigate }) => {
         transportMode: null,
         interests: [],
     });
+    const messageIdRef = useRef(0);
+    const createMessageId = () => {
+        messageIdRef.current += 1;
+        return `${Date.now()}-${messageIdRef.current}`;
+    };
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     const scrollToBottom = () => {
@@ -35,32 +54,13 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onNavigate }) => {
         scrollToBottom();
     }, [messages]);
 
-    // Initialize with welcome message and first interactive card
-    useEffect(() => {
-        const initMessages: Message[] = [
-            {
-                id: '1',
-                type: 'ai',
-                content: "Hey there! ✨ I'm your AI travel companion. Let's plan your perfect trip together!",
-                timestamp: new Date()
-            },
-            {
-                id: '2',
-                type: 'interactive',
-                interactiveType: 'destination',
-                timestamp: new Date()
-            }
-        ];
-        setMessages(initMessages);
-    }, []);
-
     const handleDestinationSelect = (destination: string) => {
         setPreferences(prev => ({ ...prev, destination }));
         setMessages(prev => [
             ...prev,
-            { id: Date.now().toString(), type: 'user', content: `I want to go to ${destination}`, timestamp: new Date() },
-            { id: (Date.now() + 1).toString(), type: 'ai', content: `Great choice! ${destination} is amazing! 🌟 Who are you traveling with?`, timestamp: new Date() },
-            { id: (Date.now() + 2).toString(), type: 'interactive', interactiveType: 'companions', timestamp: new Date() }
+            { id: createMessageId(), type: 'user', content: `I want to go to ${destination}`, timestamp: new Date() },
+            { id: createMessageId(), type: 'ai', content: `Great choice! ${destination} is amazing! 🌟 Who are you traveling with?`, timestamp: new Date() },
+            { id: createMessageId(), type: 'interactive', interactiveType: 'companions', timestamp: new Date() }
         ]);
     };
 
@@ -68,9 +68,9 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onNavigate }) => {
         setPreferences(prev => ({ ...prev, companions }));
         setMessages(prev => [
             ...prev,
-            { id: Date.now().toString(), type: 'user', content: `I'm traveling ${companions}`, timestamp: new Date() },
-            { id: (Date.now() + 1).toString(), type: 'ai', content: `Sounds fun! Now let's talk budget 💰`, timestamp: new Date() },
-            { id: (Date.now() + 2).toString(), type: 'interactive', interactiveType: 'budget', timestamp: new Date() }
+            { id: createMessageId(), type: 'user', content: `I'm traveling ${companions}`, timestamp: new Date() },
+            { id: createMessageId(), type: 'ai', content: `Sounds fun! Now let's talk budget 💰`, timestamp: new Date() },
+            { id: createMessageId(), type: 'interactive', interactiveType: 'budget', timestamp: new Date() }
         ]);
     };
 
@@ -78,9 +78,9 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onNavigate }) => {
         setPreferences(prev => ({ ...prev, budget }));
         setMessages(prev => [
             ...prev,
-            { id: Date.now().toString(), type: 'user', content: `My budget is ${budget}`, timestamp: new Date() },
-            { id: (Date.now() + 1).toString(), type: 'ai', content: `Perfect! When are you planning to travel? 📅`, timestamp: new Date() },
-            { id: (Date.now() + 2).toString(), type: 'interactive', interactiveType: 'dates', timestamp: new Date() }
+            { id: createMessageId(), type: 'user', content: `My budget is ${budget}`, timestamp: new Date() },
+            { id: createMessageId(), type: 'ai', content: `Perfect! When are you planning to travel? 📅`, timestamp: new Date() },
+            { id: createMessageId(), type: 'interactive', interactiveType: 'dates', timestamp: new Date() }
         ]);
     };
 
@@ -88,9 +88,9 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onNavigate }) => {
         setPreferences(prev => ({ ...prev, dates }));
         setMessages(prev => [
             ...prev,
-            { id: Date.now().toString(), type: 'user', content: `I'm planning for ${dates}`, timestamp: new Date() },
-            { id: (Date.now() + 1).toString(), type: 'ai', content: `Great! Now, where are you from? 📍 This helps us plan the best travel route for you.`, timestamp: new Date() },
-            { id: (Date.now() + 2).toString(), type: 'interactive', interactiveType: 'location', timestamp: new Date() }
+            { id: createMessageId(), type: 'user', content: `I'm planning for ${dates}`, timestamp: new Date() },
+            { id: createMessageId(), type: 'ai', content: `Great! Now, where are you from? 📍 This helps us plan the best travel route for you.`, timestamp: new Date() },
+            { id: createMessageId(), type: 'interactive', interactiveType: 'location', timestamp: new Date() }
         ]);
     };
 
@@ -98,9 +98,9 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onNavigate }) => {
         setPreferences(prev => ({ ...prev, currentLocation: location }));
         setMessages(prev => [
             ...prev,
-            { id: Date.now().toString(), type: 'user', content: `I'm from ${location}`, timestamp: new Date() },
-            { id: (Date.now() + 1).toString(), type: 'ai', content: `Perfect! How would you like to travel from ${location}? 🚀`, timestamp: new Date() },
-            { id: (Date.now() + 2).toString(), type: 'interactive', interactiveType: 'transport', timestamp: new Date() }
+            { id: createMessageId(), type: 'user', content: `I'm from ${location}`, timestamp: new Date() },
+            { id: createMessageId(), type: 'ai', content: `Perfect! How would you like to travel from ${location}? 🚀`, timestamp: new Date() },
+            { id: createMessageId(), type: 'interactive', interactiveType: 'transport', timestamp: new Date() }
         ]);
     };
 
@@ -108,9 +108,9 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onNavigate }) => {
         setPreferences(prev => ({ ...prev, transportMode: transport }));
         setMessages(prev => [
             ...prev,
-            { id: Date.now().toString(), type: 'user', content: `I'll travel by ${TRANSPORT_LABELS[transport]}`, timestamp: new Date() },
-            { id: (Date.now() + 1).toString(), type: 'ai', content: `Great choice! Now tell me about your interests 🎯`, timestamp: new Date() },
-            { id: (Date.now() + 2).toString(), type: 'interactive', interactiveType: 'interests', timestamp: new Date() }
+            { id: createMessageId(), type: 'user', content: `I'll travel by ${TRANSPORT_LABELS[transport]}`, timestamp: new Date() },
+            { id: createMessageId(), type: 'ai', content: `Great choice! Now tell me about your interests 🎯`, timestamp: new Date() },
+            { id: createMessageId(), type: 'interactive', interactiveType: 'interests', timestamp: new Date() }
         ]);
     };
 
@@ -119,10 +119,160 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onNavigate }) => {
         setPreferences(updatedPrefs);
         setMessages(prev => [
             ...prev,
-            { id: Date.now().toString(), type: 'user', content: `I'm interested in ${interests.join(', ')}`, timestamp: new Date() },
-            { id: (Date.now() + 1).toString(), type: 'ai', content: `Excellent! 🎉 Here are the top attractions at your destination that you must visit!`, timestamp: new Date() },
-            { id: (Date.now() + 2).toString(), type: 'interactive', interactiveType: 'attractions', timestamp: new Date() }
+            { id: createMessageId(), type: 'user', content: `I'm interested in ${interests.join(', ')}`, timestamp: new Date() },
+            { id: createMessageId(), type: 'ai', content: `Excellent! 🎉 Here are the top attractions at your destination that you must visit!`, timestamp: new Date() },
+            { id: createMessageId(), type: 'interactive', interactiveType: 'attractions', timestamp: new Date() }
         ]);
+    };
+
+    const buildBlocksFromStructured = (structured: {
+        summary?: string;
+        recommendations?: unknown[];
+        next_questions?: string[];
+    }) => {
+        if (!structured) return undefined;
+        const blocks: UIResponse['blocks'] = [];
+
+        if (structured.summary) {
+            blocks.push({ type: 'text', content: structured.summary, format: 'plain' });
+        }
+
+        if (Array.isArray(structured.recommendations) && structured.recommendations.length > 0) {
+            blocks.push({ type: 'title', text: 'Recommendations', level: 3 });
+            blocks.push({
+                type: 'list',
+                ordered: false,
+                items: structured.recommendations.map((rec, index) => ({
+                    id: `rec-${index}`,
+                    text: typeof rec === 'string' ? rec : JSON.stringify(rec)
+                }))
+            });
+        }
+
+        if (Array.isArray(structured.next_questions) && structured.next_questions.length > 0) {
+            blocks.push({ type: 'title', text: 'Next Questions', level: 3 });
+            blocks.push({
+                type: 'list',
+                ordered: true,
+                items: structured.next_questions.map((question, index) => ({
+                    id: `question-${index}`,
+                    text: question
+                }))
+            });
+        }
+
+        if (blocks.length === 0) return undefined;
+        return { blocks };
+    };
+
+    const mergeBlocks = (primary?: UIResponse, secondary?: UIResponse) => {
+        if (!primary && !secondary) return undefined;
+        if (!primary) return secondary;
+        if (!secondary) return primary;
+        return { blocks: [...primary.blocks, ...secondary.blocks] };
+    };
+
+    const streamChat = async (prompt: string) => {
+        const response = await fetch(`${API_BASE_URL}/api/chat/stream`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                message: prompt,
+                sessionId: sessionId || undefined,
+            }),
+        });
+
+        if (!response.ok || !response.body) {
+            throw new Error('Failed to start streaming');
+        }
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let finalPayload: unknown = null;
+        let streamError: unknown = null;
+
+        const processChunk = (chunk: string) => {
+            const lines = chunk.split('\n');
+            let event = 'message';
+            const dataLines: string[] = [];
+
+            for (const line of lines) {
+                if (line.startsWith('event:')) {
+                    event = line.replace('event:', '').trim();
+                    continue;
+                }
+                if (line.startsWith('data:')) {
+                    dataLines.push(line.replace('data:', '').trim());
+                }
+            }
+
+            if (dataLines.length === 0) return;
+            const raw = dataLines.join('\n');
+            let payload: unknown = raw;
+            try {
+                payload = JSON.parse(raw);
+            } catch {
+                payload = raw;
+            }
+
+            if (event === 'meta' && typeof payload === 'object' && payload !== null && 'sessionId' in payload) {
+                const metaSessionId = (payload as { sessionId?: string }).sessionId;
+                if (metaSessionId && metaSessionId !== sessionId) {
+                    setSessionId(metaSessionId);
+                }
+            }
+            if (event === 'final') {
+                finalPayload = payload;
+                if (typeof payload === 'object' && payload !== null && 'sessionId' in payload) {
+                    const finalSessionId = (payload as { sessionId?: string }).sessionId;
+                    if (finalSessionId && finalSessionId !== sessionId) {
+                        setSessionId(finalSessionId);
+                    }
+                }
+            }
+            if (event === 'error') {
+                streamError = payload;
+            }
+        };
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+
+            const parts = buffer.split('\n\n');
+            buffer = parts.pop() || '';
+            for (const part of parts) {
+                if (!part.trim()) continue;
+                processChunk(part);
+            }
+        }
+
+        if (buffer.trim()) {
+            processChunk(buffer);
+        }
+
+        if (!finalPayload) {
+            const message =
+                typeof streamError === 'object' && streamError !== null && 'message' in streamError
+                    ? (streamError as { message?: string }).message || 'Streaming failed'
+                    : 'Streaming failed';
+            throw new Error(message);
+        }
+
+        return finalPayload as {
+            structured?: {
+                reply?: string;
+                itinerary?: unknown;
+            };
+            itinerary?: unknown;
+            fallback?: { itinerary?: unknown };
+            message?: string;
+            uiBlocks?: UIResponse;
+        };
     };
 
     const handleAttractionsContinue = async (selectedAttractions: Attraction[]) => {
@@ -146,138 +296,13 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onNavigate }) => {
 
             return lines.join('\n');
         };
-
-        const buildBlocksFromStructured = (structured: {
-            summary?: string;
-            recommendations?: unknown[];
-            next_questions?: string[];
-        }) => {
-            if (!structured) return undefined;
-            const blocks: UIResponse['blocks'] = [];
-
-            if (structured.summary) {
-                blocks.push({ type: 'text', content: structured.summary, format: 'plain' });
-            }
-
-            if (Array.isArray(structured.recommendations) && structured.recommendations.length > 0) {
-                blocks.push({ type: 'title', text: 'Recommendations', level: 3 });
-                blocks.push({
-                    type: 'list',
-                    ordered: false,
-                    items: structured.recommendations.map((rec, index) => ({
-                        id: `rec-${index}`,
-                        text: typeof rec === 'string' ? rec : JSON.stringify(rec)
-                    }))
-                });
-            }
-
-            if (Array.isArray(structured.next_questions) && structured.next_questions.length > 0) {
-                blocks.push({ type: 'title', text: 'Next Questions', level: 3 });
-                blocks.push({
-                    type: 'list',
-                    ordered: true,
-                    items: structured.next_questions.map((question, index) => ({
-                        id: `question-${index}`,
-                        text: question
-                    }))
-                });
-            }
-
-            if (blocks.length === 0) return undefined;
-            return { blocks };
-        };
-
-        const streamChat = async () => {
-            const response = await fetch(`${API_BASE_URL}/api/chat/stream`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    message: buildPrompt(),
-                    sessionId: sessionId || undefined,
-                }),
-            });
-
-            if (!response.ok || !response.body) {
-                throw new Error('Failed to start streaming');
-            }
-
-            const reader = response.body.getReader();
-            const decoder = new TextDecoder();
-            let buffer = '';
-            let finalPayload: any = null;
-            let streamError: any = null;
-
-            const processChunk = (chunk: string) => {
-                const lines = chunk.split('\n');
-                let event = 'message';
-                const dataLines: string[] = [];
-
-                for (const line of lines) {
-                    if (line.startsWith('event:')) {
-                        event = line.replace('event:', '').trim();
-                        continue;
-                    }
-                    if (line.startsWith('data:')) {
-                        dataLines.push(line.replace('data:', '').trim());
-                    }
-                }
-
-                if (dataLines.length === 0) return;
-                const raw = dataLines.join('\n');
-                let payload: any = raw;
-                try {
-                    payload = JSON.parse(raw);
-                } catch {
-                    payload = raw;
-                }
-
-                if (event === 'meta' && payload?.sessionId && payload.sessionId !== sessionId) {
-                    setSessionId(payload.sessionId);
-                }
-                if (event === 'final') {
-                    finalPayload = payload;
-                    if (payload?.sessionId && payload.sessionId !== sessionId) {
-                        setSessionId(payload.sessionId);
-                    }
-                }
-                if (event === 'error') {
-                    streamError = payload;
-                }
-            };
-
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-                buffer += decoder.decode(value, { stream: true });
-
-                const parts = buffer.split('\n\n');
-                buffer = parts.pop() || '';
-                for (const part of parts) {
-                    if (!part.trim()) continue;
-                    processChunk(part);
-                }
-            }
-
-            if (buffer.trim()) {
-                processChunk(buffer);
-            }
-
-            if (!finalPayload) {
-                const message = streamError?.message || 'Streaming failed';
-                throw new Error(message);
-            }
-
-            return finalPayload;
-        };
         
         // Add user message and loading state
-        const loadingMsgId = (Date.now() + 2).toString();
+        const loadingMsgId = createMessageId();
         setMessages(prev => [
             ...prev,
             { 
-                id: Date.now().toString(), 
+                id: createMessageId(), 
                 type: 'user', 
                 content: attractionCount > 0 
                     ? `I've selected ${attractionCount} attraction${attractionCount > 1 ? 's' : ''}: ${selectedAttractions.map(a => a.name).join(', ')}` 
@@ -285,7 +310,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onNavigate }) => {
                 timestamp: new Date() 
             },
             { 
-                id: (Date.now() + 1).toString(), 
+                id: createMessageId(), 
                 type: 'ai', 
                 content: attractionCount > 0 
                     ? `✨ Great choices! Let me generate a personalized itinerary for you...`
@@ -302,16 +327,17 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onNavigate }) => {
         ]);
 
         try {
-            const data = await streamChat();
+            const data = await streamChat(buildPrompt());
             const structured = data.structured || null;
             const itinerary = structured?.itinerary || data.itinerary || data?.fallback?.itinerary;
-            const blocks = structured ? buildBlocksFromStructured(structured) : undefined;
+            const structuredBlocks = structured ? buildBlocksFromStructured(structured) : undefined;
+            const blocks = mergeBlocks(structuredBlocks, data.uiBlocks);
             const responseText = structured?.reply || data.message || 'I have your trip updates ready.';
 
             setMessages(prev => prev.map(msg => {
                 if (msg.id !== loadingMsgId) return msg;
 
-                if (itinerary) {
+                if (itinerary && Array.isArray(itinerary.dailyPlan) && itinerary.dailyPlan.length > 0) {
                     return {
                         ...msg,
                         isLoading: false,
@@ -345,6 +371,70 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onNavigate }) => {
         }
     };
 
+    const handleFreeformSubmit = async (message: string) => {
+        const loadingMsgId = createMessageId();
+        setMessages(prev => [
+            ...prev,
+            { id: createMessageId(), type: 'user', content: message, timestamp: new Date() },
+            {
+                id: createMessageId(),
+                type: 'ai',
+                content: 'Let me check that for you...',
+                timestamp: new Date()
+            },
+            {
+                id: loadingMsgId,
+                type: 'interactive',
+                interactiveType: 'itinerary',
+                timestamp: new Date(),
+                isLoading: true
+            }
+        ]);
+
+        try {
+            const data = await streamChat(message);
+            const structured = data.structured || null;
+            const itinerary = structured?.itinerary || data.itinerary || data?.fallback?.itinerary;
+            const structuredBlocks = structured ? buildBlocksFromStructured(structured) : undefined;
+            const blocks = mergeBlocks(structuredBlocks, data.uiBlocks);
+            const responseText = structured?.reply || data.message || 'I have your trip updates ready.';
+
+            setMessages(prev => prev.map(msg => {
+                if (msg.id !== loadingMsgId) return msg;
+
+                if (itinerary && Array.isArray(itinerary.dailyPlan) && itinerary.dailyPlan.length > 0) {
+                    return {
+                        ...msg,
+                        isLoading: false,
+                        itineraryData: itinerary
+                    };
+                }
+
+                return {
+                    ...msg,
+                    type: 'ai' as const,
+                    interactiveType: undefined,
+                    isLoading: false,
+                    content: responseText,
+                    blocks
+                };
+            }));
+        } catch (error) {
+            console.error('Chat error:', error);
+            setMessages(prev => prev.map(msg =>
+                msg.id === loadingMsgId
+                    ? {
+                        ...msg,
+                        type: 'ai' as const,
+                        interactiveType: undefined,
+                        isLoading: false,
+                        content: '❌ Sorry, I could not process that message. Please try again.'
+                    }
+                    : msg
+            ));
+        }
+    };
+
     return (
         <div className="mobile-chat-screen">
             {/* Chat Header */}
@@ -371,8 +461,15 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onNavigate }) => {
                 </AnimatePresence>
                 <div ref={messagesEndRef} />
             </div>
+
+            {/* Input */}
+            <InlineAIInput
+                onSubmit={handleFreeformSubmit}
+                placeholder="Ask anything about your trip..."
+            />
         </div>
     );
 };
 
 export default ChatScreen;
+

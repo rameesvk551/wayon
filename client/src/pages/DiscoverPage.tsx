@@ -55,23 +55,30 @@ const DiscoverPage: React.FC = () => {
                     </div>
 
                     {/* Destinations Grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {destinations.slice(0, 6).map((destination, index) => (
-                            <motion.div
-                                key={destination.id}
-                                initial={{ opacity: 0, y: 30 }}
-                                whileInView={{ opacity: 1, y: 0 }}
-                                viewport={{ once: true }}
-                                transition={{ duration: 0.5, delay: index * 0.1 }}
-                            >
-                                <InspirationCard
-                                    destination={destination}
-                                    size={index === 0 ? 'lg' : 'md'}
-                                    onClick={() => handleDestinationClick(destination.id)}
-                                />
-                            </motion.div>
-                        ))}
-                    </div>
+                    {destinations.length === 0 ? (
+                        <div className="py-12 text-center text-[var(--color-text-muted)]">
+                            <p className="text-sm font-medium">No destinations available yet</p>
+                            <p className="text-xs">Check back soon for updated recommendations.</p>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {destinations.slice(0, 6).map((destination, index) => (
+                                <motion.div
+                                    key={destination.id}
+                                    initial={{ opacity: 0, y: 30 }}
+                                    whileInView={{ opacity: 1, y: 0 }}
+                                    viewport={{ once: true }}
+                                    transition={{ duration: 0.5, delay: index * 0.1 }}
+                                >
+                                    <InspirationCard
+                                        destination={destination}
+                                        size={index === 0 ? 'lg' : 'md'}
+                                        onClick={() => handleDestinationClick(destination.id)}
+                                    />
+                                </motion.div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             </section>
 
@@ -99,22 +106,22 @@ const DiscoverPage: React.FC = () => {
                             <div className="flex items-center gap-3 px-5 py-3 bg-white/10 rounded-xl backdrop-blur-sm">
                                 <Globe size={24} className="text-white" />
                                 <div className="text-left">
-                                    <div className="text-xl font-bold text-white">500+</div>
+                                    <div className="text-xl font-bold text-white">Global</div>
                                     <div className="text-sm text-white/70">Destinations</div>
                                 </div>
                             </div>
                             <div className="flex items-center gap-3 px-5 py-3 bg-white/10 rounded-xl backdrop-blur-sm">
                                 <MapPin size={24} className="text-white" />
                                 <div className="text-left">
-                                    <div className="text-xl font-bold text-white">10K+</div>
+                                    <div className="text-xl font-bold text-white">Curated</div>
                                     <div className="text-sm text-white/70">Activities</div>
                                 </div>
                             </div>
                             <div className="flex items-center gap-3 px-5 py-3 bg-white/10 rounded-xl backdrop-blur-sm">
                                 <Sparkles size={24} className="text-white" />
                                 <div className="text-left">
-                                    <div className="text-xl font-bold text-white">50K+</div>
-                                    <div className="text-sm text-white/70">Trips Planned</div>
+                                    <div className="text-xl font-bold text-white">Personalized</div>
+                                    <div className="text-sm text-white/70">Itineraries</div>
                                 </div>
                             </div>
                         </div>

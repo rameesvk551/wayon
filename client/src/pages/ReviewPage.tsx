@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Calendar, Users, MapPin, Clock, Star } from 'lucide-react';
-import { greekItineraryDays, greekItinerary } from '../data/itinerary';
+import type { DayItinerary } from '../types';
 import { ExportOptions } from '../components/molecules/ExportOptions';
 import { BookingSection } from '../components/organisms/BookingSection';
 import { TransportBadge, PriceTag, RatingStars } from '../components/molecules';
@@ -9,6 +9,8 @@ import { TransportBadge, PriceTag, RatingStars } from '../components/molecules';
 const ReviewPage: React.FC = () => {
     const { tripId } = useParams();
     const navigate = useNavigate();
+    const itineraryDays: DayItinerary[] = [];
+    const itineraryName = '';
 
     const handleGoBack = () => {
         navigate(`/plan/${tripId || 'trip-1'}`);
@@ -18,46 +20,30 @@ const ReviewPage: React.FC = () => {
         const pdfServiceUrl =
             import.meta.env.VITE_PDF_SERVICE_URL || 'http://localhost:4010';
 
-        const cityCoordinates: Record<string, { lat: number; lng: number }> = {
-            Athens: { lat: 37.9838, lng: 23.7275 },
-            Mykonos: { lat: 37.4467, lng: 25.3289 },
-            Santorini: { lat: 36.3932, lng: 25.4615 }
+        const markers = cities
+            .map((city, index) => ({
+                id: `${city}-${index}`,
+                label: String.fromCharCode(65 + index),
+                lat: 0,
+                lng: 0,
+                title: city,
+                category: 'sightseeing'
+            }));
+
+        const center = {
+            lat: 0,
+            lng: 0
         };
 
-        const markers = cities
-            .map((city, index) => {
-                const coords = cityCoordinates[city];
-                if (!coords) return null;
-                return {
-                    id: `${city}-${index}`,
-                    label: String.fromCharCode(65 + index),
-                    lat: coords.lat,
-                    lng: coords.lng,
-                    title: city,
-                    category: 'sightseeing'
-                };
-            })
-            .filter(Boolean) as Array<{
-                id: string;
-                label: string;
-                lat: number;
-                lng: number;
-                title: string;
-                category?: string;
-            }>;
-
-        const center = markers.length
-            ? {
-                  lat: markers.reduce((sum, marker) => sum + marker.lat, 0) / markers.length,
-                  lng: markers.reduce((sum, marker) => sum + marker.lng, 0) / markers.length
-              }
-            : { lat: 37.9838, lng: 23.7275 };
+        const startDate = itineraryDays[0]?.date;
+        const endDate = itineraryDays[itineraryDays.length - 1]?.date;
+        const destination = itineraryDays[0]?.city || '';
 
         const payload = {
             trip: {
-                title: greekItinerary.name,
-                destination: 'Greece',
-                dateRange: { start: '2026-03-15', end: '2026-03-21' },
+                title: itineraryName || 'Your Trip',
+                destination,
+                dateRange: { start: startDate || '', end: endDate || '' },
                 totalDays
             },
             branding: {
@@ -73,7 +59,7 @@ const ReviewPage: React.FC = () => {
                     coordinates: markers.map((marker) => [marker.lng, marker.lat])
                 }
             },
-            days: greekItineraryDays.map((day) => ({
+            days: itineraryDays.map((day) => ({
                 dayNumber: day.dayNumber,
                 date: day.date,
                 city: day.city,
@@ -144,12 +130,50 @@ const ReviewPage: React.FC = () => {
     const handleCopyLink = () => console.log('Copy link');
 
     // Calculate totals
-    const totalDays = greekItineraryDays.length;
-    const totalActivities = greekItineraryDays.reduce(
+    const totalDays = itineraryDays.length;
+    const totalActivities = itineraryDays.reduce(
         (sum, day) => sum + day.activities.length,
         0
     );
-    const cities = [...new Set(greekItineraryDays.map(d => d.city))];
+    const cities = [...new Set(itineraryDays.map(d => d.city))];
+    const dateLabel = itineraryDays.length > 0 && itineraryDays[0]?.date && itineraryDays[itineraryDays.length - 1]?.date
+        ? `${new Date(itineraryDays[0].date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${new Date(itineraryDays[itineraryDays.length - 1].date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+        : 'Dates TBD';
+
+    if (itineraryDays.length === 0) {
+        return (
+            <div className="min-h-screen bg-[var(--color-bg-primary)]">
+                <motion.header
+                    initial={{ y: -20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    className="sticky top-0 z-50 bg-white border-b border-[var(--color-border)]"
+                >
+                    <div className="max-w-5xl mx-auto px-6 py-4">
+                        <div className="flex items-center gap-4">
+                            <button
+                                onClick={handleGoBack}
+                                className="
+                                    w-10 h-10 rounded-full
+                                    flex items-center justify-center
+                                    hover:bg-[var(--color-bg-tertiary)]
+                                    transition-colors
+                                "
+                            >
+                                <ArrowLeft size={20} />
+                            </button>
+                            <h1 className="text-xl font-bold text-[var(--color-text-primary)]">
+                                Review Trip
+                            </h1>
+                        </div>
+                    </div>
+                </motion.header>
+                <div className="max-w-5xl mx-auto px-6 py-12 text-center text-[var(--color-text-muted)]">
+                    <p className="text-lg font-medium">No itinerary to review yet</p>
+                    <p className="text-sm">Create a trip plan to see your review here.</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-[var(--color-bg-primary)]">
@@ -175,12 +199,12 @@ const ReviewPage: React.FC = () => {
                             </button>
                             <div>
                                 <h1 className="text-xl font-bold text-[var(--color-text-primary)]">
-                                    {greekItinerary.name}
+                                    {itineraryName || 'Your Trip'}
                                 </h1>
                                 <div className="flex items-center gap-4 text-sm text-[var(--color-text-muted)]">
                                     <span className="flex items-center gap-1">
                                         <Calendar size={14} />
-                                        Mar 15 – Mar 22, 2026
+                                        {dateLabel}
                                     </span>
                                     <span className="flex items-center gap-1">
                                         <Users size={14} />
@@ -293,7 +317,7 @@ const ReviewPage: React.FC = () => {
                         </h2>
                     </div>
                     <div className="divide-y divide-[var(--color-border)]">
-                        {greekItineraryDays.map((day, index) => (
+                        {itineraryDays.map((day, index) => (
                             <motion.div
                                 key={day.id}
                                 initial={{ opacity: 0 }}

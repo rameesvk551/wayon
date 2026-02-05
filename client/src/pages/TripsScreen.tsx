@@ -2,36 +2,15 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, Calendar, Clock, Wallet, Briefcase } from 'lucide-react';
 
-// Mock trips data matching mobile app
-const mockTrips = [
-    {
-        id: '1',
-        destination: 'Paris, France',
-        startDate: '2026-03-15',
-        endDate: '2026-03-22',
-        budget: 2500,
-        status: 'upcoming',
-        image: 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=400',
-    },
-    {
-        id: '2',
-        destination: 'Tokyo, Japan',
-        startDate: '2026-04-10',
-        endDate: '2026-04-20',
-        budget: 4000,
-        status: 'planned',
-        image: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=400',
-    },
-    {
-        id: '3',
-        destination: 'Bali, Indonesia',
-        startDate: '2025-12-01',
-        endDate: '2025-12-08',
-        budget: 1800,
-        status: 'completed',
-        image: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=400',
-    },
-];
+const trips: Array<{
+    id: string;
+    destination: string;
+    startDate: string;
+    endDate: string;
+    budget: number;
+    status: string;
+    image: string;
+}> = [];
 
 const getStatusColor = (status: string) => {
     switch (status) {
@@ -62,7 +41,7 @@ const getDaysDiff = (startDate: string, endDate: string) => {
 export const TripsScreen: React.FC = () => {
     const [activeTab, setActiveTab] = useState<'all' | 'upcoming' | 'completed'>('all');
 
-    const displayTrips = mockTrips.filter((trip) => {
+    const displayTrips = trips.filter((trip) => {
         if (activeTab === 'all') return true;
         if (activeTab === 'upcoming') return trip.status === 'upcoming' || trip.status === 'planned';
         return trip.status === 'completed';

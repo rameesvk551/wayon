@@ -16,10 +16,10 @@ interface TripTopBarProps {
 }
 
 export const TripTopBar: React.FC<TripTopBarProps> = ({
-    tripName = 'Greek Island Adventure',
-    startDate = 'Mar 15',
-    endDate = 'Mar 22',
-    travelers = 2,
+    tripName = 'Your Trip',
+    startDate = '--',
+    endDate = '--',
+    travelers = 0,
     onEditName,
     onEditDates,
     onEditTravelers,

@@ -6,13 +6,7 @@ interface HeroSectionProps {
     onSearch?: (query: string) => void;
 }
 
-const trendingSearches = [
-    'Greek Islands',
-    'Japan in Spring',
-    'Bali Beaches',
-    'Amalfi Coast',
-    'Paris Romantic'
-];
+const trendingSearches: string[] = [];
 
 export const HeroSection: React.FC<HeroSectionProps> = ({
     onSearch
@@ -91,7 +85,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                             type="text"
                             value={searchValue}
                             onChange={(e) => setSearchValue(e.target.value)}
-                            placeholder="e.g., 7 days in Greece with beaches and ancient ruins..."
+                            placeholder="Describe your trip preferences..."
                             className="
                                 w-full py-5 pl-14 pr-36
                                 text-base text-[var(--color-text-primary)]
@@ -119,34 +113,36 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                 </motion.form>
 
                 {/* Trending Searches */}
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, delay: 0.4 }}
-                    className="flex flex-wrap justify-center gap-2"
-                >
-                    <span className="text-sm text-white/60 mr-2">Trending:</span>
-                    {trendingSearches.map((search, index) => (
-                        <motion.button
-                            key={search}
-                            initial={{ opacity: 0, scale: 0.9 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ delay: 0.5 + index * 0.05 }}
-                            onClick={() => handleTrendingClick(search)}
-                            className="
-                                px-3 py-1.5
-                                text-sm text-white/90
-                                bg-white/10 backdrop-blur-sm
-                                border border-white/20
-                                rounded-full
-                                hover:bg-white/20 hover:border-white/30
-                                transition-all duration-200
-                            "
-                        >
-                            {search}
-                        </motion.button>
-                    ))}
-                </motion.div>
+                {trendingSearches.length > 0 && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.6, delay: 0.4 }}
+                        className="flex flex-wrap justify-center gap-2"
+                    >
+                        <span className="text-sm text-white/60 mr-2">Trending:</span>
+                        {trendingSearches.map((search, index) => (
+                            <motion.button
+                                key={search}
+                                initial={{ opacity: 0, scale: 0.9 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                transition={{ delay: 0.5 + index * 0.05 }}
+                                onClick={() => handleTrendingClick(search)}
+                                className="
+                                    px-3 py-1.5
+                                    text-sm text-white/90
+                                    bg-white/10 backdrop-blur-sm
+                                    border border-white/20
+                                    rounded-full
+                                    hover:bg-white/20 hover:border-white/30
+                                    transition-all duration-200
+                                "
+                            >
+                                {search}
+                            </motion.button>
+                        ))}
+                    </motion.div>
+                )}
             </div>
 
             {/* Scroll Indicator */}

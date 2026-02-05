@@ -2,7 +2,6 @@ import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Search, X, Star, MapPin, Sparkles, ChevronRight } from 'lucide-react';
 
-// Mock data matching mobile app
 const categories = [
     { id: '1', label: 'All', icon: '🌍' },
     { id: '2', label: 'Adventure', icon: '🧭' },
@@ -12,72 +11,24 @@ const categories = [
     { id: '6', label: 'Nature', icon: '🌿' },
 ];
 
-const destinations = [
-    {
-        id: '1',
-        name: 'Venice Grand Canal',
-        country: 'Italy',
-        image: 'https://images.unsplash.com/photo-1514890547357-a9ee288728e0?w=400',
-        rating: 4.8,
-        price: '$139/person',
-        category: 'Culture',
-    },
-    {
-        id: '2',
-        name: 'Tahitian Island',
-        country: 'French Polynesia',
-        image: 'https://images.unsplash.com/photo-1589197331516-4d84b72ebde3?w=400',
-        rating: 4.9,
-        price: '$249/person',
-        category: 'Beach',
-    },
-    {
-        id: '3',
-        name: 'Santorini',
-        country: 'Greece',
-        image: 'https://images.unsplash.com/photo-1613395877344-13d4a8e0d49e?w=400',
-        rating: 4.7,
-        price: '$199/person',
-        category: 'Beach',
-    },
-    {
-        id: '4',
-        name: 'Swiss Alps',
-        country: 'Switzerland',
-        image: 'https://images.unsplash.com/photo-1531366936337-7c912a4589a7?w=400',
-        rating: 4.9,
-        price: '$299/person',
-        category: 'Adventure',
-    },
-    {
-        id: '5',
-        name: 'Kyoto Temples',
-        country: 'Japan',
-        image: 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=400',
-        rating: 4.8,
-        price: '$179/person',
-        category: 'Culture',
-    },
-];
+const destinations: Array<{
+    id: string;
+    name: string;
+    country: string;
+    image: string;
+    rating: number;
+    price: string;
+    category: string;
+}> = [];
 
-const nearbyDestinations = [
-    {
-        id: '1',
-        name: 'Piazza del Campo',
-        country: 'Italy',
-        rating: 4.4,
-        price: '$83/person',
-        image: 'https://images.unsplash.com/photo-1467269204594-9661b134dd2b?w=400',
-    },
-    {
-        id: '2',
-        name: 'Leaning Tower of Pisa',
-        country: 'Italy',
-        rating: 4.4,
-        price: '$83/person',
-        image: 'https://images.unsplash.com/photo-1544944379-c962cec84ab8?w=400',
-    },
-];
+const nearbyDestinations: Array<{
+    id: string;
+    name: string;
+    country: string;
+    rating: number;
+    price: string;
+    image: string;
+}> = [];
 
 interface HomeScreenProps {
     onNavigate?: (tab: string) => void;
@@ -224,26 +175,33 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
                     <button className="mobile-see-all">See All</button>
                 </div>
 
-                <div className="mobile-nearby-list">
-                    {nearbyDestinations.map((dest) => (
-                        <div key={dest.id} className="mobile-nearby-card">
-                            <img src={dest.image} alt={dest.name} className="mobile-nearby-image" />
-                            <div className="mobile-nearby-info">
-                                <h3>{dest.name}</h3>
-                                <div className="mobile-nearby-meta">
-                                    <MapPin size={14} />
-                                    <span>{dest.country}</span>
-                                    <Star size={14} fill="#FCD34D" stroke="#FCD34D" />
-                                    <span>{dest.rating}</span>
+                {nearbyDestinations.length === 0 ? (
+                    <div className="mobile-empty-state">
+                        <MapPin size={48} className="text-[var(--color-text-light)]" />
+                        <p>No nearby destinations yet</p>
+                    </div>
+                ) : (
+                    <div className="mobile-nearby-list">
+                        {nearbyDestinations.map((dest) => (
+                            <div key={dest.id} className="mobile-nearby-card">
+                                <img src={dest.image} alt={dest.name} className="mobile-nearby-image" />
+                                <div className="mobile-nearby-info">
+                                    <h3>{dest.name}</h3>
+                                    <div className="mobile-nearby-meta">
+                                        <MapPin size={14} />
+                                        <span>{dest.country}</span>
+                                        <Star size={14} fill="#FCD34D" stroke="#FCD34D" />
+                                        <span>{dest.rating}</span>
+                                    </div>
+                                    <p className="mobile-nearby-price">{dest.price}</p>
                                 </div>
-                                <p className="mobile-nearby-price">{dest.price}</p>
+                                <button className="mobile-heart-button">
+                                    ❤️
+                                </button>
                             </div>
-                            <button className="mobile-heart-button">
-                                ❤️
-                            </button>
-                        </div>
-                    ))}
-                </div>
+                        ))}
+                    </div>
+                )}
             </section>
 
             {/* Bottom spacing for nav */}

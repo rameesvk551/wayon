@@ -16,17 +16,15 @@ const menuItems = [
     { id: 'about', label: 'About', icon: Info },
 ];
 
-// Mock user data
-const mockUser = {
-    name: 'Traveler',
-    email: 'hello@travel.ai',
+const user = {
+    name: '',
+    email: ''
 };
 
-// Mock stats
 const stats = {
-    trips: 3,
-    countries: 5,
-    cities: 12,
+    trips: 0,
+    countries: 0,
+    cities: 0
 };
 
 export const ProfileScreen: React.FC = () => {
@@ -50,8 +48,8 @@ export const ProfileScreen: React.FC = () => {
                     <User size={40} className="text-[var(--color-primary)]" />
                 </div>
                 <div className="mobile-user-info">
-                    <h2>{mockUser.name}</h2>
-                    <p>{mockUser.email}</p>
+                    <h2>{user.name || 'Guest'}</h2>
+                    <p>{user.email || 'No profile data loaded'}</p>
                 </div>
                 <button className="mobile-edit-btn">
                     <Pencil size={18} className="text-[var(--color-primary)]" />

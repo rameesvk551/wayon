@@ -25,27 +25,10 @@ interface BookingSectionProps {
     }>;
 }
 
-const defaultData = {
-    hotels: [
-        { id: '1', name: 'Hotel Grande Bretagne', nights: 2, totalPrice: 700 },
-        { id: '2', name: 'Myconian Collection', nights: 2, totalPrice: 960 },
-        { id: '3', name: 'Canaves Oia Suites', nights: 3, totalPrice: 1950 }
-    ],
-    transport: [
-        { id: '1', type: 'ferry', from: 'Athens', to: 'Mykonos', price: 45 },
-        { id: '2', type: 'ferry', from: 'Mykonos', to: 'Santorini', price: 55 }
-    ],
-    activities: [
-        { id: '1', name: 'Acropolis Visit', price: 20 },
-        { id: '2', name: 'Delos Island Day Trip', price: 55 },
-        { id: '3', name: 'Sunset Sailing Cruise', price: 150 }
-    ]
-};
-
 export const BookingSection: React.FC<BookingSectionProps> = ({
-    hotels = defaultData.hotels,
-    transport = defaultData.transport,
-    activities = defaultData.activities
+    hotels = [],
+    transport = [],
+    activities = []
 }) => {
     const totalHotels = hotels.reduce((sum, h) => sum + h.totalPrice, 0);
     const totalTransport = transport.reduce((sum, t) => sum + t.price, 0);
@@ -74,44 +57,48 @@ export const BookingSection: React.FC<BookingSectionProps> = ({
                             Accommodations
                         </h4>
                     </div>
-                    <div className="space-y-2">
-                        {hotels.map((hotel, index) => (
-                            <motion.div
-                                key={hotel.id}
-                                initial={{ opacity: 0, x: -10 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                transition={{ delay: index * 0.05 }}
-                                className="flex items-center justify-between p-3 bg-[var(--color-bg-tertiary)] rounded-lg"
-                            >
-                                <div>
-                                    <p className="text-sm font-medium text-[var(--color-text-primary)]">
-                                        {hotel.name}
-                                    </p>
-                                    <p className="text-xs text-[var(--color-text-muted)]">
-                                        {hotel.nights} nights
-                                    </p>
-                                </div>
-                                <div className="flex items-center gap-3">
-                                    <span className="text-sm font-semibold text-[var(--color-text-primary)]">
-                                        ${hotel.totalPrice}
-                                    </span>
-                                    <button className="
-                                        flex items-center gap-1
-                                        px-3 py-1.5
-                                        text-xs font-medium
-                                        text-white
-                                        bg-[var(--color-secondary)]
-                                        rounded-lg
-                                        hover:bg-[var(--color-secondary-hover)]
-                                        transition-colors
-                                    ">
-                                        Book
-                                        <ExternalLink size={12} />
-                                    </button>
-                                </div>
-                            </motion.div>
-                        ))}
-                    </div>
+                    {hotels.length === 0 ? (
+                        <p className="text-sm text-[var(--color-text-muted)]">No hotel options yet.</p>
+                    ) : (
+                        <div className="space-y-2">
+                            {hotels.map((hotel, index) => (
+                                <motion.div
+                                    key={hotel.id}
+                                    initial={{ opacity: 0, x: -10 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{ delay: index * 0.05 }}
+                                    className="flex items-center justify-between p-3 bg-[var(--color-bg-tertiary)] rounded-lg"
+                                >
+                                    <div>
+                                        <p className="text-sm font-medium text-[var(--color-text-primary)]">
+                                            {hotel.name}
+                                        </p>
+                                        <p className="text-xs text-[var(--color-text-muted)]">
+                                            {hotel.nights} nights
+                                        </p>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <span className="text-sm font-semibold text-[var(--color-text-primary)]">
+                                            ${hotel.totalPrice}
+                                        </span>
+                                        <button className="
+                                            flex items-center gap-1
+                                            px-3 py-1.5
+                                            text-xs font-medium
+                                            text-white
+                                            bg-[var(--color-secondary)]
+                                            rounded-lg
+                                            hover:bg-[var(--color-secondary-hover)]
+                                            transition-colors
+                                        ">
+                                            Book
+                                            <ExternalLink size={12} />
+                                        </button>
+                                    </div>
+                                </motion.div>
+                            ))}
+                        </div>
+                    )}
                 </div>
 
                 {/* Transport */}
@@ -122,43 +109,47 @@ export const BookingSection: React.FC<BookingSectionProps> = ({
                             Transport
                         </h4>
                     </div>
-                    <div className="space-y-2">
-                        {transport.map((item, index) => (
-                            <motion.div
-                                key={item.id}
-                                initial={{ opacity: 0, x: -10 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                transition={{ delay: 0.2 + index * 0.05 }}
-                                className="flex items-center justify-between p-3 bg-[var(--color-bg-tertiary)] rounded-lg"
-                            >
-                                <div>
-                                    <p className="text-sm font-medium text-[var(--color-text-primary)]">
-                                        {item.from} → {item.to}
-                                    </p>
-                                    <p className="text-xs text-[var(--color-text-muted)] capitalize">
-                                        {item.type}
-                                    </p>
-                                </div>
-                                <div className="flex items-center gap-3">
-                                    <span className="text-sm font-semibold text-[var(--color-text-primary)]">
-                                        ${item.price}
-                                    </span>
-                                    <button className="
-                                        flex items-center gap-1
-                                        px-3 py-1.5
-                                        text-xs font-medium
-                                        text-[var(--color-accent)]
-                                        bg-[var(--color-accent-light)]
-                                        rounded-lg
-                                        hover:bg-[var(--color-accent)] hover:text-white
-                                        transition-colors
-                                    ">
-                                        Reserve
-                                    </button>
-                                </div>
-                            </motion.div>
-                        ))}
-                    </div>
+                    {transport.length === 0 ? (
+                        <p className="text-sm text-[var(--color-text-muted)]">No transport options yet.</p>
+                    ) : (
+                        <div className="space-y-2">
+                            {transport.map((item, index) => (
+                                <motion.div
+                                    key={item.id}
+                                    initial={{ opacity: 0, x: -10 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{ delay: 0.2 + index * 0.05 }}
+                                    className="flex items-center justify-between p-3 bg-[var(--color-bg-tertiary)] rounded-lg"
+                                >
+                                    <div>
+                                        <p className="text-sm font-medium text-[var(--color-text-primary)]">
+                                            {item.from} → {item.to}
+                                        </p>
+                                        <p className="text-xs text-[var(--color-text-muted)] capitalize">
+                                            {item.type}
+                                        </p>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <span className="text-sm font-semibold text-[var(--color-text-primary)]">
+                                            ${item.price}
+                                        </span>
+                                        <button className="
+                                            flex items-center gap-1
+                                            px-3 py-1.5
+                                            text-xs font-medium
+                                            text-[var(--color-accent)]
+                                            bg-[var(--color-accent-light)]
+                                            rounded-lg
+                                            hover:bg-[var(--color-accent)] hover:text-white
+                                            transition-colors
+                                        ">
+                                            Reserve
+                                        </button>
+                                    </div>
+                                </motion.div>
+                            ))}
+                        </div>
+                    )}
                 </div>
 
                 {/* Activities */}
@@ -169,38 +160,42 @@ export const BookingSection: React.FC<BookingSectionProps> = ({
                             Activities & Tours
                         </h4>
                     </div>
-                    <div className="space-y-2">
-                        {activities.map((activity, index) => (
-                            <motion.div
-                                key={activity.id}
-                                initial={{ opacity: 0, x: -10 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                transition={{ delay: 0.4 + index * 0.05 }}
-                                className="flex items-center justify-between p-3 bg-[var(--color-bg-tertiary)] rounded-lg"
-                            >
-                                <p className="text-sm font-medium text-[var(--color-text-primary)]">
-                                    {activity.name}
-                                </p>
-                                <div className="flex items-center gap-3">
-                                    <span className="text-sm font-semibold text-[var(--color-text-primary)]">
-                                        ${activity.price}
-                                    </span>
-                                    <button className="
-                                        flex items-center gap-1
-                                        px-3 py-1.5
-                                        text-xs font-medium
-                                        text-[var(--color-primary)]
-                                        bg-[var(--color-primary-subtle)]
-                                        rounded-lg
-                                        hover:bg-[var(--color-primary)] hover:text-white
-                                        transition-colors
-                                    ">
-                                        Book
-                                    </button>
-                                </div>
-                            </motion.div>
-                        ))}
-                    </div>
+                    {activities.length === 0 ? (
+                        <p className="text-sm text-[var(--color-text-muted)]">No activities yet.</p>
+                    ) : (
+                        <div className="space-y-2">
+                            {activities.map((activity, index) => (
+                                <motion.div
+                                    key={activity.id}
+                                    initial={{ opacity: 0, x: -10 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{ delay: 0.4 + index * 0.05 }}
+                                    className="flex items-center justify-between p-3 bg-[var(--color-bg-tertiary)] rounded-lg"
+                                >
+                                    <p className="text-sm font-medium text-[var(--color-text-primary)]">
+                                        {activity.name}
+                                    </p>
+                                    <div className="flex items-center gap-3">
+                                        <span className="text-sm font-semibold text-[var(--color-text-primary)]">
+                                            ${activity.price}
+                                        </span>
+                                        <button className="
+                                            flex items-center gap-1
+                                            px-3 py-1.5
+                                            text-xs font-medium
+                                            text-[var(--color-primary)]
+                                            bg-[var(--color-primary-subtle)]
+                                            rounded-lg
+                                            hover:bg-[var(--color-primary)] hover:text-white
+                                            transition-colors
+                                        ">
+                                            Book
+                                        </button>
+                                    </div>
+                                </motion.div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             </div>
 

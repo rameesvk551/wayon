@@ -5,13 +5,14 @@ import { TripTopBar } from '../components/organisms/TripTopBar';
 import { PlanItineraryPanel } from '../components/organisms/PlanItineraryPanel';
 import { CompactMapPanel } from '../components/organisms/CompactMapPanel';
 import { InlineAIInput } from '../components/molecules/InlineAIInput';
-import { greekItineraryDays } from '../data/itinerary';
+import type { DayItinerary } from '../types';
 
 const PlanPage: React.FC = () => {
     const { tripId } = useParams();
     const navigate = useNavigate();
     const [activeDay, setActiveDay] = useState(1);
     const [isAILoading, setIsAILoading] = useState(false);
+    const [days, setDays] = useState<DayItinerary[]>([]);
 
     const handleModeSwitch = (mode: 'plan' | 'review') => {
         if (mode === 'review') {
@@ -26,29 +27,19 @@ const PlanPage: React.FC = () => {
     const handleAISubmit = (message: string) => {
         console.log('AI Request:', message);
         setIsAILoading(true);
-        // Simulate AI response
-        setTimeout(() => {
-            setIsAILoading(false);
-        }, 2000);
+        setIsAILoading(false);
     };
 
     const handleAIAction = (action: string) => {
         console.log('AI Action:', action);
         setIsAILoading(true);
-        setTimeout(() => {
-            setIsAILoading(false);
-        }, 1500);
+        setIsAILoading(false);
     };
 
     const handleMarkerClick = (markerId: string) => {
-        // Find day by marker ID
-        const marker = [
-            { id: 'athens', day: 1 },
-            { id: 'mykonos', day: 3 },
-            { id: 'santorini', day: 5 }
-        ].find(m => m.id === markerId);
-        if (marker) {
-            setActiveDay(marker.day);
+        const matchingDay = days.find((day) => day.id === markerId);
+        if (matchingDay) {
+            setActiveDay(matchingDay.dayNumber);
         }
     };
 
@@ -56,10 +47,10 @@ const PlanPage: React.FC = () => {
         <div className="h-screen w-screen flex flex-col overflow-hidden bg-[var(--color-bg-primary)]">
             {/* Top Bar */}
             <TripTopBar
-                tripName="Greek Island Adventure"
-                startDate="Mar 15"
-                endDate="Mar 22"
-                travelers={2}
+                tripName="Your Trip"
+                startDate="--"
+                endDate="--"
+                travelers={0}
                 currentMode="plan"
                 onModeSwitch={handleModeSwitch}
             />
@@ -76,7 +67,8 @@ const PlanPage: React.FC = () => {
                     {/* Scrollable Itinerary */}
                     <div className="flex-1 overflow-hidden">
                         <PlanItineraryPanel
-                            days={greekItineraryDays}
+                            days={days}
+                            onReorder={setDays}
                             onDayClick={handleDayClick}
                         />
                     </div>
