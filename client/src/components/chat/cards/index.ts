@@ -3,6 +3,7 @@ export * from './AttractionsCard';
 export * from './BudgetCard';
 export * from './CompanionsCard';
 export * from './DatesCard';
+export * from './HotelDatesCard';
 export * from './DestinationCard';
 export * from './InterestsCard';
 export * from './LocationCard';

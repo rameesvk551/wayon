@@ -3,7 +3,7 @@ import { AnimatePresence } from 'framer-motion';
 import { ChatHeader } from '../components/chat/ChatHeader';
 import { ChatMessage } from '../components/chat/ChatMessage';
 import { InlineAIInput } from '../components/molecules/InlineAIInput';
-import type { TripPreferences, Message, Attraction } from '../types/chat';
+import type { TripPreferences, Message, Attraction, ChatApiResponse } from '../types/chat';
 import { TRANSPORT_LABELS } from '../types/chat';
 import type { UIResponse } from '../types/ui-schema';
 
@@ -22,12 +22,6 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onNavigate }) => {
             content: "Hey there! ✨ I'm your AI travel companion. Let's plan your perfect trip together!",
             timestamp: new Date()
         },
-        {
-            id: '2',
-            type: 'interactive',
-            interactiveType: 'destination',
-            timestamp: new Date()
-        }
     ]));
     const [sessionId, setSessionId] = useState<string | null>(null);
     const [preferences, setPreferences] = useState<TripPreferences>({
@@ -40,6 +34,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onNavigate }) => {
         interests: [],
     });
     const messageIdRef = useRef(0);
+    const bootstrappedRef = useRef(false);
     const createMessageId = () => {
         messageIdRef.current += 1;
         return `${Date.now()}-${messageIdRef.current}`;
@@ -92,6 +87,86 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onNavigate }) => {
             { id: createMessageId(), type: 'ai', content: `Great! Now, where are you from? 📍 This helps us plan the best travel route for you.`, timestamp: new Date() },
             { id: createMessageId(), type: 'interactive', interactiveType: 'location', timestamp: new Date() }
         ]);
+    };
+
+    const extractCheckInOut = (dates: string) => {
+        const match = dates.match(/(\d{4}-\d{2}-\d{2})\s*to\s*(\d{4}-\d{2}-\d{2})/);
+        if (!match) return null;
+        return { checkIn: match[1], checkOut: match[2] };
+    };
+
+    const handleHotelDatesSelect = (dates: string) => {
+        const parsed = extractCheckInOut(dates);
+        const destination = preferences.destination;
+        const loadingMsgId = createMessageId();
+
+        setPreferences(prev => ({
+            ...prev,
+            dates,
+            destination: prev.destination || destination
+        }));
+        setMessages(prev => [
+            ...prev,
+            { id: createMessageId(), type: 'user', content: `My check-in and check-out dates are ${dates}`, timestamp: new Date() },
+            {
+                id: loadingMsgId,
+                type: 'ai',
+                content: destination
+                    ? `Searching hotels in ${destination}...`
+                    : 'Where would you like to stay?',
+                timestamp: new Date()
+            }
+        ]);
+
+        if (!parsed) {
+            setMessages(prev => prev.map(msg =>
+                msg.id === loadingMsgId
+                    ? {
+                        ...msg,
+                        content: 'I could not read those dates. Please try again (YYYY-MM-DD to YYYY-MM-DD).'
+                    }
+                    : msg
+            ));
+            return;
+        }
+
+        const searchPrompt = [
+            destination ? `Search hotels in ${destination}.` : 'Search hotels.',
+            `Check-in: ${parsed.checkIn}.`,
+            `Check-out: ${parsed.checkOut}.`,
+            'Guests: 2.',
+            'Return hotel options only.'
+        ].join(' ');
+
+        streamChat(searchPrompt)
+            .then((data) => {
+                const structured = data.structured || null;
+                const structuredBlocks = structured ? buildBlocksFromStructured(structured) : undefined;
+                const ui = getUiResponse(data);
+                const blocks = mergeBlocks(structuredBlocks, ui);
+                const responseText = structured?.reply || data.message || 'Here are hotel options for your stay.';
+
+                setMessages(prev => prev.map(msg =>
+                    msg.id === loadingMsgId
+                        ? {
+                            ...msg,
+                            content: responseText,
+                            blocks
+                        }
+                        : msg
+                ));
+            })
+            .catch((error) => {
+                console.error('Hotel search error:', error);
+                setMessages(prev => prev.map(msg =>
+                    msg.id === loadingMsgId
+                        ? {
+                            ...msg,
+                            content: 'Sorry, I could not fetch hotels right now. Please try again.'
+                        }
+                        : msg
+                ));
+            });
     };
 
     const handleLocationSelect = (location: string) => {
@@ -172,6 +247,10 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onNavigate }) => {
         return { blocks: [...primary.blocks, ...secondary.blocks] };
     };
 
+    const getUiResponse = (payload?: ChatApiResponse) => {
+        return payload?.ui || payload?.uiBlocks;
+    };
+
     const streamChat = async (prompt: string) => {
         const response = await fetch(`${API_BASE_URL}/api/chat/stream`, {
             method: 'POST',
@@ -200,12 +279,14 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onNavigate }) => {
             const dataLines: string[] = [];
 
             for (const line of lines) {
-                if (line.startsWith('event:')) {
-                    event = line.replace('event:', '').trim();
+                const trimmed = line.trim();
+                if (!trimmed) continue;
+                if (trimmed.startsWith('event:')) {
+                    event = trimmed.replace('event:', '').trim();
                     continue;
                 }
-                if (line.startsWith('data:')) {
-                    dataLines.push(line.replace('data:', '').trim());
+                if (trimmed.startsWith('data:')) {
+                    dataLines.push(trimmed.replace('data:', '').trim());
                 }
             }
 
@@ -243,7 +324,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onNavigate }) => {
             if (done) break;
             buffer += decoder.decode(value, { stream: true });
 
-            const parts = buffer.split('\n\n');
+            const parts = buffer.split(/\r?\n\r?\n/);
             buffer = parts.pop() || '';
             for (const part of parts) {
                 if (!part.trim()) continue;
@@ -263,22 +344,57 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onNavigate }) => {
             throw new Error(message);
         }
 
-        return finalPayload as {
-            structured?: {
-                reply?: string;
-                itinerary?: unknown;
-            };
-            itinerary?: unknown;
-            fallback?: { itinerary?: unknown };
-            message?: string;
-            uiBlocks?: UIResponse;
-        };
+        return finalPayload as ChatApiResponse;
     };
+
+    useEffect(() => {
+        if (bootstrappedRef.current) return;
+        bootstrappedRef.current = true;
+
+        streamChat('Start the onboarding flow.')
+            .then((data) => {
+                const structured = data.structured || null;
+                const structuredBlocks = structured ? buildBlocksFromStructured(structured) : undefined;
+                const ui = getUiResponse(data);
+                const blocks = mergeBlocks(structuredBlocks, ui);
+                const responseText = structured?.reply || data.message;
+
+                if (!responseText && !blocks) return;
+
+                setMessages(prev => prev.map((msg, index) => {
+                    if (index !== 0) return msg;
+                    return {
+                        ...msg,
+                        content: responseText || msg.content,
+                        blocks
+                    };
+                }));
+            })
+            .catch((error) => {
+                console.error('Onboarding bootstrap error:', error);
+            });
+    }, []);
 
     const handleAttractionsContinue = async (selectedAttractions: Attraction[]) => {
         const attractionCount = selectedAttractions.length;
 
         const buildPrompt = () => {
+            const attractionDetails = selectedAttractions.map((attraction, index) => {
+                const details = [
+                    `#${index + 1} ${attraction.name}`,
+                    `Category: ${attraction.category}`,
+                    `Rating: ${attraction.rating}`,
+                    `Duration: ${attraction.duration}`,
+                    `Price: ${attraction.price}`,
+                    `Address: ${attraction.address || 'Unknown'}`,
+                    `Opening hours: ${attraction.openingHours || 'Unknown'}`,
+                    `Latitude: ${typeof attraction.lat === 'number' ? attraction.lat : 'Unknown'}`,
+                    `Longitude: ${typeof attraction.lng === 'number' ? attraction.lng : 'Unknown'}`
+                ];
+
+                return details.join('\n');
+            });
+
             const lines = [
                 'Create a personalized travel itinerary and planning summary.',
                 `Destination: ${preferences.destination || 'Unknown'}`,
@@ -289,6 +405,9 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onNavigate }) => {
                 `Transport: ${preferences.transportMode ? TRANSPORT_LABELS[preferences.transportMode] : 'Unknown'}`,
                 `Interests: ${preferences.interests.length ? preferences.interests.join(', ') : 'None listed'}`,
                 `Selected attractions: ${selectedAttractions.length ? selectedAttractions.map(a => a.name).join(', ') : 'None selected'}`,
+                '',
+                'Selected attraction details:',
+                ...(attractionDetails.length ? attractionDetails : ['None selected']),
                 '',
                 'If you can, include an itinerary field in your JSON response that matches:',
                 '{ destination, totalDays, dailyPlan: [{ day, type?, description?, region?, activities?, totalDurationHours? }], warnings? }'
@@ -331,7 +450,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onNavigate }) => {
             const structured = data.structured || null;
             const itinerary = structured?.itinerary || data.itinerary || data?.fallback?.itinerary;
             const structuredBlocks = structured ? buildBlocksFromStructured(structured) : undefined;
-            const blocks = mergeBlocks(structuredBlocks, data.uiBlocks);
+            const blocks = mergeBlocks(structuredBlocks, getUiResponse(data));
             const responseText = structured?.reply || data.message || 'I have your trip updates ready.';
 
             setMessages(prev => prev.map(msg => {
@@ -396,29 +515,33 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onNavigate }) => {
             const structured = data.structured || null;
             const itinerary = structured?.itinerary || data.itinerary || data?.fallback?.itinerary;
             const structuredBlocks = structured ? buildBlocksFromStructured(structured) : undefined;
-            const blocks = mergeBlocks(structuredBlocks, data.uiBlocks);
+            const ui = getUiResponse(data);
+            const blocks = mergeBlocks(structuredBlocks, ui);
             const responseText = structured?.reply || data.message || 'I have your trip updates ready.';
+            setMessages(prev => {
+                const updated = prev.map(msg => {
+                    if (msg.id !== loadingMsgId) return msg;
 
-            setMessages(prev => prev.map(msg => {
-                if (msg.id !== loadingMsgId) return msg;
+                    if (itinerary && Array.isArray(itinerary.dailyPlan) && itinerary.dailyPlan.length > 0) {
+                        return {
+                            ...msg,
+                            isLoading: false,
+                            itineraryData: itinerary
+                        };
+                    }
 
-                if (itinerary && Array.isArray(itinerary.dailyPlan) && itinerary.dailyPlan.length > 0) {
                     return {
                         ...msg,
+                        type: 'ai' as const,
+                        interactiveType: undefined,
                         isLoading: false,
-                        itineraryData: itinerary
+                        content: responseText,
+                        blocks
                     };
-                }
+                });
 
-                return {
-                    ...msg,
-                    type: 'ai' as const,
-                    interactiveType: undefined,
-                    isLoading: false,
-                    content: responseText,
-                    blocks
-                };
-            }));
+                return updated;
+            });
         } catch (error) {
             console.error('Chat error:', error);
             setMessages(prev => prev.map(msg =>
@@ -452,6 +575,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onNavigate }) => {
                             onCompanionsSelect={handleCompanionsSelect}
                             onBudgetSelect={handleBudgetSelect}
                             onDatesSelect={handleDatesSelect}
+                            onHotelDatesSelect={handleHotelDatesSelect}
                             onLocationSelect={handleLocationSelect}
                             onTransportSelect={handleTransportSelect}
                             onInterestsSelect={handleInterestsSelect}

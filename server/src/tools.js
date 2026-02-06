@@ -3,8 +3,51 @@ import { z } from "zod";
 import config from "./config.js";
 import { requestJson } from "./utils/http.js";
 
+// ═══════════════════════════════════════════════════════════════════════════
+// LOGGING UTILITIES
+// ═══════════════════════════════════════════════════════════════════════════
+const LOG_COLORS = {
+  reset: "\x1b[0m",
+  bright: "\x1b[1m",
+  dim: "\x1b[2m",
+  cyan: "\x1b[36m",
+  green: "\x1b[32m",
+  yellow: "\x1b[33m",
+  red: "\x1b[31m",
+  magenta: "\x1b[35m",
+  blue: "\x1b[34m",
+};
+
+const getTimestamp = () => {
+  const now = new Date();
+  return now.toISOString().replace("T", " ").slice(0, 23);
+};
+
+const logTool = (level, serviceKey, message, data = null) => {
+  const timestamp = getTimestamp();
+  const colors = {
+    info: LOG_COLORS.cyan,
+    success: LOG_COLORS.green,
+    warn: LOG_COLORS.yellow,
+    error: LOG_COLORS.red,
+    request: LOG_COLORS.magenta,
+    response: LOG_COLORS.blue,
+  };
+  const color = colors[level] || LOG_COLORS.reset;
+  const prefix = `${LOG_COLORS.dim}[${timestamp}]${LOG_COLORS.reset} ${color}[TOOL:${serviceKey.toUpperCase()}]${LOG_COLORS.reset}`;
+
+  console.log(`${prefix} ${message}`);
+  if (data) {
+    console.log(`${LOG_COLORS.dim}├─ Details:${LOG_COLORS.reset}`, JSON.stringify(data, null, 2));
+  }
+};
+
 const normalizeServiceResult = (service, response, request) => {
   if (!response.ok) {
+    logTool("error", service, `❌ Service returned error`, {
+      status: response.status,
+      error: response.json || response.text,
+    });
     return JSON.stringify({
       ok: false,
       service,
@@ -13,6 +56,11 @@ const normalizeServiceResult = (service, response, request) => {
       request,
     });
   }
+
+  const dataPreview = response.json
+    ? (Array.isArray(response.json) ? `Array[${response.json.length}]` : typeof response.json)
+    : "text";
+  logTool("success", service, `✅ Result normalized: ${dataPreview}`);
 
   return JSON.stringify({
     ok: true,
@@ -26,30 +74,50 @@ const createRestTool = ({ name, description, schema, serviceKey, mapInput }) => 
   const service = config.services[serviceKey];
   return tool(
     async (input) => {
+      const startTime = Date.now();
       const body = typeof mapInput === "function" ? mapInput(input) : input;
       const url = `${service.baseUrl}${service.path}`;
-      console.log(`[tool:${serviceKey}] request`, {
-        name,
-        method: service.method,
-        url,
-        body,
-      });
-      const response = await requestJson({
-        baseUrl: service.baseUrl,
-        path: service.path,
-        method: service.method,
-        body,
-        timeoutMs: config.requestTimeoutMs,
-      });
-      console.log(`[tool:${serviceKey}] response`, {
-        ok: response.ok,
-        status: response.status,
-        hasJson: Boolean(response.json),
-        textPreview: typeof response.text === "string"
-          ? response.text.slice(0, 300)
-          : null,
-      });
-      return normalizeServiceResult(serviceKey, response, body);
+
+      console.log(`\n${"═".repeat(70)}`);
+      logTool("request", serviceKey, `🔧 TOOL INVOKED: ${name}`);
+      logTool("info", serviceKey, `📍 Endpoint: ${service.method} ${url}`);
+      logTool("info", serviceKey, `📦 Request payload:`, body);
+
+      try {
+        const response = await requestJson({
+          baseUrl: service.baseUrl,
+          path: service.path,
+          method: service.method,
+          body,
+          timeoutMs: config.requestTimeoutMs,
+        });
+
+        const duration = Date.now() - startTime;
+        logTool("response", serviceKey, `📥 Response received in ${duration}ms`, {
+          ok: response.ok,
+          status: response.status,
+          hasJson: Boolean(response.json),
+          jsonPreview: response.json
+            ? (Array.isArray(response.json)
+              ? `Array with ${response.json.length} items`
+              : Object.keys(response.json).slice(0, 5).join(", "))
+            : null,
+          textPreview: typeof response.text === "string"
+            ? response.text.slice(0, 200)
+            : null,
+        });
+
+        console.log(`${"═".repeat(70)}\n`);
+        return normalizeServiceResult(serviceKey, response, body);
+      } catch (error) {
+        const duration = Date.now() - startTime;
+        logTool("error", serviceKey, `💥 Request failed after ${duration}ms`, {
+          error: error.message,
+          stack: error.stack?.split("\n").slice(0, 3),
+        });
+        console.log(`${"═".repeat(70)}\n`);
+        throw error;
+      }
     },
     {
       name,
@@ -81,8 +149,8 @@ export const buildTools = () => {
     }),
     mapInput: (input) => ({
       location: input.destination,
-      checkInDate: input.checkIn,
-      checkOutDate: input.checkOut,
+      checkIn: input.checkIn,
+      checkOut: input.checkOut,
       guests: input.guests,
       amenities: input.amenities,
       budget: input.budget,
@@ -96,10 +164,23 @@ export const buildTools = () => {
     schema: z.object({
       origin: z.string().describe("Origin city or airport"),
       destination: z.string().describe("Destination city or airport"),
-      departDate: z.string().describe("Departure date in YYYY-MM-DD"),
+      departDate: z.string().optional().describe("Departure date in YYYY-MM-DD"),
+      departure: z.string().optional().describe("Departure date in YYYY-MM-DD (alias for departDate)"),
       returnDate: z.string().optional().describe("Return date in YYYY-MM-DD"),
       passengers: z.number().int().min(1).optional().describe("Number of passengers"),
       cabin: z.string().optional().describe("Cabin class (economy, premium, business)")
+    }).superRefine((value, ctx) => {
+      if (!value.departDate && !value.departure) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "departDate is required",
+          path: ["departDate"],
+        });
+      }
+    }),
+    mapInput: (input) => ({
+      ...input,
+      departDate: input.departDate || input.departure,
     }),
   });
 

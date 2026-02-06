@@ -57,12 +57,14 @@ export interface TitleBlock {
     type: 'title';
     text: string;
     level?: 1 | 2 | 3;
+    blockVersion?: number;
 }
 
 export interface TextBlock {
     type: 'text';
     content: string;
     format?: 'plain' | 'markdown';
+    blockVersion?: number;
 }
 
 export interface CardBlock {
@@ -74,18 +76,21 @@ export interface CardBlock {
     actions?: ActionItem[];
     badge?: string;
     badgeVariant?: 'default' | 'primary' | 'success' | 'warning' | 'error';
+    blockVersion?: number;
 }
 
 export interface ListBlock {
     type: 'list';
     items: ListItem[];
     ordered?: boolean;
+    blockVersion?: number;
 }
 
 export interface TimelineBlock {
     type: 'timeline';
     title?: string;
     items: TimelineItem[];
+    blockVersion?: number;
 }
 
 export interface MapBlock {
@@ -94,6 +99,7 @@ export interface MapBlock {
     routes?: MapRouteItem[];
     center?: { lat: number; lng: number };
     zoom?: number;
+    blockVersion?: number;
 }
 
 export interface AlertBlock {
@@ -102,6 +108,7 @@ export interface AlertBlock {
     text: string;
     title?: string;
     dismissible?: boolean;
+    blockVersion?: number;
 }
 
 export interface ImageBlock {
@@ -110,17 +117,38 @@ export interface ImageBlock {
     alt?: string;
     caption?: string;
     layout?: 'full' | 'inline' | 'thumbnail';
+    blockVersion?: number;
 }
 
 export interface ActionsBlock {
     type: 'actions';
     items: ActionItem[];
     layout?: 'horizontal' | 'vertical' | 'wrap';
+    blockVersion?: number;
+}
+
+export type CollectInputType =
+    | 'destination'
+    | 'companions'
+    | 'budget'
+    | 'dates'
+    | 'hotel_dates'
+    | 'location'
+    | 'transport'
+    | 'interests';
+
+export interface CollectInputBlock {
+    type: 'collect_input';
+    title?: string;
+    subtitle?: string;
+    inputs: CollectInputType[];
+    blockVersion?: number;
 }
 
 export interface DividerBlock {
     type: 'divider';
     spacing?: 'sm' | 'md' | 'lg';
+    blockVersion?: number;
 }
 
 export interface WeatherBlock {
@@ -132,6 +160,7 @@ export interface WeatherBlock {
     wind: string;
     uvIndex: string;
     feelsLike?: number;
+    blockVersion?: number;
 }
 
 export interface HotelItem {
@@ -152,6 +181,7 @@ export interface HotelCarouselBlock {
     type: 'hotel_carousel';
     title?: string;
     hotels: HotelItem[];
+    blockVersion?: number;
 }
 
 export interface FlightItem {
@@ -179,6 +209,7 @@ export interface FlightCarouselBlock {
     type: 'flight_carousel';
     title?: string;
     flights: FlightItem[];
+    blockVersion?: number;
 }
 
 // ===== ATTRACTION TYPES =====
@@ -200,6 +231,7 @@ export interface AttractionCarouselBlock {
     title?: string;
     destination: string;
     attractions: AttractionItem[];
+    blockVersion?: number;
 }
 
 // ===== MAP INSTRUCTION TYPES =====
@@ -234,6 +266,7 @@ export type UIBlock =
     | AlertBlock
     | ImageBlock
     | ActionsBlock
+    | CollectInputBlock
     | DividerBlock
     | WeatherBlock
     | HotelCarouselBlock
@@ -244,6 +277,7 @@ export type UIBlock =
 export interface UIResponse {
     blocks: UIBlock[];
     map?: MapInstruction;
+    version?: string;
 }
 
 // ===== TYPE GUARDS =====
@@ -256,6 +290,7 @@ export const isMapBlock = (block: UIBlock): block is MapBlock => block.type === 
 export const isAlertBlock = (block: UIBlock): block is AlertBlock => block.type === 'alert';
 export const isImageBlock = (block: UIBlock): block is ImageBlock => block.type === 'image';
 export const isActionsBlock = (block: UIBlock): block is ActionsBlock => block.type === 'actions';
+export const isCollectInputBlock = (block: UIBlock): block is CollectInputBlock => block.type === 'collect_input';
 export const isDividerBlock = (block: UIBlock): block is DividerBlock => block.type === 'divider';
 export const isWeatherBlock = (block: UIBlock): block is WeatherBlock => block.type === 'weather';
 export const isHotelCarouselBlock = (block: UIBlock): block is HotelCarouselBlock => block.type === 'hotel_carousel';

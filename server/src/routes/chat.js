@@ -3,6 +3,48 @@ import { HumanMessage } from "@langchain/core/messages";
 import { graph } from "../agent.js";
 import { getOrCreateSession, setSessionMessages } from "../memory.js";
 import { safeJsonParse } from "../utils/http.js";
+import { parseAiResponse } from "../utils/ai-response.js";
+import { deriveIntent } from "../utils/intent.js";
+import { buildUiForIntent } from "../services/ui/builders.js";
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CHAT LOGGING UTILITIES
+// ═══════════════════════════════════════════════════════════════════════════
+const LOG_COLORS = {
+  reset: "\x1b[0m",
+  bright: "\x1b[1m",
+  dim: "\x1b[2m",
+  cyan: "\x1b[36m",
+  green: "\x1b[32m",
+  yellow: "\x1b[33m",
+  red: "\x1b[31m",
+  magenta: "\x1b[35m",
+  blue: "\x1b[34m",
+  white: "\x1b[37m",
+};
+
+const getTimestamp = () => new Date().toISOString().replace("T", " ").slice(0, 23);
+
+const logChat = (level, tag, message, data = null) => {
+  const timestamp = getTimestamp();
+  const colors = {
+    info: LOG_COLORS.cyan,
+    success: LOG_COLORS.green,
+    warn: LOG_COLORS.yellow,
+    error: LOG_COLORS.red,
+    request: LOG_COLORS.magenta,
+    response: LOG_COLORS.blue,
+    session: LOG_COLORS.white,
+  };
+  const color = colors[level] || LOG_COLORS.reset;
+  const prefix = `${LOG_COLORS.dim}[${timestamp}]${LOG_COLORS.reset} ${color}[${tag}]${LOG_COLORS.reset}`;
+
+  console.log(`${prefix} ${message}`);
+  if (data) {
+    const formatted = typeof data === "string" ? data : JSON.stringify(data, null, 2);
+    console.log(`${LOG_COLORS.dim}├─ Details:${LOG_COLORS.reset}`, formatted);
+  }
+};
 
 const router = Router();
 
@@ -135,55 +177,6 @@ const deriveItinerary = (structured, messages) => {
   };
 };
 
-const coerceArray = (value) => {
-  if (!value) return [];
-  return Array.isArray(value) ? value : [value];
-};
-
-const getNested = (obj, paths) => {
-  if (!obj || typeof obj !== "object") return undefined;
-  for (const path of paths) {
-    const parts = path.split(".");
-    let current = obj;
-    let found = true;
-    for (const part of parts) {
-      if (!current || typeof current !== "object" || !(part in current)) {
-        found = false;
-        break;
-      }
-      current = current[part];
-    }
-    if (found && current !== undefined) return current;
-  }
-  return undefined;
-};
-
-const formatPrice = (value, currency) => {
-  if (value === null || value === undefined) return undefined;
-  if (typeof value === "string") return value;
-  if (typeof value === "number") {
-    const suffix = currency ? ` ${currency}` : "";
-    return `${value}${suffix}`;
-  }
-  if (typeof value === "object") {
-    const amount = value.amount ?? value.value ?? value.price ?? value.total;
-    const curr = value.currency ?? currency;
-    if (amount !== undefined) {
-      return formatPrice(amount, curr);
-    }
-  }
-  return undefined;
-};
-
-const mapWeatherCondition = (description) => {
-  const text = `${description || ""}`.toLowerCase();
-  if (text.includes("snow")) return "snowy";
-  if (text.includes("rain") || text.includes("storm")) return "rainy";
-  if (text.includes("cloud")) return "cloudy";
-  if (text.includes("partly")) return "partly_cloudy";
-  return "sunny";
-};
-
 const extractToolResults = (messages) => {
   const results = [];
   const toolMessages = messages.filter((msg) => getMessageType(msg) === "tool");
@@ -202,249 +195,87 @@ const extractToolResults = (messages) => {
   return results;
 };
 
-const buildBlocksFromTools = (messages) => {
-  const toolResults = extractToolResults(messages);
-  if (toolResults.length === 0) return null;
-
-  const blocks = [];
-
-  for (const result of toolResults) {
-    if (!result.ok) {
-      blocks.push({
-        type: "alert",
-        level: "warning",
-        text: result.error || `${result.service || "Service"} is unavailable.`,
-      });
-      continue;
-    }
-
-    const data = result.data;
-    switch (result.service) {
-      case "weather": {
-        const payload = data?.current ? data : data?.data ?? data;
-        const current = payload?.current;
-        if (current) {
-          blocks.push({
-            type: "weather",
-            location: payload?.city
-              ? `${payload.city}${payload?.country ? `, ${payload.country}` : ""}`
-              : "Weather update",
-            temperature: current.temperature ?? current.temp ?? 0,
-            feelsLike: current.feelsLike ?? current.feels_like,
-            condition: mapWeatherCondition(current.description),
-            humidity: current.humidity ?? 0,
-            wind: `${current.windSpeed ?? current.wind_speed ?? 0} m/s`,
-            uvIndex: "N/A",
-          });
-        }
-        break;
-      }
-      case "hotel": {
-        const hotels = coerceArray(
-          getNested(data, [
-            "hotels",
-            "data.hotels",
-            "data.data.hotels",
-            "data",
-            "results",
-          ]) ?? data
-        );
-        if (hotels.length > 0) {
-          blocks.push({
-            type: "hotel_carousel",
-            title: "Hotel Options",
-            hotels: hotels.map((hotel, index) => ({
-              id: hotel.id || hotel.hotelId || `hotel-${index}`,
-              name: hotel.name || hotel.title || "Hotel",
-              image: hotel.image || hotel.imageUrl || hotel.images?.[0] || "",
-              rating: Number(hotel.rating ?? hotel.reviewScore ?? 4.2),
-              reviewCount: hotel.reviewCount ?? hotel.reviews,
-              price:
-                formatPrice(hotel.price, hotel.currency) ||
-                formatPrice(hotel.pricePerNight, hotel.currency) ||
-                "Contact for pricing",
-              originalPrice: formatPrice(hotel.originalPrice, hotel.currency),
-              location:
-                hotel.location ||
-                hotel.city ||
-                [hotel.address, hotel.country].filter(Boolean).join(", "),
-              amenities: hotel.amenities || [],
-              badge: hotel.badge,
-              badgeType: hotel.badgeType,
-            })),
-          });
-        }
-        break;
-      }
-      case "flight": {
-        const flights = coerceArray(
-          getNested(data, ["flights", "data.flights", "data", "results"]) ?? data
-        );
-        if (flights.length > 0) {
-          blocks.push({
-            type: "flight_carousel",
-            title: "Flight Options",
-            flights: flights.map((flight, index) => ({
-              id: flight.id || `flight-${index}`,
-              airline: flight.airline || flight.carrier || "Airline",
-              airlineLogo: flight.airlineLogo || flight.logo,
-              flightNumber: flight.flightNumber || flight.number || "N/A",
-              departure: flight.departureTime || flight.departure || "",
-              arrival: flight.arrivalTime || flight.arrival || "",
-              departureAirport: flight.departureAirport || flight.origin || "",
-              arrivalAirport: flight.arrivalAirport || flight.destination || "",
-              departureCity: flight.departureCity,
-              arrivalCity: flight.arrivalCity,
-              duration: flight.duration || flight.totalDuration || "",
-              price: formatPrice(flight.price, flight.currency) || "Contact",
-              stops: Number.isFinite(Number(flight.stops)) ? Number(flight.stops) : 0,
-              aircraft: flight.aircraft,
-              class: flight.class,
-              route: flight.route,
-              gate: flight.gate,
-              seat: flight.seat,
-            })),
-          });
-        }
-        break;
-      }
-      case "attraction": {
-        const attractions = coerceArray(
-          getNested(data, ["attractions", "data.attractions", "data", "results"]) ?? data
-        );
-        if (attractions.length > 0) {
-          const source = data?.source ?? data?.data?.source;
-          const requestCity = result.request?.city || result.request?.destination;
-          const requestCountry = result.request?.country;
-          const destinationLabel = requestCity
-            ? `${requestCity}${requestCountry ? `, ${requestCountry}` : ""}`
-            : attractions[0]?.city || attractions[0]?.location?.city || "Destination";
-          if (source === "fallback") {
-            blocks.push({
-              type: "alert",
-              level: "info",
-              text: "Attraction results are sample data because the attraction service returned fallback results.",
-            });
-          }
-          blocks.push({
-            type: "attraction_carousel",
-            title: "Top Attractions",
-            destination: destinationLabel,
-            attractions: attractions.map((attr, index) => ({
-              id: attr.id || `attr-${index}`,
-              name: attr.name || attr.title || "Attraction",
-              category: attr.category || attr.type || "general",
-              description: attr.description,
-              rating: Number(attr.rating ?? 4.5),
-              image: attr.image || attr.imageUrl || attr.photos?.[0],
-              duration: attr.duration,
-              price: formatPrice(attr.price, attr.currency),
-              lat: attr.lat ?? attr.latitude ?? 0,
-              lng: attr.lng ?? attr.longitude ?? 0,
-            })),
-          });
-        }
-        break;
-      }
-      case "tour": {
-        const experiences = coerceArray(
-          getNested(data, ["experiences", "data.experiences", "data", "results"]) ?? data
-        );
-        if (experiences.length > 0) {
-          blocks.push({
-            type: "list",
-            ordered: false,
-            items: experiences.map((exp, index) => ({
-              id: exp.id || `exp-${index}`,
-              text: `${exp.name || exp.title || "Experience"}${exp.location?.city ? ` • ${exp.location.city}` : ""}`,
-            })),
-          });
-        }
-        break;
-      }
-      case "blog": {
-        const posts = coerceArray(
-          getNested(data, ["posts", "data", "blogs", "articles", "results"]) ?? data
-        );
-        if (posts.length > 0) {
-          blocks.push({
-            type: "list",
-            ordered: false,
-            items: posts.map((post, index) => ({
-              id: post.id || `post-${index}`,
-              text: post.title || post.name || post.slug || "Blog post",
-            })),
-          });
-        }
-        break;
-      }
-      case "transport": {
-        const legs = coerceArray(
-          getNested(data, ["data", "legs", "routes", "results"]) ?? data
-        );
-        if (legs.length > 0) {
-          blocks.push({
-            type: "list",
-            ordered: false,
-            items: legs.map((leg, index) => ({
-              id: `leg-${index}`,
-              text: leg.origin?.name && leg.destination?.name
-                ? `${leg.origin.name} → ${leg.destination.name}`
-                : `Transport option ${index + 1}`,
-            })),
-          });
-        }
-        break;
-      }
-      case "pdf": {
-        if (data?.pdfUrl || data?.pdfBytesBase64) {
-          blocks.push({
-            type: "alert",
-            level: "success",
-            text: "Itinerary PDF is ready to download.",
-          });
-        }
-        break;
-      }
-      default:
-        break;
-    }
-  }
-
-  if (blocks.length === 0) return null;
-  return { blocks };
-};
-
 const buildResponse = (messages) => {
+  logChat("info", "RESPONSE-BUILDER", "🔨 Building response from messages", { messageCount: messages.length });
+
   const finalAi = extractFinalAiMessage(messages);
   const content = finalAi?.content || "";
-  const structured = safeJsonParse(content);
+  const parsed = parseAiResponse(content);
+  const structured = parsed.ok ? parsed.data : null;
+  const parseErrors = parsed.ok ? [] : [parsed.error];
+
+  if (!parsed.ok) {
+    logChat("warn", "RESPONSE-BUILDER", `⚠️ AI response parse failed`, { error: parsed.error });
+  }
 
   const itinerary = deriveItinerary(structured, messages);
+  logChat("info", "RESPONSE-BUILDER", `📅 Itinerary derived`, {
+    hasItinerary: !!itinerary,
+    destination: itinerary?.destination,
+    totalDays: itinerary?.totalDays,
+    dailyPlanDays: itinerary?.dailyPlan?.length,
+  });
+
   const structuredPayload = structured
     ? { ...structured, itinerary }
     : {
-        reply: content || "Here is your updated trip plan.",
-        summary: "",
-        recommendations: [],
-        next_questions: [],
-        itinerary,
-      };
-  const uiBlocks = buildBlocksFromTools(messages);
+      reply: content || "Here is your updated trip plan.",
+      summary: "",
+      recommendations: [],
+      next_questions: [],
+      itinerary,
+    };
 
+  const toolResults = extractToolResults(messages);
+  logChat("info", "RESPONSE-BUILDER", `🔧 Tool results extracted`, {
+    count: toolResults.length,
+    services: toolResults.map(r => ({ service: r.service, ok: r.ok })),
+  });
+
+  const intent = deriveIntent({ structured, toolResults, itinerary });
+  logChat("info", "RESPONSE-BUILDER", `🎯 Intent derived`, intent);
+
+  const ui = buildUiForIntent({ intent, structuredPayload, toolResults });
+  logChat("info", "RESPONSE-BUILDER", `🖼️ UI blocks built`, {
+    blockCount: ui?.blocks?.length || 0,
+    blockTypes: ui?.blocks?.map(b => b.type) || [],
+  });
+
+  const uiBlocks = ui ? { blocks: ui.blocks } : null;
+
+  const hasCollectInputs = ui?.blocks?.some((block) => block.type === "collect_input");
+  if (hasCollectInputs && structuredPayload?.reply) {
+    logChat("info", "RESPONSE-BUILDER", `📋 Collect input detected, adjusting reply`);
+    structuredPayload.reply = "Sure — select the options below so I can tailor your plan.";
+  }
+
+  logChat("success", "RESPONSE-BUILDER", `✅ Response built successfully`);
   return {
+    schemaVersion: "2026-02-05",
     message: structuredPayload.reply || content,
     structured: structuredPayload,
     itinerary,
+    intent,
+    ui: ui || { version: "2026-02-05", blocks: [] },
     uiBlocks,
+    errors: parseErrors,
     toolCalls: extractToolCalls(messages),
   };
 };
 
 router.post("/chat", async (req, res) => {
+  const requestId = Math.random().toString(36).substring(2, 8).toUpperCase();
+  const startTime = Date.now();
   const { message, sessionId } = req.body || {};
 
+  console.log(`\n${"█".repeat(70)}`);
+  logChat("request", "CHAT-API", `📨 POST /chat [${requestId}]`);
+  logChat("info", "CHAT-API", `💬 Message: "${message?.slice(0, 100)}${message?.length > 100 ? '...' : ''}"`);
+  logChat("info", "CHAT-API", `🔑 Session ID: ${sessionId || "(new session)"}`);
+
   if (!message || typeof message !== "string") {
+    logChat("error", "CHAT-API", `❌ Invalid request: missing message`);
+    console.log(`${"█".repeat(70)}\n`);
     return res.status(400).json({
       error: "Missing 'message' in request body.",
     });
@@ -452,23 +283,54 @@ router.post("/chat", async (req, res) => {
 
   try {
     const session = getOrCreateSession(sessionId);
+    logChat("session", "CHAT-API", `📂 Session loaded`, {
+      id: session.id,
+      existingMessages: session.messages.length,
+      isNew: !sessionId || sessionId !== session.id,
+    });
+
     const userMessage = new HumanMessage(message);
     const inputMessages = [...session.messages, userMessage];
+    logChat("info", "CHAT-API", `📊 Total messages to process: ${inputMessages.length}`);
+
+    logChat("info", "CHAT-API", `⏳ Invoking LangGraph agent...`);
+    const graphStartTime = Date.now();
 
     const result = await graph.invoke(
       { messages: inputMessages },
       { recursionLimit: 8 }
     );
 
+    const graphDuration = Date.now() - graphStartTime;
+    logChat("success", "CHAT-API", `✅ LangGraph completed in ${graphDuration}ms`, {
+      outputMessageCount: result.messages?.length || 0,
+    });
+
     setSessionMessages(session.id, result.messages || inputMessages);
+    logChat("info", "CHAT-API", `💾 Session messages updated`);
 
     const responsePayload = buildResponse(result.messages || []);
+
+    const totalDuration = Date.now() - startTime;
+    logChat("success", "CHAT-API", `🏁 Request [${requestId}] completed in ${totalDuration}ms`, {
+      intent: responsePayload.intent?.name,
+      uiBlockCount: responsePayload.ui?.blocks?.length || 0,
+      hasItinerary: !!responsePayload.itinerary,
+    });
+    console.log(`${"█".repeat(70)}\n`);
+
     return res.json({
       sessionId: session.id,
       ...responsePayload,
     });
   } catch (error) {
-    console.error("/api/chat error", error);
+    const totalDuration = Date.now() - startTime;
+    logChat("error", "CHAT-API", `💥 Request [${requestId}] failed after ${totalDuration}ms`, {
+      error: error.message,
+      stack: error.stack?.split("\n").slice(0, 5),
+    });
+    console.log(`${"█".repeat(70)}\n`);
+
     return res.status(500).json({
       error: "Failed to process request.",
       fallback: {

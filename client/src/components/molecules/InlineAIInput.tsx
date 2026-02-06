@@ -1,6 +1,6 @@
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useRef } from 'react';
-import { Send, Sparkles, Route, MapPin, Clock, Utensils, Hotel } from 'lucide-react';
+import { Send, Mic, Paperclip, Smile, Sparkles } from 'lucide-react';
 
 interface InlineAIInputProps {
     onSubmit?: (message: string) => void;
@@ -9,21 +9,21 @@ interface InlineAIInputProps {
     isLoading?: boolean;
 }
 
-const quickActions = [
-    { id: 'optimize', label: 'Optimize route', icon: Route },
-    { id: 'nearby', label: 'Add nearby attractions', icon: MapPin },
-    { id: 'reduce-time', label: 'Reduce travel time', icon: Clock },
-    { id: 'restaurants', label: 'Find restaurants', icon: Utensils },
-    { id: 'hotels', label: 'Better hotels', icon: Hotel }
+const suggestions = [
+    "Plan my trip to Paris",
+    "Find hotels near beach",
+    "Best restaurants nearby",
+    "Optimize my itinerary"
 ];
 
 export const InlineAIInput: React.FC<InlineAIInputProps> = ({
     onSubmit,
     onActionClick,
-    placeholder = "Ask AI to modify your trip...",
+    placeholder = "Ask anything about your trip...",
     isLoading = false
 }) => {
     const [inputValue, setInputValue] = useState('');
+    const [isFocused, setIsFocused] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -41,113 +41,101 @@ export const InlineAIInput: React.FC<InlineAIInputProps> = ({
         }
     };
 
+    const handleSuggestionClick = (suggestion: string) => {
+        setInputValue(suggestion);
+        inputRef.current?.focus();
+    };
+
     return (
         <motion.div
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 0.3 }}
-            className="
-                bg-white
-                border-t border-[var(--color-border)]
-                p-4
-            "
+            className="chat-input-v2"
         >
-            {/* Quick Actions */}
-            <div className="flex items-center gap-2 mb-3 overflow-x-auto no-scrollbar pb-1">
-                {quickActions.map((action) => {
-                    const Icon = action.icon;
-                    return (
-                        <motion.button
-                            key={action.id}
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                            onClick={() => onActionClick?.(action.id)}
-                            disabled={isLoading}
-                            className="
-                                flex-shrink-0
-                                inline-flex items-center gap-1.5
-                                px-3 py-1.5
-                                bg-[var(--color-primary-subtle)]
-                                text-[var(--color-primary)]
-                                text-xs font-medium
-                                rounded-full
-                                border border-transparent
-                                hover:bg-[var(--color-primary-light)]
-                                hover:border-[var(--color-primary)]
-                                disabled:opacity-50
-                                transition-all duration-200
-                            "
-                        >
-                            <Icon size={12} />
-                            {action.label}
-                        </motion.button>
-                    );
-                })}
-            </div>
+            {/* Suggestions - only show when focused and empty */}
+            <AnimatePresence>
+                {isFocused && !inputValue && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 10 }}
+                        className="chat-suggestions"
+                    >
+                        {suggestions.map((suggestion, index) => (
+                            <motion.button
+                                key={index}
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                onClick={() => handleSuggestionClick(suggestion)}
+                                className="chat-suggestion-chip"
+                            >
+                                <Sparkles size={12} />
+                                {suggestion}
+                            </motion.button>
+                        ))}
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
-            {/* Input Form */}
-            <form onSubmit={handleSubmit} className="relative">
-                <div className="
-                    flex items-center gap-3
-                    px-4 py-3
-                    bg-[var(--color-bg-tertiary)]
-                    border border-[var(--color-border)]
-                    rounded-xl
-                    focus-within:border-[var(--color-primary)]
-                    focus-within:ring-2 focus-within:ring-[var(--color-primary-light)]
-                    transition-all duration-200
-                ">
-                    {/* AI Icon */}
-                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-secondary)] flex items-center justify-center">
-                        <Sparkles size={14} className="text-white" />
-                    </div>
+            {/* Main Input Area */}
+            <form onSubmit={handleSubmit} className="chat-input-form">
+                <div className={`chat-input-container ${isFocused ? 'focused' : ''}`}>
+                    {/* Attachment Button */}
+                    <motion.button
+                        type="button"
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={() => onActionClick?.('attach')}
+                        className="chat-input-action"
+                    >
+                        <Paperclip size={20} />
+                    </motion.button>
 
-                    {/* Input */}
+                    {/* Input Field */}
                     <input
                         ref={inputRef}
                         type="text"
                         value={inputValue}
                         onChange={(e) => setInputValue(e.target.value)}
                         onKeyDown={handleKeyDown}
+                        onFocus={() => setIsFocused(true)}
+                        onBlur={() => setTimeout(() => setIsFocused(false), 150)}
                         placeholder={placeholder}
                         disabled={isLoading}
-                        className="
-                            flex-1
-                            bg-transparent
-                            text-sm
-                            text-[var(--color-text-primary)]
-                            placeholder:text-[var(--color-text-muted)]
-                            outline-none
-                            disabled:opacity-50
-                        "
+                        className="chat-input-field"
                     />
 
-                    {/* Send Button */}
+                    {/* Emoji Button */}
                     <motion.button
-                        type="submit"
+                        type="button"
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={() => onActionClick?.('emoji')}
+                        className="chat-input-action"
+                    >
+                        <Smile size={20} />
+                    </motion.button>
+
+                    {/* Send/Mic Button */}
+                    <motion.button
+                        type={inputValue.trim() ? "submit" : "button"}
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
-                        disabled={!inputValue.trim() || isLoading}
-                        className="
-                            flex-shrink-0
-                            w-9 h-9
-                            rounded-lg
-                            bg-[var(--color-primary)]
-                            text-white
-                            flex items-center justify-center
-                            disabled:opacity-50 disabled:cursor-not-allowed
-                            hover:bg-[var(--color-primary-hover)]
-                            transition-colors
-                        "
+                        onClick={!inputValue.trim() ? () => onActionClick?.('voice') : undefined}
+                        disabled={isLoading}
+                        className={`chat-send-btn ${inputValue.trim() ? 'active' : ''}`}
                     >
                         {isLoading ? (
                             <motion.div
                                 animate={{ rotate: 360 }}
                                 transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                                className="w-4 h-4 border-2 border-white border-t-transparent rounded-full"
+                                className="chat-loading-spinner"
                             />
+                        ) : inputValue.trim() ? (
+                            <Send size={18} />
                         ) : (
-                            <Send size={16} />
+                            <Mic size={18} />
                         )}
                     </motion.button>
                 </div>

@@ -1,5 +1,5 @@
 import React from 'react';
-import type { UIBlock, UIResponse } from '../../types/ui-schema';
+import type { UIBlock, UIResponse, AttractionItem } from '../../types/ui-schema';
 import {
     TitleBlock,
     TextBlock,
@@ -20,135 +20,124 @@ import {
 interface ChatRendererProps {
     response: UIResponse;
     onAction?: (actionId: string) => void;
+    onAttractionsSubmit?: (attractions: AttractionItem[]) => void;
 }
 
 interface BlockRendererProps {
     block: UIBlock;
     onAction?: (actionId: string) => void;
+    onAttractionsSubmit?: (attractions: AttractionItem[]) => void;
 }
+
+type BlockRendererFn = (
+    block: UIBlock,
+    onAction?: (actionId: string) => void,
+    onAttractionsSubmit?: (attractions: AttractionItem[]) => void
+) => React.ReactNode;
+
+const blockRenderers: Record<UIBlock['type'], BlockRendererFn> = {
+    title: (block) => <TitleBlock text={block.text} level={block.level} />,
+    text: (block) => <TextBlock content={block.content} format={block.format} />,
+    card: (block) => (
+        <CardBlock
+            title={block.title}
+            subtitle={block.subtitle}
+            image={block.image}
+            meta={block.meta}
+            actions={block.actions}
+            badge={block.badge}
+            badgeVariant={block.badgeVariant}
+        />
+    ),
+    list: (block) => <ListBlock items={block.items} ordered={block.ordered} />,
+    timeline: (block) => <TimelineBlock title={block.title} items={block.items} />,
+    image: (block) => (
+        <ImageBlock
+            src={block.src}
+            alt={block.alt}
+            caption={block.caption}
+            layout={block.layout}
+        />
+    ),
+    map: (block) => (
+        <MapBlock
+            markers={block.markers}
+            routes={block.routes}
+            center={block.center}
+            zoom={block.zoom}
+        />
+    ),
+    alert: (block) => (
+        <AlertBlock
+            level={block.level}
+            text={block.text}
+            title={block.title}
+            dismissible={block.dismissible}
+        />
+    ),
+    actions: (block, onAction) => (
+        <ActionsBlock
+            items={block.items}
+            layout={block.layout}
+            onAction={onAction}
+        />
+    ),
+    divider: (block) => <DividerBlock spacing={block.spacing} />,
+    weather: (block) => (
+        <WeatherBlock
+            location={block.location}
+            temperature={block.temperature}
+            condition={block.condition}
+            humidity={block.humidity}
+            wind={block.wind}
+            uvIndex={block.uvIndex}
+            feelsLike={block.feelsLike}
+        />
+    ),
+    hotel_carousel: (block, onAction) => (
+        <HotelCarouselBlock
+            title={block.title}
+            hotels={block.hotels}
+            onHotelClick={(id) => onAction?.(`hotel-view-${id}`)}
+            onBookClick={(id) => onAction?.(`hotel-book-${id}`)}
+        />
+    ),
+    flight_carousel: (block, onAction) => (
+        <FlightCarouselBlock
+            title={block.title}
+            flights={block.flights}
+            onFlightClick={(id) => onAction?.(`flight-view-${id}`)}
+            onBookClick={(id) => onAction?.(`flight-book-${id}`)}
+        />
+    ),
+    attraction_carousel: (block, onAction, onAttractionsSubmit) => (
+        <AttractionCarouselBlock
+            title={block.title}
+            destination={block.destination}
+            attractions={block.attractions}
+            onAttractionClick={(attr) => onAction?.(`attraction-view-${attr.id}`)}
+            onBuildItinerary={onAttractionsSubmit}
+        />
+    ),
+    collect_input: () => null
+};
 
 /**
  * Renders a single UI block based on its type.
  * Gracefully ignores unknown block types.
  */
-const BlockRenderer: React.FC<BlockRendererProps> = ({ block, onAction }) => {
-    console.log('🧱 Rendering block:', block.type, block);
-    switch (block.type) {
-        case 'title':
-            return <TitleBlock text={block.text} level={block.level} />;
-
-        case 'text':
-            return <TextBlock content={block.content} format={block.format} />;
-
-        case 'card':
-            return (
-                <CardBlock
-                    title={block.title}
-                    subtitle={block.subtitle}
-                    image={block.image}
-                    meta={block.meta}
-                    actions={block.actions}
-                    badge={block.badge}
-                    badgeVariant={block.badgeVariant}
-                />
-            );
-
-        case 'list':
-            return <ListBlock items={block.items} ordered={block.ordered} />;
-
-        case 'timeline':
-            return <TimelineBlock title={block.title} items={block.items} />;
-
-        case 'image':
-            return (
-                <ImageBlock
-                    src={block.src}
-                    alt={block.alt}
-                    caption={block.caption}
-                    layout={block.layout}
-                />
-            );
-
-        case 'map':
-            return (
-                <MapBlock
-                    markers={block.markers}
-                    routes={block.routes}
-                    center={block.center}
-                    zoom={block.zoom}
-                />
-            );
-
-        case 'alert':
-            return (
-                <AlertBlock
-                    level={block.level}
-                    text={block.text}
-                    title={block.title}
-                    dismissible={block.dismissible}
-                />
-            );
-
-        case 'actions':
-            return (
-                <ActionsBlock
-                    items={block.items}
-                    layout={block.layout}
-                    onAction={onAction}
-                />
-            );
-
-        case 'divider':
-            return <DividerBlock spacing={block.spacing} />;
-
-        case 'weather':
-            return (
-                <WeatherBlock
-                    location={block.location}
-                    temperature={block.temperature}
-                    condition={block.condition}
-                    humidity={block.humidity}
-                    wind={block.wind}
-                    uvIndex={block.uvIndex}
-                    feelsLike={block.feelsLike}
-                />
-            );
-
-        case 'hotel_carousel':
-            return (
-                <HotelCarouselBlock
-                    title={block.title}
-                    hotels={block.hotels}
-                    onHotelClick={(id) => onAction?.(`hotel-view-${id}`)}
-                    onBookClick={(id) => onAction?.(`hotel-book-${id}`)}
-                />
-            );
-
-        case 'flight_carousel':
-            return (
-                <FlightCarouselBlock
-                    title={block.title}
-                    flights={block.flights}
-                    onFlightClick={(id) => onAction?.(`flight-view-${id}`)}
-                    onBookClick={(id) => onAction?.(`flight-book-${id}`)}
-                />
-            );
-
-        case 'attraction_carousel':
-            return (
-                <AttractionCarouselBlock
-                    title={block.title}
-                    destination={block.destination}
-                    attractions={block.attractions}
-                    onAttractionClick={(attr) => onAction?.(`attraction-view-${attr.id}`)}
-                />
-            );
-
-        default:
-            // Gracefully ignore unknown block types
-            console.warn(`Unknown block type: ${(block as { type: string }).type}`);
-            return null;
+const BlockRenderer: React.FC<BlockRendererProps> = ({ block, onAction, onAttractionsSubmit }) => {
+    const renderer = blockRenderers[block.type];
+    if (!renderer) {
+        console.warn(`Unknown block type: ${(block as { type: string }).type}`);
+        return (
+            <AlertBlock
+                level="warning"
+                text={`Unsupported block type: ${(block as { type: string }).type}`}
+            />
+        );
     }
+    return <>{renderer(block, onAction, onAttractionsSubmit)}</>;
 };
 
 /**
@@ -168,7 +157,7 @@ const BlockRenderer: React.FC<BlockRendererProps> = ({ block, onAction }) => {
  * />
  * ```
  */
-export const ChatRenderer: React.FC<ChatRendererProps> = ({ response, onAction }) => {
+export const ChatRenderer: React.FC<ChatRendererProps> = ({ response, onAction, onAttractionsSubmit }) => {
     if (!response.blocks || response.blocks.length === 0) {
         return null;
     }
@@ -180,6 +169,7 @@ export const ChatRenderer: React.FC<ChatRendererProps> = ({ response, onAction }
                     key={`block-${index}-${block.type}`}
                     block={block}
                     onAction={onAction}
+                    onAttractionsSubmit={onAttractionsSubmit}
                 />
             ))}
         </div>

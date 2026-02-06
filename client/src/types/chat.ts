@@ -61,10 +61,32 @@ export interface Message {
     type: 'ai' | 'user' | 'interactive';
     content?: string;
     blocks?: UIResponse;
-    interactiveType?: 'destination' | 'companions' | 'budget' | 'dates' | 'location' | 'transport' | 'attractions' | 'interests' | 'summary' | 'itinerary';
+    interactiveType?: 'destination' | 'companions' | 'budget' | 'dates' | 'hotel_dates' | 'location' | 'transport' | 'attractions' | 'interests' | 'summary' | 'itinerary';
     timestamp: Date;
     itineraryData?: ItineraryOutput;
     isLoading?: boolean;
+}
+
+export interface ChatApiResponse {
+    schemaVersion?: string;
+    sessionId?: string;
+    message?: string;
+    structured?: {
+        reply?: string;
+        itinerary?: unknown;
+        next_questions?: string[];
+    };
+    itinerary?: unknown;
+    fallback?: { itinerary?: unknown };
+    ui?: UIResponse;
+    uiBlocks?: UIResponse;
+    intent?: {
+        name: string;
+        confidence?: number;
+        slots?: Record<string, unknown>;
+    };
+    errors?: string[];
+    toolCalls?: unknown[];
 }
 
 export const TRANSPORT_LABELS: Record<string, string> = {

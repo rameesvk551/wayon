@@ -1,18 +1,21 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Star, Clock, MapPin } from 'lucide-react';
+import { Star, Clock, MapPin, X, Ticket, Info, CheckCircle2 } from 'lucide-react';
 import type { AttractionCarouselBlock as AttractionCarouselBlockType, AttractionItem } from '../../types/ui-schema';
 import { useMapContext } from '../../store/MapContext';
 
 type AttractionCarouselBlockProps = Omit<AttractionCarouselBlockType, 'type'> & {
     onAttractionClick?: (attraction: AttractionItem) => void;
+    onBuildItinerary?: (attractions: AttractionItem[]) => void;
 };
 
 const AttractionCard: React.FC<{
     attraction: AttractionItem;
     isHighlighted: boolean;
+    isSelected: boolean;
     onClick: () => void;
-}> = ({ attraction, isHighlighted, onClick }) => {
+    onToggleSelect: () => void;
+}> = ({ attraction, isHighlighted, isSelected, onClick, onToggleSelect }) => {
     const cardRef = useRef<HTMLDivElement>(null);
 
     // Scroll into view when highlighted
@@ -41,6 +44,25 @@ const AttractionCard: React.FC<{
                 }
             `}
         >
+            <button
+                className={`
+                    absolute top-3 right-3 z-10
+                    h-8 w-8 rounded-full
+                    flex items-center justify-center
+                    border-2 transition-all duration-200
+                    ${isSelected
+                        ? 'bg-[var(--color-primary)] border-[var(--color-primary)] text-white'
+                        : 'bg-white/90 border-white/70 text-[var(--color-text-muted)]'
+                    }
+                `}
+                onClick={(event) => {
+                    event.stopPropagation();
+                    onToggleSelect();
+                }}
+                aria-label={isSelected ? 'Remove from itinerary' : 'Add to itinerary'}
+            >
+                {isSelected ? <CheckCircle2 size={16} /> : <div className="h-3.5 w-3.5 rounded-full border border-current" />}
+            </button>
             {/* Image */}
             <div className="relative h-40 overflow-hidden">
                 <img
@@ -128,17 +150,128 @@ const AttractionCard: React.FC<{
     );
 };
 
+const AttractionDetailsModal: React.FC<{
+    attraction: AttractionItem | null;
+    isOpen: boolean;
+    onClose: () => void;
+}> = ({ attraction, isOpen, onClose }) => {
+    if (!isOpen || !attraction) return null;
+
+    const imageSrc = attraction.image || 'https://images.unsplash.com/photo-1499856871958-5b9627545d1a?w=800';
+
+    return (
+        <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="attraction-modal-overlay"
+            onClick={onClose}
+        >
+            <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                transition={{ type: 'spring', damping: 24, stiffness: 320 }}
+                className="attraction-modal"
+                onClick={(event) => event.stopPropagation()}
+            >
+                <div className="attraction-modal-image">
+                    <img src={imageSrc} alt={attraction.name} />
+                    <div className="attraction-modal-image-overlay" />
+                    <button className="attraction-modal-close" onClick={onClose}>
+                        <X size={20} />
+                    </button>
+                    <span className="attraction-modal-category">{attraction.category}</span>
+                </div>
+
+                <div className="attraction-modal-content">
+                    <div className="attraction-modal-header">
+                        <h2>{attraction.name}</h2>
+                        <div className="attraction-modal-rating">
+                            <Star size={18} className="fill-yellow-400 text-yellow-400" />
+                            <span>{attraction.rating.toFixed(1)}</span>
+                        </div>
+                    </div>
+
+                    <p className="attraction-modal-desc">
+                        {attraction.description || 'A must-see highlight packed with local charm and memorable views.'}
+                    </p>
+
+                    <div className="attraction-modal-info-grid">
+                        <div className="attraction-modal-info-item">
+                            <Clock size={18} />
+                            <div>
+                                <span className="label">Duration</span>
+                                <span className="value">{attraction.duration || 'Flexible visit'}</span>
+                            </div>
+                        </div>
+                        <div className="attraction-modal-info-item">
+                            <Ticket size={18} />
+                            <div>
+                                <span className="label">Entry Fee</span>
+                                <span className="value">{attraction.price || 'Free'}</span>
+                            </div>
+                        </div>
+                        <div className="attraction-modal-info-item">
+                            <MapPin size={18} />
+                            <div>
+                                <span className="label">Coordinates</span>
+                                <span className="value">
+                                    {attraction.lat.toFixed(4)}, {attraction.lng.toFixed(4)}
+                                </span>
+                            </div>
+                        </div>
+                        <div className="attraction-modal-info-item">
+                            <Info size={18} />
+                            <div>
+                                <span className="label">Category</span>
+                                <span className="value">{attraction.category}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="attraction-modal-actions">
+                        <button className="attraction-modal-select-btn" onClick={onClose}>
+                            <MapPin size={18} />
+                            View on map
+                        </button>
+                    </div>
+                </div>
+            </motion.div>
+        </motion.div>
+    );
+};
+
 export const AttractionCarouselBlock: React.FC<AttractionCarouselBlockProps> = ({
     title,
     attractions,
     onAttractionClick,
+    onBuildItinerary,
 }) => {
     const { highlightedAttractionId, selectAttraction } = useMapContext();
+    const [activeAttraction, setActiveAttraction] = useState<AttractionItem | null>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedAttractionIds, setSelectedAttractionIds] = useState<string[]>([]);
 
     const handleAttractionClick = (attraction: AttractionItem) => {
         selectAttraction(attraction.id);
         onAttractionClick?.(attraction);
+        setActiveAttraction(attraction);
+        setIsModalOpen(true);
     };
+
+    const toggleSelection = (id: string) => {
+        setSelectedAttractionIds((prev) =>
+            prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+        );
+    };
+
+    const handleModalClose = () => {
+        setIsModalOpen(false);
+        setActiveAttraction(null);
+    };
+
+    const selectedAttractions = attractions.filter((attraction) => selectedAttractionIds.includes(attraction.id));
 
     return (
         <motion.div
@@ -153,17 +286,46 @@ export const AttractionCarouselBlock: React.FC<AttractionCarouselBlockProps> = (
                 </h2>
             )}
 
-            {/* 3-column grid */}
-            <div className="grid grid-cols-3 gap-3">
+            {/* Two cards per row */}
+            <div className="grid grid-cols-2 gap-4">
                 {attractions.map((attraction) => (
                     <AttractionCard
                         key={attraction.id}
                         attraction={attraction}
                         isHighlighted={highlightedAttractionId === attraction.id}
+                        isSelected={selectedAttractionIds.includes(attraction.id)}
                         onClick={() => handleAttractionClick(attraction)}
+                        onToggleSelect={() => toggleSelection(attraction.id)}
                     />
                 ))}
             </div>
+
+            {onBuildItinerary && (
+                <div className="mt-4">
+                    <button
+                        className={`
+                            w-full rounded-xl px-4 py-3 text-sm font-semibold
+                            transition-all duration-200
+                            ${selectedAttractionIds.length > 0
+                                ? 'bg-[var(--color-primary)] text-white shadow-md hover:shadow-lg'
+                                : 'bg-[var(--color-border-light)] text-[var(--color-text-muted)] cursor-not-allowed'
+                            }
+                        `}
+                        onClick={() => onBuildItinerary(selectedAttractions)}
+                        disabled={selectedAttractionIds.length === 0}
+                    >
+                        {selectedAttractionIds.length > 0
+                            ? `Build itinerary with ${selectedAttractionIds.length} attraction${selectedAttractionIds.length > 1 ? 's' : ''}`
+                            : 'Select attractions to build itinerary'}
+                    </button>
+                </div>
+            )}
+
+            <AttractionDetailsModal
+                attraction={activeAttraction}
+                isOpen={isModalOpen}
+                onClose={handleModalClose}
+            />
         </motion.div>
     );
 };
