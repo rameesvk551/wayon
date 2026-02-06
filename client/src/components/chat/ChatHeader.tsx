@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Sparkles, MoreVertical, Phone, Video } from 'lucide-react';
+import { Sparkles, MoreVertical, Heart } from 'lucide-react';
 
 interface ChatHeaderProps {
     onNavigate?: (tab: string) => void;
@@ -40,19 +40,10 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({ onNavigate }) => {
                         whileHover={{ scale: 1.1 }}
                         whileTap={{ scale: 0.9 }}
                         className="chat-action-btn"
-                        onClick={() => onNavigate?.('call')}
-                        aria-label="Voice call"
+                        onClick={() => onNavigate?.('favorites')}
+                        aria-label="Favorites"
                     >
-                        <Phone size={18} />
-                    </motion.button>
-                    <motion.button
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
-                        className="chat-action-btn"
-                        onClick={() => onNavigate?.('video')}
-                        aria-label="Video call"
-                    >
-                        <Video size={18} />
+                        <Heart size={18} />
                     </motion.button>
                     <motion.button
                         whileHover={{ scale: 1.1 }}

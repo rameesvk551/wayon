@@ -189,15 +189,65 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onNavigate }) => {
         ]);
     };
 
-    const handleInterestsSelect = (interests: string[]) => {
+    const handleInterestsSelect = async (interests: string[]) => {
         const updatedPrefs = { ...preferences, interests };
         setPreferences(updatedPrefs);
+
+        const loadingMsgId = createMessageId();
         setMessages(prev => [
             ...prev,
             { id: createMessageId(), type: 'user', content: `I'm interested in ${interests.join(', ')}`, timestamp: new Date() },
-            { id: createMessageId(), type: 'ai', content: `Excellent! 🎉 Here are the top attractions at your destination that you must visit!`, timestamp: new Date() },
-            { id: createMessageId(), type: 'interactive', interactiveType: 'attractions', timestamp: new Date() }
+            {
+                id: loadingMsgId,
+                type: 'ai',
+                content: `Excellent! 🎉 Let me find the top attractions for you...`,
+                timestamp: new Date()
+            }
         ]);
+
+        // Build prompt to fetch attractions based on preferences
+        const attractionPrompt = [
+            `Find top attractions and places to visit in ${preferences.destination || 'the destination'}.`,
+            `Interests: ${interests.join(', ')}.`,
+            `Travel type: ${preferences.companions || 'solo'}.`,
+            'Return attraction options only.'
+        ].join(' ');
+
+        try {
+            const data = await streamChat(attractionPrompt);
+            const structured = data.structured || null;
+            const structuredBlocks = structured ? buildBlocksFromStructured(structured) : undefined;
+            const ui = getUiResponse(data);
+            const blocks = mergeBlocks(structuredBlocks, ui);
+            const responseText = structured?.reply || data.message || 'Here are the top attractions for your destination!';
+
+            setMessages(prev => prev.map(msg =>
+                msg.id === loadingMsgId
+                    ? {
+                        ...msg,
+                        content: responseText,
+                        blocks
+                    }
+                    : msg
+            ));
+        } catch (error) {
+            console.error('Attractions fetch error:', error);
+            setMessages(prev => prev.map(msg =>
+                msg.id === loadingMsgId
+                    ? {
+                        ...msg,
+                        content: 'Sorry, I could not fetch attractions right now. You can continue to generate your itinerary.',
+                        blocks: {
+                            blocks: [{
+                                type: 'actions' as const,
+                                items: [{ id: 'continue', label: 'Continue to Itinerary', variant: 'primary' as const }],
+                                layout: 'horizontal' as const
+                            }]
+                        }
+                    }
+                    : msg
+            ));
+        }
     };
 
     const buildBlocksFromStructured = (structured: {
@@ -415,33 +465,33 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onNavigate }) => {
 
             return lines.join('\n');
         };
-        
+
         // Add user message and loading state
         const loadingMsgId = createMessageId();
         setMessages(prev => [
             ...prev,
-            { 
-                id: createMessageId(), 
-                type: 'user', 
-                content: attractionCount > 0 
-                    ? `I've selected ${attractionCount} attraction${attractionCount > 1 ? 's' : ''}: ${selectedAttractions.map(a => a.name).join(', ')}` 
-                    : 'Continuing without selecting attractions', 
-                timestamp: new Date() 
+            {
+                id: createMessageId(),
+                type: 'user',
+                content: attractionCount > 0
+                    ? `I've selected ${attractionCount} attraction${attractionCount > 1 ? 's' : ''}: ${selectedAttractions.map(a => a.name).join(', ')}`
+                    : 'Continuing without selecting attractions',
+                timestamp: new Date()
             },
-            { 
-                id: createMessageId(), 
-                type: 'ai', 
-                content: attractionCount > 0 
+            {
+                id: createMessageId(),
+                type: 'ai',
+                content: attractionCount > 0
                     ? `✨ Great choices! Let me generate a personalized itinerary for you...`
-                    : `✨ Let me generate your trip itinerary...`, 
-                timestamp: new Date() 
+                    : `✨ Let me generate your trip itinerary...`,
+                timestamp: new Date()
             },
-            { 
-                id: loadingMsgId, 
-                type: 'interactive', 
-                interactiveType: 'itinerary', 
+            {
+                id: loadingMsgId,
+                type: 'interactive',
+                interactiveType: 'itinerary',
                 timestamp: new Date(),
-                isLoading: true 
+                isLoading: true
             }
         ]);
 
@@ -476,15 +526,15 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onNavigate }) => {
         } catch (error) {
             console.error('Itinerary generation error:', error);
             // Update the loading message to show error/fallback
-            setMessages(prev => prev.map(msg => 
-                msg.id === loadingMsgId 
-                    ? { 
-                        ...msg, 
+            setMessages(prev => prev.map(msg =>
+                msg.id === loadingMsgId
+                    ? {
+                        ...msg,
                         type: 'ai' as const,
                         interactiveType: undefined,
                         isLoading: false,
                         content: `❌ Sorry, I couldn't generate the itinerary right now. Please make sure the server is running and try again.`
-                      }
+                    }
                     : msg
             ));
         }
