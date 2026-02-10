@@ -10,6 +10,88 @@ import type { UIResponse } from '../types/ui-schema';
 // API configuration
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4333';
 
+/** Auto-download a PDF returned by the itinerary service.
+ *  Prefers `downloadUrl` (small SSE payload, proper HTTP download).
+ *  Falls back to base64 blob download if URL is unavailable. */
+const triggerPdfDownload = (pdf: { downloadUrl?: string; pdfBase64?: string; pageCount?: number; sizeBytes?: number }, destination?: string) => {
+    const safeName = (destination || 'trip').replace(/[^a-zA-Z0-9_-]/g, '_').toLowerCase();
+    const filename = `${safeName}-itinerary.pdf`;
+
+    // ── Approach 1: server-side download URL via fetch+blob (preferred) ──
+    if (pdf.downloadUrl) {
+        const url = pdf.downloadUrl.startsWith('http')
+            ? pdf.downloadUrl
+            : `${API_BASE_URL}${pdf.downloadUrl}`;
+        console.log(`📄 [PDF] Fetching PDF from: ${url}`);
+
+        fetch(url)
+            .then(resp => {
+                if (!resp.ok) throw new Error(`HTTP ${resp.status}: ${resp.statusText}`);
+                const ct = resp.headers.get('content-type') || '';
+                console.log(`📄 [PDF] Response: ${resp.status}, content-type: ${ct}, size: ${resp.headers.get('content-length')}`);
+                return resp.blob();
+            })
+            .then(blob => {
+                console.log(`📄 [PDF] Blob received: ${blob.size} bytes, type: ${blob.type}`);
+                const blobUrl = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = blobUrl;
+                link.download = filename;
+                link.style.display = 'none';
+                document.body.appendChild(link);
+                link.click();
+                setTimeout(() => {
+                    link.remove();
+                    URL.revokeObjectURL(blobUrl);
+                }, 5000);
+                console.log(`📄 [PDF] Download triggered: ${filename} (${pdf.pageCount || '?'} pages)`);
+            })
+            .catch(err => {
+                console.error('📄 [PDF] Fetch download failed:', err);
+                // Fallback: try direct anchor navigation
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = filename;
+                link.target = '_blank';
+                document.body.appendChild(link);
+                link.click();
+                setTimeout(() => link.remove(), 5000);
+            });
+        return;
+    }
+
+    // ── Approach 2: base64 blob fallback ──────────────────────────────
+    if (pdf.pdfBase64) {
+        try {
+            console.log(`📄 [PDF] Using base64 fallback (${Math.round(pdf.pdfBase64.length / 1024)}KB encoded)`);
+            const byteChars = atob(pdf.pdfBase64);
+            const byteArray = new Uint8Array(byteChars.length);
+            for (let i = 0; i < byteChars.length; i++) {
+                byteArray[i] = byteChars.charCodeAt(i);
+            }
+            const blob = new Blob([byteArray], { type: 'application/pdf' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            link.style.display = 'none';
+            document.body.appendChild(link);
+            link.click();
+            // Delay cleanup to let the browser initiate the download
+            setTimeout(() => {
+                link.remove();
+                URL.revokeObjectURL(url);
+            }, 5000);
+            console.log(`📄 [PDF] Base64 download triggered: ${filename}`);
+        } catch (err) {
+            console.error('📄 [PDF] Base64 download failed:', err);
+        }
+        return;
+    }
+
+    console.warn('📄 [PDF] No downloadUrl or pdfBase64 found in pdf response:', pdf);
+};
+
 interface ChatScreenProps {
     onNavigate?: (tab: string) => void;
 }
@@ -503,6 +585,18 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onNavigate }) => {
             const blocks = mergeBlocks(structuredBlocks, getUiResponse(data));
             const responseText = structured?.reply || data.message || 'I have your trip updates ready.';
 
+            // Auto-download PDF if present
+            if (data.pdf) {
+                console.log('📄 [PDF] PDF data received in response:', {
+                    hasDownloadUrl: !!data.pdf.downloadUrl,
+                    hasPdfBase64: !!data.pdf.pdfBase64,
+                    pageCount: data.pdf.pageCount,
+                    sizeBytes: data.pdf.sizeBytes,
+                });
+                const dest = preferences.destination || (itinerary as any)?.destination || 'trip';
+                triggerPdfDownload(data.pdf, dest);
+            }
+
             setMessages(prev => prev.map(msg => {
                 if (msg.id !== loadingMsgId) return msg;
 
@@ -568,6 +662,19 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onNavigate }) => {
             const ui = getUiResponse(data);
             const blocks = mergeBlocks(structuredBlocks, ui);
             const responseText = structured?.reply || data.message || 'I have your trip updates ready.';
+
+            // Auto-download PDF if present
+            if (data.pdf) {
+                console.log('📄 [PDF] PDF data received (freeform):', {
+                    hasDownloadUrl: !!data.pdf.downloadUrl,
+                    hasPdfBase64: !!data.pdf.pdfBase64,
+                    pageCount: data.pdf.pageCount,
+                    sizeBytes: data.pdf.sizeBytes,
+                });
+                const dest = preferences.destination || (itinerary as any)?.destination || 'trip';
+                triggerPdfDownload(data.pdf, dest);
+            }
+
             setMessages(prev => {
                 const updated = prev.map(msg => {
                     if (msg.id !== loadingMsgId) return msg;

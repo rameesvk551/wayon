@@ -18,7 +18,7 @@ const ReviewPage: React.FC = () => {
 
     const handleExportPDF = async () => {
         const pdfServiceUrl =
-            import.meta.env.VITE_PDF_SERVICE_URL || 'http://localhost:4010';
+            import.meta.env.VITE_PDF_SERVICE_URL || 'http://localhost:4055';
 
         const markers = cities
             .map((city, index) => ({

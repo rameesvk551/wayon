@@ -87,6 +87,12 @@ export interface ChatApiResponse {
     };
     errors?: string[];
     toolCalls?: unknown[];
+    pdf?: {
+        downloadUrl?: string;
+        pdfBase64?: string;
+        pageCount: number;
+        sizeBytes?: number;
+    };
 }
 
 export const TRANSPORT_LABELS: Record<string, string> = {

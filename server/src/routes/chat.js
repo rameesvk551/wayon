@@ -6,7 +6,37 @@ import { safeJsonParse, requestJson } from "../utils/http.js";
 import { parseAiResponse } from "../utils/ai-response.js";
 import { deriveIntent } from "../utils/intent.js";
 import { buildUiForIntent } from "../services/ui/builders.js";
+import crypto from "crypto";
 import config from "../config.js";
+
+// ═══════════════════════════════════════════════════════════════════════════
+// TEMPORARY PDF STORE  (in-memory, auto-expires after 10 min)
+// ═══════════════════════════════════════════════════════════════════════════
+const pdfStore = new Map(); // id → { buffer: Buffer, pageCount, createdAt, destination }
+const PDF_TTL_MS = 10 * 60 * 1000; // 10 minutes
+
+function storePdf(pdfBase64, pageCount, destination) {
+  // Clean up expired entries on every store
+  const now = Date.now();
+  for (const [id, entry] of pdfStore) {
+    if (now - entry.createdAt > PDF_TTL_MS) pdfStore.delete(id);
+  }
+  const id = crypto.randomUUID();
+  const buffer = Buffer.from(pdfBase64, "base64");
+
+  // Verify the buffer starts with %PDF- (valid PDF header)
+  const header = buffer.slice(0, 5).toString("ascii");
+  if (header !== "%PDF-") {
+    console.error(`❌ [PdfStore] Invalid PDF! Header: "${header}" (expected "%PDF-"), base64 length: ${pdfBase64.length}, buffer length: ${buffer.length}`);
+    console.error(`   First 100 chars of base64: ${pdfBase64.slice(0, 100)}`);
+  } else {
+    console.log(`✅ [PdfStore] Valid PDF header confirmed`);
+  }
+
+  pdfStore.set(id, { buffer, pageCount, createdAt: now, destination });
+  console.log(`📦 [PdfStore] Stored PDF ${id} (${Math.round(buffer.length / 1024)}KB, ${pageCount} pages, TTL 10min)`);
+  return id;
+}
 
 // ═══════════════════════════════════════════════════════════════════════════
 // CHAT LOGGING UTILITIES
@@ -336,42 +366,75 @@ const callItineraryServiceDirect = async (attractions, meta) => {
     numDays,
     attractions,
     preferences: { dayStartTime: "09:00", maxDailyMinutes: 600 },
+    generatePdf: true,
+    pdfOptions: {
+      startDate: new Date().toISOString().slice(0, 10),
+      format: "A4",
+      includeInfographicCover: true,
+    },
   };
 
   logChat("info", "DIRECT-ITINERARY", `📤 REQUEST PAYLOAD`, {
     destination: body.destination,
     numDays: body.numDays,
     attractionCount: body.attractions.length,
+    generatePdf: body.generatePdf,
+    pdfOptions: body.pdfOptions,
     attractions: body.attractions.map((a) => ({ id: a.id, name: a.name, lat: a.lat, lng: a.lng, priority: a.priority, visitDuration: a.visitDuration, category: a.category })),
     preferences: body.preferences,
   });
 
   try {
+    const startMs = Date.now();
     const response = await requestJson({
       baseUrl: itineraryService.baseUrl,
       path: itineraryService.path,
       method: itineraryService.method,
       body,
-      timeoutMs: 15000,
+      timeoutMs: 45000,
     });
+    const elapsedMs = Date.now() - startMs;
 
     logChat("info", "DIRECT-ITINERARY", `📥 Service responded`, {
       ok: response.ok,
       status: response.status,
+      elapsedMs,
     });
 
     if (!response.ok) {
-      logChat("error", "DIRECT-ITINERARY", `❌ Service error`, { text: response.text?.slice(0, 500) });
+      logChat("error", "DIRECT-ITINERARY", `❌ Service error`, {
+        status: response.status,
+        elapsedMs,
+        text: response.text?.slice(0, 500),
+      });
       return null;
     }
 
     const result = response.json;
     const data = result?.data ?? result;
 
+    // ── PDF result logging ───────────────────────────────────────────
+    const pdfResult = result?.pdf ?? null;
+    if (pdfResult) {
+      logChat("info", "DIRECT-ITINERARY", `📄 PDF generated successfully`, {
+        pageCount: pdfResult.pageCount,
+        base64Length: pdfResult.pdfBase64?.length || 0,
+        hasPdfData: !!pdfResult.pdfBase64,
+      });
+    } else {
+      logChat("warn", "DIRECT-ITINERARY", `⚠️ No PDF in response (generatePdf was ${body.generatePdf})`, {
+        hasResultPdf: !!result?.pdf,
+        resultKeys: Object.keys(result || {}),
+      });
+    }
+
     logChat("info", "DIRECT-ITINERARY", `📥 RESPONSE DATA`, {
       success: result?.success,
       numDays: data?.numDays,
       dailyPlanDays: (data?.dailyPlan || []).length,
+      hasPdf: !!pdfResult,
+      pdfPageCount: pdfResult?.pageCount || 0,
+      elapsedMs,
       dailyPlan: (data?.dailyPlan || []).map((d) => ({
         day: d.day,
         title: d.title,
@@ -390,6 +453,7 @@ const callItineraryServiceDirect = async (attractions, meta) => {
       ok: true,
       data: result,
       request: body,
+      pdf: pdfResult || null,
     }];
 
     const intent = { name: "itinerary_generate", confidence: 0.95, slots: { destination, numDays } };
@@ -433,7 +497,7 @@ const callItineraryServiceDirect = async (attractions, meta) => {
 
     const ui = buildUiForIntent({ intent, structuredPayload: structured, toolResults });
 
-    return {
+    const finalResponse = {
       schemaVersion: "2026-02-05",
       message: structured.reply,
       structured,
@@ -443,7 +507,27 @@ const callItineraryServiceDirect = async (attractions, meta) => {
       uiBlocks: ui ? { blocks: ui.blocks } : null,
       errors: [],
       toolCalls: [],
+      ...(pdfResult?.pdfBase64 && (() => {
+        const pdfId = storePdf(pdfResult.pdfBase64, pdfResult.pageCount, destination);
+        return {
+          pdf: {
+            downloadUrl: `/api/chat/download-pdf/${pdfId}`,
+            pageCount: pdfResult.pageCount,
+            sizeBytes: Math.round(pdfResult.pdfBase64.length * 3 / 4),
+          },
+        };
+      })()),
     };
+
+    logChat("info", "DIRECT-ITINERARY", `✅ Final response built`, {
+      hasPdf: !!finalResponse.pdf,
+      pdfPageCount: finalResponse.pdf?.pageCount || 0,
+      pdfDownloadUrl: finalResponse.pdf?.downloadUrl || null,
+      uiBlockCount: finalResponse.ui?.blocks?.length || 0,
+      elapsedMs,
+    });
+
+    return finalResponse;
   } catch (error) {
     logChat("error", "DIRECT-ITINERARY", `💥 Service call failed`, { error: error.message });
     return null;
@@ -854,6 +938,40 @@ router.post("/chat/stream", async (req, res) => {
     });
     res.end();
   }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PDF DOWNLOAD ENDPOINT
+// ═══════════════════════════════════════════════════════════════════════════
+router.get("/chat/download-pdf/:id", (req, res) => {
+  const { id } = req.params;
+  const entry = pdfStore.get(id);
+
+  if (!entry) {
+    console.log(`⚠️ [PdfDownload] PDF ${id} not found or expired`);
+    return res.status(404).json({ error: "PDF not found or expired. Please regenerate the itinerary." });
+  }
+
+  const safeName = (entry.destination || "trip").replace(/[^a-zA-Z0-9_-]/g, "_").toLowerCase();
+  const filename = `${safeName}-itinerary.pdf`;
+  const buf = entry.buffer;
+
+  // Verify before sending
+  const header = buf.slice(0, 5).toString("ascii");
+  console.log(`📥 [PdfDownload] Serving PDF ${id} → ${filename} (${Math.round(buf.length / 1024)}KB, header: "${header}")`);
+
+  // Use raw writeHead + end to bypass any Express response processing
+  res.writeHead(200, {
+    "Content-Type": "application/pdf",
+    "Content-Disposition": `attachment; filename="${filename}"`,
+    "Content-Length": buf.length,
+    "Access-Control-Allow-Origin": "*",
+    "Cache-Control": "no-store",
+  });
+  res.end(buf);
+
+  // Remove after download (one-time use)
+  pdfStore.delete(id);
 });
 
 export default router;
