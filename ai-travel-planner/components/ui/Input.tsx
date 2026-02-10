@@ -8,7 +8,7 @@ import {
     ViewStyle,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, borderRadius, spacing, fontSize } from '../../theme';
+import { colors, borderRadius, spacing, fontSize, fonts } from '../../theme';
 
 interface InputProps {
     placeholder?: string;
@@ -105,7 +105,7 @@ const styles = StyleSheet.create({
     },
     label: {
         fontSize: fontSize.sm,
-        fontWeight: '600',
+        fontFamily: fonts.bodySemibold,
         color: colors.text.primary,
         marginBottom: spacing.xs,
     },
@@ -114,20 +114,20 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         backgroundColor: colors.white,
         borderRadius: borderRadius.lg,
-        borderWidth: 2,
-        borderColor: colors.background.tertiary,
+        borderWidth: 1.5,
+        borderColor: colors.border.DEFAULT,
         paddingHorizontal: spacing.md,
     },
     inputFocused: {
         borderColor: colors.primary.DEFAULT,
         shadowColor: colors.primary.DEFAULT,
         shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.2,
-        shadowRadius: 8,
+        shadowOpacity: 0.15,
+        shadowRadius: 10,
         elevation: 2,
     },
     inputError: {
-        borderColor: colors.secondary.DEFAULT,
+        borderColor: colors.error.DEFAULT,
     },
     icon: {
         marginRight: spacing.sm,
@@ -136,6 +136,7 @@ const styles = StyleSheet.create({
         flex: 1,
         paddingVertical: spacing.md,
         fontSize: fontSize.base,
+        fontFamily: fonts.body,
         color: colors.text.primary,
     },
     eyeIcon: {
@@ -143,7 +144,7 @@ const styles = StyleSheet.create({
     },
     error: {
         fontSize: fontSize.xs,
-        color: colors.secondary.DEFAULT,
+        color: colors.error.DEFAULT,
         marginTop: spacing.xs,
     },
 });

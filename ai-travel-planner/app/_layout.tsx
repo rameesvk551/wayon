@@ -3,6 +3,8 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { useFonts, Sora_400Regular, Sora_500Medium, Sora_600SemiBold, Sora_700Bold } from '@expo-google-fonts/sora';
+import { Fraunces_600SemiBold, Fraunces_700Bold, Fraunces_800ExtraBold } from '@expo-google-fonts/fraunces';
 import { useAuthStore } from '../store';
 import { colors } from '../theme';
 
@@ -11,6 +13,15 @@ export default function RootLayout() {
     const segments = useSegments();
     const { isAuthenticated, token } = useAuthStore();
     const [isReady, setIsReady] = useState(false);
+    const [fontsLoaded] = useFonts({
+        Sora_400Regular,
+        Sora_500Medium,
+        Sora_600SemiBold,
+        Sora_700Bold,
+        Fraunces_600SemiBold,
+        Fraunces_700Bold,
+        Fraunces_800ExtraBold,
+    });
 
     useEffect(() => {
         // Simulate checking auth state
@@ -35,7 +46,7 @@ export default function RootLayout() {
         }
     }, [isAuthenticated, segments, isReady]);
 
-    if (!isReady) {
+    if (!isReady || !fontsLoaded) {
         return (
             <View style={styles.loading}>
                 <ActivityIndicator size="large" color={colors.primary.DEFAULT} />
@@ -45,7 +56,7 @@ export default function RootLayout() {
 
     return (
         <SafeAreaProvider>
-            <StatusBar style="auto" />
+            <StatusBar style="dark" />
             <Stack screenOptions={{ headerShown: false }}>
                 <Stack.Screen name="index" />
                 <Stack.Screen name="onboarding" />

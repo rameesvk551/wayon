@@ -9,8 +9,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { Card } from '../../components/ui';
-import { colors, fontSize, spacing, borderRadius, shadows } from '../../theme';
+import { colors, spacing, shadows, fonts } from '../../theme';
 
 // Mock favorites
 const mockFavorites = [
@@ -51,40 +50,48 @@ const mockFavorites = [
 export default function FavoritesScreen() {
     return (
         <SafeAreaView style={styles.container}>
-            <View style={styles.header}>
-                <Text style={styles.title}>Favorites</Text>
-                <Text style={styles.subtitle}>{mockFavorites.length} saved items</Text>
-            </View>
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
+                <View style={styles.header}>
+                    <Text style={styles.title}>Favorites</Text>
+                    <Text style={styles.subtitle}>{mockFavorites.length} saved items</Text>
+                </View>
 
-            <ScrollView showsVerticalScrollIndicator={false} style={styles.content}>
-                <View style={styles.grid}>
-                    {mockFavorites.map((item) => (
-                        <TouchableOpacity key={item.id} style={styles.favoriteCard} activeOpacity={0.9}>
-                            <Image source={{ uri: item.image }} style={styles.favoriteImage} />
-                            <TouchableOpacity style={styles.heartButton}>
-                                <Ionicons name="heart" size={24} color={colors.secondary.DEFAULT} />
-                            </TouchableOpacity>
-                            <View style={styles.ratingBadge}>
-                                <Ionicons name="star" size={12} color="#FCD34D" />
-                                <Text style={styles.ratingText}>{item.rating}</Text>
-                            </View>
-                            <View style={styles.favoriteInfo}>
-                                <Text style={styles.favoriteName} numberOfLines={1}>
-                                    {item.name}
-                                </Text>
-                                <View style={styles.locationRow}>
-                                    <Ionicons name="location" size={12} color={colors.text.muted} />
-                                    <Text style={styles.favoriteCountry}>{item.country}</Text>
+                {mockFavorites.length === 0 ? (
+                    <View style={styles.emptyState}>
+                        <Ionicons name="heart-outline" size={48} color={colors.text.light} />
+                        <Text style={styles.emptyTitle}>No favorites yet</Text>
+                        <Text style={styles.emptySubtitle}>
+                            Save destinations, hotels, or activities to see them here.
+                        </Text>
+                    </View>
+                ) : (
+                    <View style={styles.grid}>
+                        {mockFavorites.map((item) => (
+                            <TouchableOpacity key={item.id} style={styles.favoriteCard} activeOpacity={0.9}>
+                                <Image source={{ uri: item.image }} style={styles.favoriteImage} />
+                                <TouchableOpacity style={styles.heartButton}>
+                                    <Ionicons name="heart" size={20} color={colors.error.DEFAULT} />
+                                </TouchableOpacity>
+                                <View style={styles.ratingBadge}>
+                                    <Ionicons name="star" size={12} color="#FCD34D" />
+                                    <Text style={styles.ratingText}>{item.rating}</Text>
                                 </View>
-                                <View style={styles.typeBadge}>
-                                    <Text style={styles.typeText}>
+                                <View style={styles.favoriteInfo}>
+                                    <Text style={styles.favoriteName} numberOfLines={1}>
+                                        {item.name}
+                                    </Text>
+                                    <View style={styles.locationRow}>
+                                        <Ionicons name="location-outline" size={12} color={colors.text.muted} />
+                                        <Text style={styles.favoriteCountry}>{item.country}</Text>
+                                    </View>
+                                    <Text style={styles.typeBadge}>
                                         {item.type.charAt(0).toUpperCase() + item.type.slice(1)}
                                     </Text>
                                 </View>
-                            </View>
-                        </TouchableOpacity>
-                    ))}
-                </View>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+                )}
 
                 <View style={{ height: 100 }} />
             </ScrollView>
@@ -97,34 +104,34 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: colors.background.DEFAULT,
     },
-    header: {
+    content: {
         paddingHorizontal: spacing.xl,
         paddingTop: spacing.md,
     },
+    header: {
+        marginBottom: spacing.lg,
+    },
     title: {
-        fontSize: fontSize['2xl'],
-        fontWeight: '700',
+        fontSize: 24,
+        fontFamily: fonts.bodyBold,
         color: colors.text.primary,
     },
     subtitle: {
-        fontSize: fontSize.sm,
+        fontSize: 14,
         color: colors.text.muted,
-        marginTop: 2,
-    },
-    content: {
-        flex: 1,
-        paddingTop: spacing.lg,
+        marginTop: 4,
+        fontFamily: fonts.body,
     },
     grid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        paddingHorizontal: spacing.lg,
-        gap: spacing.md,
+        justifyContent: 'space-between',
+        gap: 12,
     },
     favoriteCard: {
-        width: '47%',
+        width: '48%',
         backgroundColor: colors.white,
-        borderRadius: borderRadius.lg,
+        borderRadius: 16,
         overflow: 'hidden',
         ...shadows.md,
     },
@@ -135,8 +142,8 @@ const styles = StyleSheet.create({
     },
     heartButton: {
         position: 'absolute',
-        top: spacing.sm,
-        right: spacing.sm,
+        top: 8,
+        right: 8,
         width: 36,
         height: 36,
         borderRadius: 18,
@@ -146,50 +153,65 @@ const styles = StyleSheet.create({
     },
     ratingBadge: {
         position: 'absolute',
-        top: spacing.sm,
-        left: spacing.sm,
+        top: 8,
+        left: 8,
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: 'rgba(0,0,0,0.6)',
-        paddingHorizontal: spacing.xs,
-        paddingVertical: 2,
-        borderRadius: borderRadius.full,
-        gap: 2,
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 12,
+        gap: 4,
     },
     ratingText: {
         color: colors.white,
         fontSize: 11,
-        fontWeight: '600',
+        fontFamily: fonts.bodySemibold,
     },
     favoriteInfo: {
-        padding: spacing.sm,
+        padding: 12,
     },
     favoriteName: {
-        fontSize: fontSize.base,
-        fontWeight: '700',
+        fontSize: 14,
+        fontFamily: fonts.bodyBold,
         color: colors.text.primary,
     },
     locationRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 2,
-        marginTop: 2,
+        gap: 4,
+        marginTop: 4,
     },
     favoriteCountry: {
-        fontSize: fontSize.xs,
+        fontSize: 12,
         color: colors.text.muted,
     },
     typeBadge: {
-        marginTop: spacing.xs,
+        marginTop: 8,
         alignSelf: 'flex-start',
         backgroundColor: colors.primary.subtle,
-        paddingHorizontal: spacing.sm,
-        paddingVertical: 2,
-        borderRadius: borderRadius.full,
-    },
-    typeText: {
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 12,
         fontSize: 10,
-        fontWeight: '600',
-        color: colors.primary.dark,
+        fontFamily: fonts.bodySemibold,
+        color: colors.primary.hover,
+    },
+    emptyState: {
+        alignItems: 'center',
+        paddingVertical: 40,
+    },
+    emptyTitle: {
+        marginTop: 16,
+        fontSize: 18,
+        fontFamily: fonts.bodySemibold,
+        color: colors.text.secondary,
+    },
+    emptySubtitle: {
+        marginTop: 6,
+        fontSize: 13,
+        color: colors.text.muted,
+        textAlign: 'center',
+        fontFamily: fonts.body,
     },
 });

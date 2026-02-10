@@ -301,6 +301,56 @@ export const buildTools = () => {
     }),
   });
 
+  const generateItinerary = createRestTool({
+    name: "generate_itinerary",
+    description:
+      "Generate an optimised multi-day itinerary from a list of selected attractions. " +
+      "Uses the TOPTW algorithm to assign attractions to days respecting time windows, " +
+      "priorities, and daily time budgets. Call this AFTER the user has selected or confirmed " +
+      "attractions they want to visit.",
+    serviceKey: "itinerary",
+    schema: z.object({
+      destination: z.string().describe("Trip destination (e.g. 'Paris, France')"),
+      numDays: z.number().int().min(1).max(14).describe("Number of trip days"),
+      attractions: z
+        .array(
+          z.object({
+            id: z.string().describe("Attraction ID"),
+            name: z.string().describe("Attraction name"),
+            lat: z.number().describe("Latitude"),
+            lng: z.number().describe("Longitude"),
+            priority: z.number().optional().describe("1-10, higher = more important"),
+            visitDuration: z.number().optional().describe("Visit duration in minutes"),
+            timeWindow: z
+              .object({
+                open: z.string().optional().describe("Opening time HH:MM"),
+                close: z.string().optional().describe("Closing time HH:MM"),
+              })
+              .optional(),
+            category: z.string().optional().describe("Category like historical, nature, food"),
+            image: z.string().optional().describe("Image URL"),
+            description: z.string().optional().describe("Short description"),
+          })
+        )
+        .describe("List of attractions to include in the itinerary"),
+      preferences: z
+        .object({
+          dayStartTime: z.string().optional().describe("Day start time HH:MM, default 09:00"),
+          maxDailyMinutes: z.number().optional().describe("Max active minutes per day, default 600"),
+          travelType: z.string().optional().describe("WALKING, DRIVING, PUBLIC_TRANSPORT, CYCLING"),
+          budget: z.number().optional().describe("Trip budget"),
+          currency: z.string().optional().describe("Currency code"),
+        })
+        .optional(),
+      startLocation: z
+        .object({
+          lat: z.number().describe("Hotel / base latitude"),
+          lng: z.number().describe("Hotel / base longitude"),
+        })
+        .optional(),
+    }),
+  });
+
   return [
     hotelSearch,
     flightSearch,
@@ -310,5 +360,6 @@ export const buildTools = () => {
     itineraryPdf,
     weatherLookup,
     transportOptions,
+    generateItinerary,
   ];
 };

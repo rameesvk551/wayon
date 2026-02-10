@@ -12,7 +12,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Button } from '../components/ui';
-import { colors, fontSize, spacing, borderRadius } from '../theme';
+import { colors, fontSize, spacing, fonts, gradients } from '../theme';
 
 const { width, height } = Dimensions.get('window');
 
@@ -33,7 +33,7 @@ const slides: OnboardingSlide[] = [
         description:
             'Explore amazing destinations around the world with personalized AI-powered recommendations.',
         icon: 'airplane',
-        colors: ['#7C3AED', '#5B21B6'],
+        colors: gradients.primary,
     },
     {
         id: '2',
@@ -42,7 +42,7 @@ const slides: OnboardingSlide[] = [
         description:
             'Let wayon.ai create the perfect itinerary tailored to your interests, budget, and travel style.',
         icon: 'map',
-        colors: ['#FF6B6B', '#DC2626'],
+        colors: gradients.accent,
     },
     {
         id: '3',
@@ -51,7 +51,7 @@ const slides: OnboardingSlide[] = [
         description:
             'From flights to hotels, experience seamless travel planning all in one place with wayon.ai.',
         icon: 'compass',
-        colors: ['#00C9A7', '#0D9488'],
+        colors: gradients.primary,
     },
 ];
 
@@ -216,12 +216,12 @@ const styles = StyleSheet.create({
     },
     title: {
         fontSize: 42,
-        fontWeight: '800',
+        fontFamily: fonts.displayBold,
         color: colors.text.primary,
     },
     subtitle: {
         fontSize: fontSize.xl,
-        fontWeight: '600',
+        fontFamily: fonts.bodySemibold,
         color: colors.primary.DEFAULT,
         marginTop: spacing.sm,
     },

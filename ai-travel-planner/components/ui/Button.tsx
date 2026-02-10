@@ -8,7 +8,7 @@ import {
     TextStyle,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { colors, borderRadius, spacing } from '../../theme';
+import { colors, borderRadius, spacing, fonts, gradients } from '../../theme';
 
 interface ButtonProps {
     title: string;
@@ -66,7 +66,7 @@ export const Button: React.FC<ButtonProps> = ({
                 activeOpacity={0.8}
             >
                 <LinearGradient
-                    colors={isDisabled ? ['#94A3B8', '#94A3B8'] : ['#00C9A7', '#0D9488']}
+                    colors={isDisabled ? [colors.text.light, colors.text.light] : gradients.primary}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
                     style={[styles.gradient, getSizeStyles()]}
@@ -154,11 +154,11 @@ const styles = StyleSheet.create({
     },
     text: {
         color: colors.white,
-        fontWeight: '600',
+        fontFamily: fonts.bodySemibold,
     },
     textPrimary: {
         color: colors.white,
-        fontWeight: '700',
+        fontFamily: fonts.bodyBold,
     },
     textOutline: {
         color: colors.primary.DEFAULT,

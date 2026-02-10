@@ -2,10 +2,11 @@ import { Router } from "express";
 import { HumanMessage } from "@langchain/core/messages";
 import { graph } from "../agent.js";
 import { getOrCreateSession, setSessionMessages } from "../memory.js";
-import { safeJsonParse } from "../utils/http.js";
+import { safeJsonParse, requestJson } from "../utils/http.js";
 import { parseAiResponse } from "../utils/ai-response.js";
 import { deriveIntent } from "../utils/intent.js";
 import { buildUiForIntent } from "../services/ui/builders.js";
+import config from "../config.js";
 
 // ═══════════════════════════════════════════════════════════════════════════
 // CHAT LOGGING UTILITIES
@@ -195,6 +196,297 @@ const extractToolResults = (messages) => {
   return results;
 };
 
+// ═══════════════════════════════════════════════════════════════════════════
+// PRE-PROCESSING: Detect user intent from keywords to improve fallback quality
+// ═══════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════════════
+// DIRECT ITINERARY GENERATION (bypasses LLM for selected-attraction messages)
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Parse "Selected attraction details" blocks from the user prompt.
+ * Returns null if no attractions found.
+ */
+const parseSelectedAttractions = (text) => {
+  if (!text || typeof text !== "string") return null;
+  if (!/selected attract/i.test(text)) return null;
+
+  const blocks = text.split(/(?=#\d+\s)/).filter(Boolean);
+  const attractions = [];
+
+  for (const block of blocks) {
+    const nameMatch = block.match(/^#\d+\s+(.+?)$/m);
+    if (!nameMatch) continue;
+
+    const latMatch = block.match(/Latitude:\s*([\d.-]+)/i);
+    const lngMatch = block.match(/Longitude:\s*([\d.-]+)/i);
+    if (!latMatch || !lngMatch) continue;
+
+    const lat = parseFloat(latMatch[1]);
+    const lng = parseFloat(lngMatch[1]);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
+
+    const catMatch = block.match(/Category:\s*(.+)/i);
+    const ratingMatch = block.match(/Rating:\s*([\d.]+)/i);
+    const priceMatch = block.match(/Price:\s*(.+)/i);
+    const durationMatch = block.match(/Duration:\s*(.+)/i);
+
+    // ── Filter out non-attraction entries (travel agencies, services, people) ──
+    const attractionName = nameMatch[1].trim();
+    const category = catMatch ? catMatch[1].trim().toLowerCase() : "";
+    const NON_ATTRACTION_PATTERNS = [
+      /\b(travels?|agency|tour operator|taxi|cab|car rental|transport|logistics|courier|shipping)\b/i,
+      /\b(consultanc|pvt\.?\s*ltd|llc|inc|corp|services?\s+(?:pvt|ltd|llp))\b/i,
+      /\b(atm|bank|hospital|clinic|pharmacy|petrol|gas station|police|post office)\b/i,
+    ];
+    const NON_ATTRACTION_CATEGORIES = [
+      "travel_agency", "taxi_stand", "car_rental", "bus_station",
+      "gas_station", "atm", "bank", "hospital", "pharmacy",
+      "police", "post_office", "insurance_agency", "real_estate_agency",
+      "moving_company", "locksmith", "electrician", "plumber",
+    ];
+    const isNonAttraction =
+      NON_ATTRACTION_PATTERNS.some((p) => p.test(attractionName)) ||
+      NON_ATTRACTION_CATEGORIES.includes(category) ||
+      // Single word names with no category are likely a person or business
+      (attractionName.split(/\s+/).length === 1 && !category);
+    if (isNonAttraction) {
+      logChat("info", "PARSE-ATTRACTIONS", `⏭️  Skipping non-attraction: "${attractionName}" (category: ${category || "none"})`);
+      continue;
+    }
+
+    // Derive visitDuration in minutes from duration text
+    let visitDuration = 60; // default
+    if (durationMatch) {
+      const durText = durationMatch[1].toLowerCase();
+      const hourM = durText.match(/(\d+)\s*h/); 
+      const minM = durText.match(/(\d+)\s*min/);
+      if (hourM) visitDuration = parseInt(hourM[1]) * 60;
+      if (minM) visitDuration += parseInt(minM[1]);
+    }
+
+    // Derive priority from rating (scale 1-10)
+    const rating = ratingMatch ? parseFloat(ratingMatch[1]) : 4.0;
+    const priority = Math.min(10, Math.max(1, Math.round(rating * 2)));
+
+    attractions.push({
+      id: `attr-${attractions.length + 1}`,
+      name: attractionName,
+      lat,
+      lng,
+      priority,
+      visitDuration,
+      category: catMatch ? catMatch[1].trim().toLowerCase() : "general",
+      image: "",
+      description: "",
+    });
+  }
+
+  return attractions.length > 0 ? attractions : null;
+};
+
+/**
+ * Parse destination and numDays from the user prompt text.
+ */
+const parseItineraryMeta = (text) => {
+  const destMatch = text.match(/Destination:\s*(.+)/i);
+  let destination = destMatch ? destMatch[1].trim() : null;
+  if (destination && destination.toLowerCase() === "unknown") destination = null;
+
+  // Try to extract numDays from the text
+  const dayMatch = text.match(/(\d+)\s*(?:day|days|night|nights)/i);
+  let numDays = dayMatch ? parseInt(dayMatch[1]) : null;
+
+  // Fallback: compute from dates if present
+  if (!numDays) {
+    const datesLine = text.match(/Dates:\s*(.+)/i);
+    if (datesLine) numDays = extractTotalDaysFromDates(datesLine[1]);
+  }
+
+  return { destination, numDays };
+};
+
+/**
+ * Call the itinerary planner service directly (no LLM needed).
+ * Returns a full response payload ready to send to the client.
+ */
+const callItineraryServiceDirect = async (attractions, meta) => {
+  const destination = meta.destination || (attractions[0]?.name ? attractions[0].name.split(",").pop()?.trim() : "Destination");
+
+  // Smart numDays: estimate total visit time & compare to daily budget (600 min)
+  // instead of the naive attractions.length / 4 which over-allocates days
+  const totalVisitMinutes = attractions.reduce((sum, a) => sum + (a.visitDuration || 60), 0);
+  const dailyBudget = meta.preferences?.maxDailyMinutes || 600;
+  // Add ~20% overhead for travel between attractions
+  const estimatedTotalMinutes = totalVisitMinutes * 1.2;
+  const numDays = meta.numDays || Math.max(1, Math.ceil(estimatedTotalMinutes / dailyBudget));
+
+  const itineraryService = config.services.itinerary;
+  const url = `${itineraryService.baseUrl}${itineraryService.path}`;
+
+  logChat("info", "DIRECT-ITINERARY", `🗓️  Calling itinerary service directly`, {
+    destination,
+    numDays,
+    attractionCount: attractions.length,
+    url,
+  });
+
+  const body = {
+    destination,
+    numDays,
+    attractions,
+    preferences: { dayStartTime: "09:00", maxDailyMinutes: 600 },
+  };
+
+  logChat("info", "DIRECT-ITINERARY", `📤 REQUEST PAYLOAD`, {
+    destination: body.destination,
+    numDays: body.numDays,
+    attractionCount: body.attractions.length,
+    attractions: body.attractions.map((a) => ({ id: a.id, name: a.name, lat: a.lat, lng: a.lng, priority: a.priority, visitDuration: a.visitDuration, category: a.category })),
+    preferences: body.preferences,
+  });
+
+  try {
+    const response = await requestJson({
+      baseUrl: itineraryService.baseUrl,
+      path: itineraryService.path,
+      method: itineraryService.method,
+      body,
+      timeoutMs: 15000,
+    });
+
+    logChat("info", "DIRECT-ITINERARY", `📥 Service responded`, {
+      ok: response.ok,
+      status: response.status,
+    });
+
+    if (!response.ok) {
+      logChat("error", "DIRECT-ITINERARY", `❌ Service error`, { text: response.text?.slice(0, 500) });
+      return null;
+    }
+
+    const result = response.json;
+    const data = result?.data ?? result;
+
+    logChat("info", "DIRECT-ITINERARY", `📥 RESPONSE DATA`, {
+      success: result?.success,
+      numDays: data?.numDays,
+      dailyPlanDays: (data?.dailyPlan || []).length,
+      dailyPlan: (data?.dailyPlan || []).map((d) => ({
+        day: d.day,
+        title: d.title,
+        stopCount: (d.stops || []).length,
+        stops: (d.stops || []).map((s) => ({ seq: s.seq, name: s.name, arrival: s.arrivalTime, departure: s.departureTime })),
+        summary: d.summary,
+      })),
+      unassigned: (data?.unassigned || []).map((u) => u.name || u.id),
+      summary: data?.summary,
+      notes: data?.notes,
+    });
+
+    // Build tool-results array so builders.js can process it
+    const toolResults = [{
+      service: "itinerary",
+      ok: true,
+      data: result,
+      request: body,
+    }];
+
+    const intent = { name: "itinerary_generate", confidence: 0.95, slots: { destination, numDays } };
+
+    const dailyStopNames = (data.dailyPlan || []).map(
+      (d) => `Day ${d.day}: ${d.stops?.map((s) => s.name).join(" → ") || "rest"}`
+    );
+
+    // Build the plan first so we can use actual counts in the reply
+    const activeDays = (data.dailyPlan || []).filter((d) => (d.stops || []).length > 0);
+    const actualDays = activeDays.length || 1;
+    const assignedCount = data.summary?.assignedAttractions ?? attractions.length;
+
+    const structured = {
+      reply: `Here is your optimised ${actualDays}-day itinerary for ${destination} with ${assignedCount} attractions!`,
+      summary: `Generated in ${data.summary?.algorithmMs ?? 0}ms using TOPTW algorithm.`,
+      recommendations: dailyStopNames,
+      next_questions: [
+        "Would you like to adjust any day?",
+        "Search for hotels near these attractions?",
+        "Download this itinerary as PDF?",
+      ],
+      itinerary: {
+        destination,
+        totalDays: actualDays,
+        dailyPlan: activeDays
+          .map((d, idx) => {
+            const stops = d.stops || [];
+            const regionParts = stops.map((s) => s.name);
+            return {
+              day: idx + 1,   // re-number after filtering
+              region: `${destination} – ${regionParts.slice(0, 2).join(", ")}${regionParts.length > 2 ? " & more" : ""}`,
+              activities: regionParts,
+              totalDurationHours: Math.round((d.summary?.totalMinutes || 0) / 60 * 10) / 10,
+            };
+          }),
+        unassignedAttractions: (data.unassigned || []).map((u) => u.name || u.id || "Unknown"),
+        warnings: data.notes || [],
+      },
+    };
+
+    const ui = buildUiForIntent({ intent, structuredPayload: structured, toolResults });
+
+    return {
+      schemaVersion: "2026-02-05",
+      message: structured.reply,
+      structured,
+      itinerary: structured.itinerary,
+      intent,
+      ui: ui || { version: "2026-02-05", blocks: [] },
+      uiBlocks: ui ? { blocks: ui.blocks } : null,
+      errors: [],
+      toolCalls: [],
+    };
+  } catch (error) {
+    logChat("error", "DIRECT-ITINERARY", `💥 Service call failed`, { error: error.message });
+    return null;
+  }
+};
+
+const detectUserIntent = (userText) => {
+  if (!userText || typeof userText !== "string") return null;
+  const text = userText.toLowerCase().trim();
+
+  // Extract destination from common patterns
+  const destPatterns = [
+    /(?:in|to|at|for|near|around)\s+([a-zA-Z][\w\s,]+?)(?:\s+(?:from|on|for|between|check|with|please|thanks|$))/i,
+    /^(?:hotels?|flights?|attractions?|weather|visit|explore|things to do)\s+(?:in|to|at|near)\s+(.+?)$/i,
+  ];
+  let destination = null;
+  for (const pattern of destPatterns) {
+    const match = text.match(pattern);
+    if (match) { destination = match[1].trim().replace(/[.,!?]+$/, ""); break; }
+  }
+
+  // Detect service type
+  if (/hotel|hotels|stay|accommodation|room|lodge|hostel|resort|booking/i.test(text)) {
+    return { type: "hotel", destination };
+  }
+  if (/flight|flights|fly|flying|airline|plane|ticket|airfare/i.test(text)) {
+    return { type: "flight", destination };
+  }
+  if (/attraction|visit|see|sightseeing|landmark|places|things to do|explore|tour|what to do/i.test(text)) {
+    return { type: "attraction", destination };
+  }
+  if (/weather|temperature|forecast|rain|climate/i.test(text)) {
+    return { type: "weather", destination };
+  }
+  if (/itinerary|plan my days|generate.*itinerary|create.*itinerary|selected attract/i.test(text)) {
+    return { type: "itinerary", destination };
+  }
+  if (destination) {
+    return { type: "general_travel", destination };
+  }
+  return null;
+};
+
 const buildResponse = (messages) => {
   logChat("info", "RESPONSE-BUILDER", "🔨 Building response from messages", { messageCount: messages.length });
 
@@ -249,6 +541,80 @@ const buildResponse = (messages) => {
     structuredPayload.reply = "Sure — select the options below so I can tailor your plan.";
   }
 
+  // 🚨 REFUSAL DETECTION: Detect and override "I cannot assist" type responses
+  const refusalPatterns = [
+    /i cannot assist/i,
+    /i am unable to assist/i,
+    /i apologize.*but.*cannot/i,
+    /my current tools.*cannot/i,
+    /i'm not able to/i,
+    /i don't have the ability/i,
+    /outside.*my capabilities/i,
+    /let me know your destination/i,
+    /what are your travel dates/i,
+  ];
+
+  const replyText = structuredPayload?.reply || content || "";
+  const isRefusal = refusalPatterns.some(pattern => pattern.test(replyText));
+
+  if (isRefusal && toolResults.length === 0) {
+    logChat("warn", "RESPONSE-BUILDER", `🚨 REFUSAL DETECTED - Overriding with context-aware response`);
+
+    // Detect what user was actually asking about from the last human message
+    const lastHuman = extractLastHumanMessage(messages);
+    const userText = (typeof lastHuman?.content === "string" ? lastHuman.content : "").toLowerCase();
+
+    const hotelKeywords = /hotel|hotels|stay|accommodation|room|lodge|hostel|resort|booking/i;
+    const flightKeywords = /flight|flights|fly|flying|airline|plane|ticket|airfare/i;
+    const attractionKeywords = /attraction|visit|see|sightseeing|landmark|places|things to do|explore|tour/i;
+    const weatherKeywords = /weather|temperature|forecast|rain|climate/i;
+
+    // Extract destination from user message
+    const destMatch = userText.match(/(?:in|to|at|for|near)\s+([a-zA-Z\s,]+?)(?:\s+(?:from|on|for|between|check|with)|$)/i);
+    const destination = destMatch ? destMatch[1].trim() : null;
+
+    if (hotelKeywords.test(userText)) {
+      const dest = destination || "your chosen city";
+      structuredPayload.reply = `Great, I can search hotels in ${dest}! To find the best options, I just need a few details:`;
+      structuredPayload.next_questions = [
+        "What are your check-in and check-out dates?",
+        "How many guests will be staying?",
+        "Do you have a budget preference (budget, mid-range, luxury)?",
+      ];
+    } else if (flightKeywords.test(userText)) {
+      const dest = destination || "your destination";
+      structuredPayload.reply = `I'll find flights to ${dest} for you! I just need a bit more info:`;
+      structuredPayload.next_questions = [
+        "Where are you flying from?",
+        "What is your departure date?",
+        "How many passengers?",
+      ];
+    } else if (attractionKeywords.test(userText) || destination) {
+      const dest = destination || "your destination";
+      structuredPayload.reply = `Let me find the best places to visit in ${dest}! What kind of activities interest you?`;
+      structuredPayload.next_questions = [
+        "Historical sites & museums",
+        "Nature & outdoor activities",
+        "Food & local cuisine",
+        "Shopping & markets",
+      ];
+    } else if (weatherKeywords.test(userText)) {
+      const dest = destination || "your destination";
+      structuredPayload.reply = `I'll check the weather in ${dest}! When are you planning to visit?`;
+      structuredPayload.next_questions = [
+        "What dates are you planning to visit?",
+      ];
+    } else {
+      structuredPayload.reply = "I'd love to help with your travel plans! What would you like to explore?";
+      structuredPayload.next_questions = [
+        "Search hotels in a city",
+        "Find flights to a destination",
+        "Discover attractions & things to do",
+        "Check weather at a destination",
+      ];
+    }
+  }
+
   logChat("success", "RESPONSE-BUILDER", `✅ Response built successfully`);
   return {
     schemaVersion: "2026-02-05",
@@ -289,7 +655,34 @@ router.post("/chat", async (req, res) => {
       isNew: !sessionId || sessionId !== session.id,
     });
 
-    const userMessage = new HumanMessage(message);
+    // ── DIRECT ITINERARY BYPASS ──────────────────────────────────────
+    // When user sends selected attractions, skip LLM and call solver directly
+    const selectedAttractions = parseSelectedAttractions(message);
+    if (selectedAttractions) {
+      logChat("info", "CHAT-API", `🗓️  Detected ${selectedAttractions.length} selected attractions — using direct itinerary path`);
+      const meta = parseItineraryMeta(message);
+      const directResult = await callItineraryServiceDirect(selectedAttractions, meta);
+      if (directResult) {
+        const totalDuration = Date.now() - startTime;
+        logChat("success", "CHAT-API", `🏁 Request [${requestId}] completed via DIRECT ITINERARY in ${totalDuration}ms`);
+        console.log(`${"█".repeat(70)}\n`);
+        return res.json({ sessionId: session.id, ...directResult });
+      }
+      logChat("warn", "CHAT-API", `⚠️ Direct itinerary failed, falling back to LLM`);
+    }
+    // ── END DIRECT ITINERARY BYPASS ──────────────────────────────────
+
+    // Enhance the user message with intent hints for the model
+    const detectedIntent = detectUserIntent(message);
+    let finalMessageText = message;
+    if (detectedIntent) {
+      logChat("info", "CHAT-API", `🎯 Pre-detected intent: ${detectedIntent.type}`, detectedIntent);
+      if (detectedIntent.destination) {
+        finalMessageText = `${message}\n[SYSTEM HINT: User is asking about ${detectedIntent.type} for "${detectedIntent.destination}". If you have enough data to call a tool, call it. Otherwise ask ONLY for the missing required fields. Do NOT ask for destination again.]`;
+      }
+    }
+
+    const userMessage = new HumanMessage(finalMessageText);
     const inputMessages = [...session.messages, userMessage];
     logChat("info", "CHAT-API", `📊 Total messages to process: ${inputMessages.length}`);
 
@@ -357,6 +750,7 @@ router.post("/chat/stream", async (req, res) => {
     "Content-Type": "text/event-stream",
     "Cache-Control": "no-cache",
     Connection: "keep-alive",
+    "Access-Control-Allow-Origin": "*",
   });
 
   const sendEvent = (event, data) => {
@@ -366,7 +760,29 @@ router.post("/chat/stream", async (req, res) => {
 
   try {
     const session = getOrCreateSession(sessionId);
-    const userMessage = new HumanMessage(message);
+
+    // ── DIRECT ITINERARY BYPASS (stream) ─────────────────────────────
+    const streamAttractions = parseSelectedAttractions(message);
+    if (streamAttractions) {
+      const meta = parseItineraryMeta(message);
+      const directResult = await callItineraryServiceDirect(streamAttractions, meta);
+      if (directResult) {
+        sendEvent("meta", { sessionId: session.id });
+        sendEvent("final", directResult);
+        res.end();
+        return;
+      }
+    }
+    // ── END DIRECT ITINERARY BYPASS (stream) ─────────────────────────
+
+    // Enhance the user message with intent hints for the model
+    const streamIntent = detectUserIntent(message);
+    let streamMessageText = message;
+    if (streamIntent?.destination) {
+      streamMessageText = `${message}\n[SYSTEM HINT: User is asking about ${streamIntent.type} for "${streamIntent.destination}". If you have enough data to call a tool, call it. Otherwise ask ONLY for the missing required fields. Do NOT ask for destination again.]`;
+    }
+
+    const userMessage = new HumanMessage(streamMessageText);
     const inputMessages = [...session.messages, userMessage];
 
     sendEvent("meta", { sessionId: session.id });

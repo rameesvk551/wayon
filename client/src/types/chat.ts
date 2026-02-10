@@ -35,7 +35,7 @@ export interface TravelDayPlan {
 
 export interface SightseeingDayPlan {
     day: number;
-    region: string;
+    region?: string;
     activities: string[];
     totalDurationHours: number;
 }

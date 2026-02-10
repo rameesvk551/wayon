@@ -3,6 +3,7 @@ import cors from "cors";
 import config from "./config.js";
 import chatRoutes from "./routes/chat.js";
 import healthRoutes from "./routes/health.js";
+import whatsappRoutes from "./routes/whatsapp.js";
 
 const app = express();
 
@@ -11,6 +12,7 @@ app.use(express.json({ limit: "1mb" }));
 
 app.use("/api", healthRoutes);
 app.use("/api", chatRoutes);
+app.use("/whatsapp", whatsappRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ error: "Route not found" });

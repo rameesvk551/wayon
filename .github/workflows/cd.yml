@@ -1,0 +1,284 @@
+name: CD - Deploy AI Trip Planning to AWS ECS
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+      components:
+        description: 'Components to deploy'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - client
+          - server
+
+env:
+  AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
+  ECR_REGISTRY: ${{ vars.ECR_REGISTRY }}
+  ECS_CLUSTER_STAGING: ai-trip-staging-cluster
+  ECS_CLUSTER_PRODUCTION: ai-trip-production-cluster
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      client: ${{ steps.changes.outputs.client }}
+      server: ${{ steps.changes.outputs.server }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      
+      - name: Detect changes
+        id: changes
+        run: |
+          if [ "${{ github.event.inputs.components }}" = "all" ] || [ -z "${{ github.event.inputs.components }}" ]; then
+            # Check for changes
+            if git diff --name-only HEAD~1 HEAD | grep -q '^client/'; then
+              echo "client=true" >> $GITHUB_OUTPUT
+            else
+              echo "client=false" >> $GITHUB_OUTPUT
+            fi
+            
+            if git diff --name-only HEAD~1 HEAD | grep -q '^server/'; then
+              echo "server=true" >> $GITHUB_OUTPUT
+            else
+              echo "server=false" >> $GITHUB_OUTPUT
+            fi
+          else
+            # Use specified component
+            echo "client=${{ github.event.inputs.components == 'client' || github.event.inputs.components == 'all' }}" >> $GITHUB_OUTPUT
+            echo "server=${{ github.event.inputs.components == 'server' || github.event.inputs.components == 'all' }}" >> $GITHUB_OUTPUT
+          fi
+
+  build-client:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.client == 'true'
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push client image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          cd client
+          
+          DOCKER_BUILDKIT=1 docker build \
+            --build-arg VITE_API_URL=${{ vars.VITE_API_URL }} \
+            --cache-from $ECR_REGISTRY/ai-trip-client:latest \
+            -t $ECR_REGISTRY/ai-trip-client:$IMAGE_TAG \
+            -t $ECR_REGISTRY/ai-trip-client:latest \
+            .
+          
+          docker push $ECR_REGISTRY/ai-trip-client:$IMAGE_TAG
+          docker push $ECR_REGISTRY/ai-trip-client:latest
+          
+          echo "IMAGE=$ECR_REGISTRY/ai-trip-client:$IMAGE_TAG" >> $GITHUB_ENV
+
+      - name: Save image info
+        run: echo "$IMAGE" > /tmp/client-image.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: client-image
+          path: /tmp/client-image.txt
+
+  build-server:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.server == 'true'
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push server image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          cd server
+          
+          DOCKER_BUILDKIT=1 docker build \
+            --cache-from $ECR_REGISTRY/ai-trip-server:latest \
+            -t $ECR_REGISTRY/ai-trip-server:$IMAGE_TAG \
+            -t $ECR_REGISTRY/ai-trip-server:latest \
+            .
+          
+          docker push $ECR_REGISTRY/ai-trip-server:$IMAGE_TAG
+          docker push $ECR_REGISTRY/ai-trip-server:latest
+          
+          echo "IMAGE=$ECR_REGISTRY/ai-trip-server:$IMAGE_TAG" >> $GITHUB_ENV
+
+      - name: Save image info
+        run: echo "$IMAGE" > /tmp/server-image.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: server-image
+          path: /tmp/server-image.txt
+
+  deploy-staging:
+    needs: [build-client, build-server]
+    if: always() && (needs.build-client.result == 'success' || needs.build-client.result == 'skipped') && (needs.build-server.result == 'success' || needs.build-server.result == 'skipped') && github.event.inputs.environment != 'production'
+    runs-on: ubuntu-latest
+    environment: staging
+    
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Download client image artifact
+        if: needs.build-client.result == 'success'
+        uses: actions/download-artifact@v4
+        with:
+          name: client-image
+          path: /tmp
+        continue-on-error: true
+
+      - name: Download server image artifact
+        if: needs.build-server.result == 'success'
+        uses: actions/download-artifact@v4
+        with:
+          name: server-image
+          path: /tmp
+        continue-on-error: true
+
+      - name: Deploy client to ECS Staging
+        if: needs.build-client.result == 'success'
+        run: |
+          aws ecs update-service \
+            --cluster ${{ env.ECS_CLUSTER_STAGING }} \
+            --service ai-trip-client \
+            --force-new-deployment \
+            --region ${{ env.AWS_REGION }}
+
+      - name: Deploy server to ECS Staging
+        if: needs.build-server.result == 'success'
+        run: |
+          aws ecs update-service \
+            --cluster ${{ env.ECS_CLUSTER_STAGING }} \
+            --service ai-trip-server \
+            --force-new-deployment \
+            --region ${{ env.AWS_REGION }}
+
+      - name: Wait for services to stabilize
+        run: |
+          if [ -f /tmp/client-image.txt ]; then
+            aws ecs wait services-stable --cluster ${{ env.ECS_CLUSTER_STAGING }} --services ai-trip-client --region ${{ env.AWS_REGION }} || true
+          fi
+          if [ -f /tmp/server-image.txt ]; then
+            aws ecs wait services-stable --cluster ${{ env.ECS_CLUSTER_STAGING }} --services ai-trip-server --region ${{ env.AWS_REGION }} || true
+          fi
+
+  deploy-production:
+    needs: [build-client, build-server, deploy-staging]
+    if: always() && needs.deploy-staging.result == 'success' && (github.event.inputs.environment == 'production' || github.ref == 'refs/heads/main')
+    runs-on: ubuntu-latest
+    environment: production
+    
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN_PROD }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Download client image artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: client-image
+          path: /tmp
+        continue-on-error: true
+
+      - name: Download server image artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: server-image
+          path: /tmp
+        continue-on-error: true
+
+      - name: Deploy client to ECS Production
+        if: hashFiles('/tmp/client-image.txt') != ''
+        run: |
+          aws ecs update-service \
+            --cluster ${{ env.ECS_CLUSTER_PRODUCTION }} \
+            --service ai-trip-client \
+            --force-new-deployment \
+            --region ${{ env.AWS_REGION }}
+
+      - name: Deploy server to ECS Production
+        if: hashFiles('/tmp/server-image.txt') != ''
+        run: |
+          aws ecs update-service \
+            --cluster ${{ env.ECS_CLUSTER_PRODUCTION }} \
+            --service ai-trip-server \
+            --force-new-deployment \
+            --region ${{ env.AWS_REGION }}
+
+      - name: Wait for services to stabilize
+        run: |
+          if [ -f /tmp/client-image.txt ]; then
+            aws ecs wait services-stable --cluster ${{ env.ECS_CLUSTER_PRODUCTION }} --services ai-trip-client --region ${{ env.AWS_REGION }} || true
+          fi
+          if [ -f /tmp/server-image.txt ]; then
+            aws ecs wait services-stable --cluster ${{ env.ECS_CLUSTER_PRODUCTION }} --services ai-trip-server --region ${{ env.AWS_REGION }} || true
+          fi
+
+  notify:
+    needs: [deploy-staging, deploy-production]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Deployment Summary
+        run: |
+          echo "## AI Trip Planning Deployment" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Environment | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Staging | ${{ needs.deploy-staging.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Production | ${{ needs.deploy-production.result }} |" >> $GITHUB_STEP_SUMMARY

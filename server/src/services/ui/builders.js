@@ -370,6 +370,76 @@ export const buildBlocksFromTools = (toolResults) => {
         }
         break;
       }
+      case "itinerary": {
+        // The itinerary service wraps its payload in { success, data }
+        const itinData = data?.data ?? data;
+        const dailyPlan = itinData?.dailyPlan ?? [];
+        const mapData = itinData?.mapData;
+        const summary = itinData?.summary;
+        const notes = itinData?.notes ?? [];
+
+        if (dailyPlan.length > 0) {
+          // Summary alert
+          if (summary) {
+            blocks.push({
+              type: "alert",
+              level: "success",
+              text: `✅ ${summary.assignedAttractions}/${summary.totalAttractions} attractions planned across ${dailyPlan.length} day(s) — optimised in ${summary.algorithmMs}ms`,
+            });
+          }
+
+          // Unassigned warning
+          const unassigned = itinData?.unassigned ?? [];
+          if (unassigned.length > 0) {
+            blocks.push({
+              type: "alert",
+              level: "warning",
+              text: `⚠️ ${unassigned.length} attraction(s) could not fit: ${unassigned.map((u) => u.name).join(", ")}`,
+            });
+          }
+
+          // Notes
+          for (const note of notes) {
+            blocks.push({ type: "alert", level: "info", text: note });
+          }
+
+          // Timeline per day
+          for (const day of dailyPlan) {
+            blocks.push({
+              type: "timeline",
+              title: day.title || `Day ${day.day}`,
+              subtitle: `${day.stops.length} stops · ${day.summary.totalVisitMinutes} min visiting · ${day.summary.totalTravelMinutes} min travel`,
+              items: day.stops.map((stop) => ({
+                time: `${stop.arrivalTime} – ${stop.departureTime}`,
+                title: stop.name,
+                description: stop.description || stop.category || "",
+                icon: stop.transportMode === "WALKING" ? "🚶" : stop.transportMode === "CYCLING" ? "🚲" : stop.transportMode === "DRIVING" ? "🚗" : "🚌",
+                metadata: {
+                  duration: `${stop.visitDurationMinutes} min`,
+                  travel: stop.travelFromPrevMinutes > 0 ? `${stop.travelFromPrevMinutes} min (${stop.distanceFromPrevKm} km)` : undefined,
+                  transport: stop.transportMode,
+                },
+              })),
+            });
+          }
+
+          // Map with all markers
+          if (mapData && mapData.markers?.length > 0) {
+            blocks.push({
+              type: "map",
+              center: mapData.centre,
+              zoom: 12,
+              markers: mapData.markers.map((m) => ({
+                lat: m.lat,
+                lng: m.lng,
+                label: m.label,
+                popup: `Day ${m.day}: ${m.label}`,
+              })),
+            });
+          }
+        }
+        break;
+      }
       default:
         break;
     }

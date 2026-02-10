@@ -13,7 +13,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { useRouter } from 'expo-router';
 import { useTripStore } from '../../store';
 import { Card } from '../../components/ui';
-import { colors, fontSize, spacing, borderRadius, shadows } from '../../theme';
+import { colors, spacing, shadows, fonts } from '../../theme';
 
 const getStatusColor = (status: string) => {
     switch (status) {
@@ -69,8 +69,8 @@ export default function TripsScreen() {
         <SafeAreaView style={styles.container}>
             <View style={styles.header}>
                 <Text style={styles.title}>My Trips</Text>
-                <TouchableOpacity>
-                    <Ionicons name="add-circle" size={32} color={colors.primary.DEFAULT} />
+                <TouchableOpacity style={styles.addBtn}>
+                    <Ionicons name="add" size={20} color={colors.white} />
                 </TouchableOpacity>
             </View>
 
@@ -157,30 +157,39 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingHorizontal: spacing.xl,
         paddingTop: spacing.md,
+        marginBottom: spacing.md,
     },
     title: {
-        fontSize: fontSize['2xl'],
-        fontWeight: '700',
+        fontSize: 24,
+        fontFamily: fonts.bodyBold,
         color: colors.text.primary,
+    },
+    addBtn: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: colors.primary.DEFAULT,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     tabs: {
         flexDirection: 'row',
         paddingHorizontal: spacing.xl,
-        marginTop: spacing.lg,
-        gap: spacing.sm,
+        gap: 8,
+        marginBottom: spacing.lg,
     },
     tab: {
-        paddingHorizontal: spacing.md,
-        paddingVertical: spacing.sm,
-        borderRadius: borderRadius.full,
+        paddingHorizontal: 18,
+        paddingVertical: 10,
+        borderRadius: 24,
         backgroundColor: colors.background.secondary,
     },
     tabActive: {
         backgroundColor: colors.primary.DEFAULT,
     },
     tabText: {
-        fontSize: fontSize.sm,
-        fontWeight: '600',
+        fontSize: 14,
+        fontFamily: fonts.bodySemibold,
         color: colors.text.muted,
     },
     tabTextActive: {
@@ -188,13 +197,13 @@ const styles = StyleSheet.create({
     },
     content: {
         flex: 1,
-        paddingTop: spacing.lg,
+        paddingHorizontal: spacing.xl,
     },
     tripCard: {
-        marginHorizontal: spacing.xl,
-        marginBottom: spacing.md,
+        marginBottom: 16,
         padding: 0,
         overflow: 'hidden',
+        borderRadius: 16,
     },
     tripImage: {
         width: '100%',
@@ -203,15 +212,15 @@ const styles = StyleSheet.create({
     },
     statusBadge: {
         position: 'absolute',
-        top: spacing.sm,
-        left: spacing.sm,
+        top: 12,
+        left: 12,
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: colors.white,
-        paddingHorizontal: spacing.sm,
-        paddingVertical: 4,
-        borderRadius: borderRadius.full,
-        gap: 4,
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 20,
+        gap: 6,
     },
     statusDot: {
         width: 8,
@@ -219,31 +228,31 @@ const styles = StyleSheet.create({
         borderRadius: 4,
     },
     statusText: {
-        fontSize: fontSize.xs,
-        fontWeight: '600',
+        fontSize: 12,
+        fontFamily: fonts.bodySemibold,
     },
     tripInfo: {
-        padding: spacing.md,
+        padding: 16,
     },
     tripDestination: {
-        fontSize: fontSize.lg,
-        fontWeight: '700',
+        fontSize: 18,
+        fontFamily: fonts.bodyBold,
         color: colors.text.primary,
     },
     tripMeta: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 4,
-        marginTop: 4,
+        marginTop: 6,
     },
     tripDates: {
-        fontSize: fontSize.sm,
+        fontSize: 13,
         color: colors.text.muted,
     },
     tripDetails: {
         flexDirection: 'row',
-        gap: spacing.lg,
-        marginTop: spacing.sm,
+        gap: 24,
+        marginTop: 12,
     },
     tripDetail: {
         flexDirection: 'row',
@@ -251,22 +260,22 @@ const styles = StyleSheet.create({
         gap: 4,
     },
     tripDetailText: {
-        fontSize: fontSize.sm,
-        fontWeight: '600',
+        fontSize: 14,
+        fontFamily: fonts.bodySemibold,
         color: colors.text.secondary,
     },
     emptyState: {
         alignItems: 'center',
-        padding: spacing.xxl,
+        paddingVertical: 60,
     },
     emptyTitle: {
-        fontSize: fontSize.lg,
-        fontWeight: '600',
+        fontSize: 18,
+        fontFamily: fonts.bodySemibold,
         color: colors.text.secondary,
-        marginTop: spacing.md,
+        marginTop: 16,
     },
     emptySubtitle: {
-        fontSize: fontSize.sm,
+        fontSize: 13,
         color: colors.text.muted,
         marginTop: 4,
     },

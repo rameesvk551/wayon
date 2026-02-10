@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Home, MessageCircle, Briefcase } from 'lucide-react';
+import { Home, Compass, LayoutGrid, Heart, User } from 'lucide-react';
 
 interface MobileLayoutProps {
     children: React.ReactNode;
@@ -9,8 +9,10 @@ interface MobileLayoutProps {
 
 const tabs = [
     { id: 'home', label: 'Home', icon: Home },
-    { id: 'chat', label: 'AI Chat', icon: MessageCircle },
-    { id: 'trips', label: 'My Trips', icon: Briefcase },
+    { id: 'discover', label: 'Discover', icon: Compass },
+    { id: 'chat', label: 'Explore', icon: LayoutGrid },
+    { id: 'favorites', label: 'Favorites', icon: Heart },
+    { id: 'profile', label: 'Profile', icon: User },
 ];
 
 export const MobileLayout: React.FC<MobileLayoutProps> = ({
@@ -25,7 +27,7 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({
                 {children}
             </main>
 
-            {/* Bottom Tab Navigation */}
+            {/* Bottom Tab Navigation - 5 Icons */}
             <nav className="mobile-bottom-nav">
                 {tabs.map((tab) => {
                     const Icon = tab.icon;
@@ -48,20 +50,10 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({
                             >
                                 <Icon
                                     size={22}
-                                    strokeWidth={isActive ? 2.5 : 2}
-                                    className={isActive ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-muted)]'}
+                                    strokeWidth={isActive ? 2.5 : 1.5}
+                                    className={isActive ? 'text-white' : 'text-gray-500'}
                                 />
                             </motion.div>
-                            <span className={`mobile-tab-label ${isActive ? 'active' : ''}`}>
-                                {tab.label}
-                            </span>
-                            {isActive && (
-                                <motion.div
-                                    layoutId="activeTabIndicator"
-                                    className="mobile-tab-indicator"
-                                    transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                                />
-                            )}
                         </button>
                     );
                 })}

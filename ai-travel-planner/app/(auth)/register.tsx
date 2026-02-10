@@ -13,7 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter, Link } from 'expo-router';
 import { Button, Input } from '../../components/ui';
 import { useAuthStore } from '../../store';
-import { colors, fontSize, spacing } from '../../theme';
+import { colors, fontSize, spacing, fonts, gradients } from '../../theme';
 
 export default function RegisterScreen() {
     const router = useRouter();
@@ -53,7 +53,7 @@ export default function RegisterScreen() {
             <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
                 {/* Header */}
                 <LinearGradient
-                    colors={['#7C3AED', '#5B21B6']}
+                    colors={gradients.primary}
                     style={styles.header}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
@@ -162,7 +162,7 @@ const styles = StyleSheet.create({
     },
     headerTitle: {
         fontSize: 28,
-        fontWeight: '800',
+        fontFamily: fonts.bodyBold,
         color: colors.white,
     },
     headerSubtitle: {
@@ -187,7 +187,7 @@ const styles = StyleSheet.create({
     },
     termsLink: {
         color: colors.primary.DEFAULT,
-        fontWeight: '500',
+        fontFamily: fonts.bodyMedium,
     },
     loginContainer: {
         flexDirection: 'row',
@@ -201,6 +201,6 @@ const styles = StyleSheet.create({
     loginLink: {
         color: colors.accent.DEFAULT,
         fontSize: fontSize.base,
-        fontWeight: '700',
+        fontFamily: fonts.bodyBold,
     },
 });

@@ -11,7 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useAuthStore, useTripStore } from '../../store';
-import { colors, fontSize, spacing, borderRadius, shadows } from '../../theme';
+import { colors, spacing, shadows, fonts } from '../../theme';
 
 const menuItems = [
     { id: 'edit', label: 'Edit Profile', icon: 'person-outline', route: null },
@@ -99,7 +99,6 @@ export default function ProfileScreen() {
                             key={item.id}
                             style={[
                                 styles.menuItem,
-                                index === 0 && styles.menuItemFirst,
                                 index === menuItems.length - 1 && styles.menuItemLast,
                             ]}
                         >
@@ -151,10 +150,11 @@ const styles = StyleSheet.create({
     header: {
         paddingHorizontal: spacing.xl,
         paddingTop: spacing.md,
+        marginBottom: spacing.lg,
     },
     title: {
-        fontSize: fontSize['2xl'],
-        fontWeight: '700',
+        fontSize: 24,
+        fontFamily: fonts.bodyBold,
         color: colors.text.primary,
     },
     userCard: {
@@ -162,9 +162,8 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         backgroundColor: colors.white,
         marginHorizontal: spacing.xl,
-        marginTop: spacing.lg,
-        padding: spacing.md,
-        borderRadius: borderRadius.lg,
+        padding: 16,
+        borderRadius: 16,
         ...shadows.sm,
     },
     avatarContainer: {
@@ -180,12 +179,12 @@ const styles = StyleSheet.create({
         marginLeft: spacing.md,
     },
     userName: {
-        fontSize: fontSize.lg,
-        fontWeight: '700',
+        fontSize: 18,
+        fontFamily: fonts.bodyBold,
         color: colors.text.primary,
     },
     userEmail: {
-        fontSize: fontSize.sm,
+        fontSize: 14,
         color: colors.text.muted,
         marginTop: 2,
     },
@@ -201,9 +200,9 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         backgroundColor: colors.white,
         marginHorizontal: spacing.xl,
-        marginTop: spacing.md,
-        padding: spacing.lg,
-        borderRadius: borderRadius.lg,
+        marginTop: 12,
+        padding: 20,
+        borderRadius: 16,
         ...shadows.sm,
     },
     statItem: {
@@ -211,12 +210,12 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     statValue: {
-        fontSize: fontSize['2xl'],
-        fontWeight: '700',
+        fontSize: 24,
+        fontFamily: fonts.bodyBold,
         color: colors.primary.DEFAULT,
     },
     statLabel: {
-        fontSize: fontSize.sm,
+        fontSize: 13,
         color: colors.text.muted,
         marginTop: 2,
     },
@@ -228,26 +227,22 @@ const styles = StyleSheet.create({
         backgroundColor: colors.white,
         marginHorizontal: spacing.xl,
         marginTop: spacing.lg,
-        borderRadius: borderRadius.lg,
+        borderRadius: 16,
         ...shadows.sm,
     },
     menuItem: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingVertical: spacing.md,
-        paddingHorizontal: spacing.md,
+        paddingVertical: 14,
+        paddingHorizontal: 16,
         borderBottomWidth: 1,
         borderBottomColor: colors.background.secondary,
     },
-    menuItemFirst: {
-        borderTopLeftRadius: borderRadius.lg,
-        borderTopRightRadius: borderRadius.lg,
-    },
     menuItemLast: {
         borderBottomWidth: 0,
-        borderBottomLeftRadius: borderRadius.lg,
-        borderBottomRightRadius: borderRadius.lg,
+        borderBottomLeftRadius: 16,
+        borderBottomRightRadius: 16,
     },
     menuItemLeft: {
         flexDirection: 'row',
@@ -263,8 +258,8 @@ const styles = StyleSheet.create({
         marginRight: spacing.sm,
     },
     menuItemLabel: {
-        fontSize: fontSize.base,
-        fontWeight: '500',
+        fontSize: 15,
+        fontFamily: fonts.bodyMedium,
         color: colors.text.primary,
     },
     menuItemRight: {
@@ -273,7 +268,7 @@ const styles = StyleSheet.create({
         gap: 4,
     },
     menuItemValue: {
-        fontSize: fontSize.sm,
+        fontSize: 14,
         color: colors.text.muted,
     },
     logoutButton: {
@@ -283,18 +278,18 @@ const styles = StyleSheet.create({
         backgroundColor: colors.secondary.light + '20',
         marginHorizontal: spacing.xl,
         marginTop: spacing.lg,
-        padding: spacing.md,
-        borderRadius: borderRadius.lg,
+        padding: 14,
+        borderRadius: 16,
         gap: spacing.sm,
     },
     logoutText: {
-        fontSize: fontSize.base,
-        fontWeight: '600',
+        fontSize: 15,
+        fontFamily: fonts.bodySemibold,
         color: colors.secondary.DEFAULT,
     },
     version: {
         textAlign: 'center',
-        fontSize: fontSize.sm,
+        fontSize: 13,
         color: colors.text.light,
         marginTop: spacing.lg,
     },

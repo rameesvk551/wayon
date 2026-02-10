@@ -79,10 +79,11 @@ export const ProfileScreen: React.FC = () => {
                 {menuItems.map((item, index) => {
                     const Icon = item.icon;
                     return (
-                        <motion.button
+                        <motion.div
                             key={item.id}
                             whileTap={{ scale: 0.98 }}
                             className={`mobile-menu-item ${index === 0 ? 'first' : ''} ${index === menuItems.length - 1 ? 'last' : ''}`}
+                            style={{ cursor: 'pointer' }}
                         >
                             <div className="mobile-menu-left">
                                 <div className="mobile-menu-icon">
@@ -109,7 +110,7 @@ export const ProfileScreen: React.FC = () => {
                             ) : (
                                 <ChevronRight size={18} className="text-[var(--color-text-muted)]" />
                             )}
-                        </motion.button>
+                        </motion.div>
                     );
                 })}
             </div>

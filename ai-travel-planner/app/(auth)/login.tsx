@@ -14,7 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter, Link } from 'expo-router';
 import { Button, Input } from '../../components/ui';
 import { useAuthStore } from '../../store';
-import { colors, fontSize, spacing, borderRadius } from '../../theme';
+import { colors, fontSize, spacing, borderRadius, fonts, gradients } from '../../theme';
 
 export default function LoginScreen() {
     const router = useRouter();
@@ -55,7 +55,7 @@ export default function LoginScreen() {
             <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
                 {/* Header */}
                 <LinearGradient
-                    colors={['#00C9A7', '#0D9488']}
+                    colors={gradients.primary}
                     style={styles.header}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
@@ -167,7 +167,7 @@ const styles = StyleSheet.create({
     },
     headerTitle: {
         fontSize: 28,
-        fontWeight: '800',
+        fontFamily: fonts.bodyBold,
         color: colors.white,
     },
     headerSubtitle: {
@@ -187,7 +187,7 @@ const styles = StyleSheet.create({
     forgotPasswordText: {
         color: colors.primary.DEFAULT,
         fontSize: fontSize.sm,
-        fontWeight: '500',
+        fontFamily: fonts.bodyMedium,
     },
     loginButton: {
         marginTop: spacing.sm,
@@ -234,6 +234,6 @@ const styles = StyleSheet.create({
     signupLink: {
         color: colors.primary.DEFAULT,
         fontSize: fontSize.base,
-        fontWeight: '700',
+        fontFamily: fonts.bodyBold,
     },
 });

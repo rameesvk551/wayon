@@ -6,6 +6,7 @@ const TOOL_INTENT_MAP = {
   tour: "experience_list",
   transport: "transport_options",
   pdf: "itinerary_pdf",
+  itinerary: "itinerary_generate",
 };
 
 export const deriveIntent = ({ structured, toolResults, itinerary }) => {

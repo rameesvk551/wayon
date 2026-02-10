@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, borderRadius, spacing, fontSize, shadows } from '../../theme';
+import { colors, borderRadius, spacing, fontSize, shadows, fonts } from '../../theme';
 
 interface CardProps {
     children: React.ReactNode;
@@ -139,14 +139,14 @@ const styles = StyleSheet.create({
     ratingText: {
         color: colors.white,
         fontSize: fontSize.xs,
-        fontWeight: '600',
+        fontFamily: fonts.bodySemibold,
     },
     destinationInfo: {
         padding: spacing.sm,
     },
     destinationName: {
         fontSize: fontSize.base,
-        fontWeight: '700',
+        fontFamily: fonts.bodyBold,
         color: colors.text.primary,
     },
     destinationCountry: {
@@ -161,8 +161,8 @@ const styles = StyleSheet.create({
     },
     priceValue: {
         fontSize: fontSize.base,
-        fontWeight: '700',
-        color: colors.primary.dark,
+        fontFamily: fonts.bodyBold,
+        color: colors.primary.hover,
     },
     chip: {
         flexDirection: 'row',
@@ -171,7 +171,7 @@ const styles = StyleSheet.create({
         paddingVertical: spacing.sm,
         borderRadius: borderRadius.full,
         borderWidth: 1.5,
-        borderColor: colors.primary.DEFAULT,
+        borderColor: colors.border.DEFAULT,
         backgroundColor: colors.white,
         gap: spacing.xs,
     },
@@ -181,8 +181,8 @@ const styles = StyleSheet.create({
     },
     chipText: {
         fontSize: fontSize.sm,
-        fontWeight: '600',
-        color: colors.primary.DEFAULT,
+        fontFamily: fonts.bodySemibold,
+        color: colors.text.secondary,
     },
     chipTextSelected: {
         color: colors.white,

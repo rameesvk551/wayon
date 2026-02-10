@@ -61,6 +61,11 @@ const config = {
       path: process.env.TRANSPORT_PATH || "/api/v1/transport/multi-modal-route",
       method: (process.env.TRANSPORT_METHOD || "POST").toUpperCase(),
     },
+    itinerary: {
+      baseUrl: process.env.ITINERARY_SERVICE || "http://localhost:4010",
+      path: process.env.ITINERARY_PATH || "/api/v1/generate-itinerary",
+      method: (process.env.ITINERARY_METHOD || "POST").toUpperCase(),
+    },
   },
 };
 

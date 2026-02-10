@@ -15,7 +15,7 @@ interface TravelDayPlan {
 
 interface SightseeingDayPlan {
     day: number;
-    region: string;
+    region?: string;
     activities: string[];
     totalDurationHours: number;
 }
@@ -57,7 +57,7 @@ function isLeisureDay(day: DayPlan): day is LeisureDayPlan {
 }
 
 function isSightseeingDay(day: DayPlan): day is SightseeingDayPlan {
-    return 'region' in day && 'activities' in day;
+    return 'activities' in day && Array.isArray((day as SightseeingDayPlan).activities);
 }
 
 // Transport icon mapping
@@ -135,7 +135,7 @@ const DayCard: React.FC<{ day: DayPlan; index: number }> = ({ day, index }) => {
             <div className="day-sightseeing-content">
                 <div className="region-header">
                     <MapPin size={16} style={{ color: config.color }} />
-                    <span className="region-name">{day.region}</span>
+                    <span className="region-name">{day.region || 'Sightseeing'}</span>
                     <span className="duration-badge">
                         <Clock size={12} />
                         {day.totalDurationHours}h

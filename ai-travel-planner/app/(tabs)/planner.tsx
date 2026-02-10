@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import {
     View,
     Text,
@@ -6,667 +6,433 @@ import {
     ScrollView,
     TouchableOpacity,
     TextInput,
-    Animated,
-    Dimensions,
+    KeyboardAvoidingView,
+    Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { Button, CategoryChip } from '../../components/ui';
-import { useTripStore } from '../../store';
-import { colors, fontSize, spacing, borderRadius, shadows } from '../../theme';
+import { colors, spacing, borderRadius, shadows, fonts, gradients } from '../../theme';
 
-const { width } = Dimensions.get('window');
+type Message = {
+    id: string;
+    type: 'ai' | 'user';
+    content: string;
+    time: string;
+};
 
-// Wizard step configuration
-const steps = [
-    { id: 0, title: 'Destination', subtitle: 'Where to?' },
-    { id: 1, title: 'Duration', subtitle: 'How long?' },
-    { id: 2, title: 'Companions', subtitle: 'Who with?' },
-    { id: 3, title: 'Budget', subtitle: 'How much?' },
-    { id: 4, title: 'Style', subtitle: 'Travel style?' },
-    { id: 5, title: 'Interests', subtitle: 'What to do?' },
+const initialMessages: Message[] = [
+    {
+        id: 'm1',
+        type: 'ai',
+        content: "Hey there! ✨ I'm your AI travel companion. Let's plan your perfect trip together!",
+        time: '09:24',
+    },
 ];
 
-const durations = [
-    { id: 'weekend', label: 'Weekend', days: '2-3 days', icon: 'flash-outline' },
-    { id: '1-week', label: '1 Week', days: '7 days', icon: 'calendar-outline' },
-    { id: '2-weeks', label: '2 Weeks', days: '14 days', icon: 'calendar' },
-    { id: 'month', label: 'Month+', days: '30+ days', icon: 'time-outline' },
-];
-
-const companions = [
-    { id: 'solo', label: 'Solo', icon: 'person-outline', desc: 'Just me' },
-    { id: 'couple', label: 'Couple', icon: 'heart-outline', desc: 'Romantic getaway' },
-    { id: 'family', label: 'Family', icon: 'people-outline', desc: 'With kids' },
-    { id: 'friends', label: 'Friends', icon: 'happy-outline', desc: 'Group trip' },
-];
-
-const travelStyles = [
-    { id: 'budget', label: 'Budget', icon: 'wallet-outline', color: '#22C55E' },
-    { id: 'mid-range', label: 'Mid-Range', icon: 'card-outline', color: '#3B82F6' },
-    { id: 'luxury', label: 'Luxury', icon: 'diamond-outline', color: '#A855F7' },
-    { id: 'adventure', label: 'Adventure', icon: 'compass-outline', color: '#F97316' },
-];
-
-const interests = [
-    { id: 'adventure', label: 'Adventure', icon: 'rocket-outline' },
-    { id: 'culture', label: 'Culture', icon: 'library-outline' },
-    { id: 'food', label: 'Food & Drink', icon: 'restaurant-outline' },
-    { id: 'nature', label: 'Nature', icon: 'leaf-outline' },
-    { id: 'nightlife', label: 'Nightlife', icon: 'moon-outline' },
-    { id: 'shopping', label: 'Shopping', icon: 'bag-outline' },
-    { id: 'photography', label: 'Photography', icon: 'camera-outline' },
-    { id: 'wellness', label: 'Wellness', icon: 'fitness-outline' },
-    { id: 'history', label: 'History', icon: 'time-outline' },
-    { id: 'beach', label: 'Beach', icon: 'sunny-outline' },
-];
-
-const popularDestinations = [
-    { id: '1', name: 'Paris, France', emoji: '🗼' },
-    { id: '2', name: 'Tokyo, Japan', emoji: '🗾' },
-    { id: '3', name: 'Bali, Indonesia', emoji: '🏝️' },
-    { id: '4', name: 'Dubai, UAE', emoji: '🏙️' },
-    { id: '5', name: 'New York, USA', emoji: '🗽' },
+const suggestions = [
+    'Plan a 5-day trip',
+    'Beach destinations',
+    'Budget under $800',
+    'Family friendly ideas',
 ];
 
 export default function PlannerScreen() {
     const router = useRouter();
-    const {
-        wizardData,
-        currentStep,
-        totalSteps,
-        setDestination,
-        setDuration,
-        setCompanions,
-        setBudget,
-        setTravelStyle,
-        toggleInterest,
-        nextStep,
-        prevStep,
-        generateTrip,
-        isGenerating,
-    } = useTripStore();
+    const [messages, setMessages] = useState<Message[]>(initialMessages);
+    const [input, setInput] = useState('');
+    const [focused, setFocused] = useState(false);
+    const scrollRef = useRef<ScrollView>(null);
 
-    const [destinationInput, setDestinationInput] = useState(wizardData.destination || '');
-    const [budgetInput, setBudgetInput] = useState(wizardData.budget?.toString() || '');
+    const sendEnabled = input.trim().length > 0;
+    const currentTime = useMemo(() => {
+        const now = new Date();
+        return now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    }, [messages.length]);
 
-    const handleDestinationChange = (text: string) => {
-        setDestinationInput(text);
-        setDestination(text);
+    const handleSend = () => {
+        if (!sendEnabled) return;
+        const trimmed = input.trim();
+        const newMessage: Message = {
+            id: `${Date.now()}`,
+            type: 'user',
+            content: trimmed,
+            time: currentTime,
+        };
+        setMessages((prev) => [...prev, newMessage]);
+        setInput('');
+        setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 50);
     };
 
-    const handleBudgetChange = (text: string) => {
-        setBudgetInput(text);
-        const num = parseInt(text, 10);
-        if (!isNaN(num)) setBudget(num);
-    };
-
-    const canProceed = () => {
-        switch (currentStep) {
-            case 0: return !!wizardData.destination;
-            case 1: return !!wizardData.duration;
-            case 2: return !!wizardData.companions;
-            case 3: return !!wizardData.budget;
-            case 4: return !!wizardData.travelStyle;
-            case 5: return wizardData.interests.length >= 2;
-            default: return false;
-        }
-    };
-
-    const handleNext = async () => {
-        if (currentStep < totalSteps - 1) {
-            nextStep();
-        } else {
-            // Generate trip
-            const trip = await generateTrip();
-            if (trip) {
-                router.push('/(tabs)/trips');
-            }
-        }
-    };
-
-    const renderStepContent = () => {
-        switch (currentStep) {
-            case 0:
-                return (
-                    <View style={styles.stepContent}>
-                        {/* Search Input */}
-                        <View style={styles.searchContainer}>
-                            <Ionicons name="search" size={22} color={colors.text.muted} />
-                            <TextInput
-                                style={styles.searchInput}
-                                placeholder="Search destinations..."
-                                placeholderTextColor={colors.text.light}
-                                value={destinationInput}
-                                onChangeText={handleDestinationChange}
-                            />
-                        </View>
-
-                        {/* Popular Destinations */}
-                        <Text style={styles.sectionLabel}>Popular Destinations</Text>
-                        <View style={styles.chipsGrid}>
-                            {popularDestinations.map((dest) => (
-                                <TouchableOpacity
-                                    key={dest.id}
-                                    style={[
-                                        styles.destinationChip,
-                                        wizardData.destination === dest.name && styles.destinationChipSelected,
-                                    ]}
-                                    onPress={() => {
-                                        setDestinationInput(dest.name);
-                                        setDestination(dest.name);
-                                    }}
-                                >
-                                    <Text style={styles.chipEmoji}>{dest.emoji}</Text>
-                                    <Text
-                                        style={[
-                                            styles.chipLabel,
-                                            wizardData.destination === dest.name && styles.chipLabelSelected,
-                                        ]}
-                                    >
-                                        {dest.name}
-                                    </Text>
-                                </TouchableOpacity>
-                            ))}
-                        </View>
-                    </View>
-                );
-
-            case 1:
-                return (
-                    <View style={styles.stepContent}>
-                        <View style={styles.optionsGrid}>
-                            {durations.map((dur) => (
-                                <TouchableOpacity
-                                    key={dur.id}
-                                    style={[
-                                        styles.optionCard,
-                                        wizardData.duration === dur.id && styles.optionCardSelected,
-                                    ]}
-                                    onPress={() => setDuration(dur.id)}
-                                >
-                                    <Ionicons
-                                        name={dur.icon as any}
-                                        size={32}
-                                        color={wizardData.duration === dur.id ? colors.white : colors.primary.DEFAULT}
-                                    />
-                                    <Text
-                                        style={[
-                                            styles.optionLabel,
-                                            wizardData.duration === dur.id && styles.optionLabelSelected,
-                                        ]}
-                                    >
-                                        {dur.label}
-                                    </Text>
-                                    <Text
-                                        style={[
-                                            styles.optionDesc,
-                                            wizardData.duration === dur.id && styles.optionDescSelected,
-                                        ]}
-                                    >
-                                        {dur.days}
-                                    </Text>
-                                </TouchableOpacity>
-                            ))}
-                        </View>
-                    </View>
-                );
-
-            case 2:
-                return (
-                    <View style={styles.stepContent}>
-                        <View style={styles.optionsGrid}>
-                            {companions.map((comp) => (
-                                <TouchableOpacity
-                                    key={comp.id}
-                                    style={[
-                                        styles.optionCard,
-                                        wizardData.companions === comp.id && styles.optionCardSelected,
-                                    ]}
-                                    onPress={() => setCompanions(comp.id as any)}
-                                >
-                                    <Ionicons
-                                        name={comp.icon as any}
-                                        size={32}
-                                        color={wizardData.companions === comp.id ? colors.white : colors.primary.DEFAULT}
-                                    />
-                                    <Text
-                                        style={[
-                                            styles.optionLabel,
-                                            wizardData.companions === comp.id && styles.optionLabelSelected,
-                                        ]}
-                                    >
-                                        {comp.label}
-                                    </Text>
-                                    <Text
-                                        style={[
-                                            styles.optionDesc,
-                                            wizardData.companions === comp.id && styles.optionDescSelected,
-                                        ]}
-                                    >
-                                        {comp.desc}
-                                    </Text>
-                                </TouchableOpacity>
-                            ))}
-                        </View>
-                    </View>
-                );
-
-            case 3:
-                return (
-                    <View style={styles.stepContent}>
-                        <View style={styles.budgetContainer}>
-                            <Text style={styles.budgetLabel}>Total Budget (USD)</Text>
-                            <View style={styles.budgetInputContainer}>
-                                <Text style={styles.currencySymbol}>$</Text>
-                                <TextInput
-                                    style={styles.budgetInput}
-                                    placeholder="1000"
-                                    placeholderTextColor={colors.text.light}
-                                    value={budgetInput}
-                                    onChangeText={handleBudgetChange}
-                                    keyboardType="numeric"
-                                />
-                            </View>
-                            <View style={styles.budgetPresets}>
-                                {[500, 1000, 2000, 5000].map((amount) => (
-                                    <TouchableOpacity
-                                        key={amount}
-                                        style={[
-                                            styles.budgetPreset,
-                                            wizardData.budget === amount && styles.budgetPresetSelected,
-                                        ]}
-                                        onPress={() => {
-                                            setBudgetInput(amount.toString());
-                                            setBudget(amount);
-                                        }}
-                                    >
-                                        <Text
-                                            style={[
-                                                styles.budgetPresetText,
-                                                wizardData.budget === amount && styles.budgetPresetTextSelected,
-                                            ]}
-                                        >
-                                            ${amount}
-                                        </Text>
-                                    </TouchableOpacity>
-                                ))}
-                            </View>
-                        </View>
-                    </View>
-                );
-
-            case 4:
-                return (
-                    <View style={styles.stepContent}>
-                        <View style={styles.optionsGrid}>
-                            {travelStyles.map((style) => (
-                                <TouchableOpacity
-                                    key={style.id}
-                                    style={[
-                                        styles.optionCard,
-                                        wizardData.travelStyle === style.id && {
-                                            ...styles.optionCardSelected,
-                                            backgroundColor: style.color,
-                                        },
-                                    ]}
-                                    onPress={() => setTravelStyle(style.id as any)}
-                                >
-                                    <Ionicons
-                                        name={style.icon as any}
-                                        size={32}
-                                        color={wizardData.travelStyle === style.id ? colors.white : style.color}
-                                    />
-                                    <Text
-                                        style={[
-                                            styles.optionLabel,
-                                            wizardData.travelStyle === style.id && styles.optionLabelSelected,
-                                        ]}
-                                    >
-                                        {style.label}
-                                    </Text>
-                                </TouchableOpacity>
-                            ))}
-                        </View>
-                    </View>
-                );
-
-            case 5:
-                return (
-                    <View style={styles.stepContent}>
-                        <Text style={styles.sectionLabel}>
-                            Select at least 2 interests ({wizardData.interests.length} selected)
-                        </Text>
-                        <View style={styles.interestsGrid}>
-                            {interests.map((interest) => (
-                                <TouchableOpacity
-                                    key={interest.id}
-                                    style={[
-                                        styles.interestChip,
-                                        wizardData.interests.includes(interest.id) && styles.interestChipSelected,
-                                    ]}
-                                    onPress={() => toggleInterest(interest.id)}
-                                >
-                                    <Ionicons
-                                        name={interest.icon as any}
-                                        size={18}
-                                        color={
-                                            wizardData.interests.includes(interest.id)
-                                                ? colors.white
-                                                : colors.primary.DEFAULT
-                                        }
-                                    />
-                                    <Text
-                                        style={[
-                                            styles.interestLabel,
-                                            wizardData.interests.includes(interest.id) && styles.interestLabelSelected,
-                                        ]}
-                                    >
-                                        {interest.label}
-                                    </Text>
-                                </TouchableOpacity>
-                            ))}
-                        </View>
-                    </View>
-                );
-
-            default:
-                return null;
-        }
+    const handleSuggestion = (text: string) => {
+        setInput(text);
     };
 
     return (
-        <SafeAreaView style={styles.container}>
-            {/* Header */}
-            <LinearGradient
-                colors={['#00C9A7', '#0D9488']}
-                style={styles.header}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
+        <SafeAreaView style={styles.safeArea}>
+            <KeyboardAvoidingView
+                style={styles.container}
+                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+                keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
             >
-                <TouchableOpacity onPress={() => currentStep > 0 && prevStep()}>
-                    <Ionicons
-                        name="arrow-back"
-                        size={24}
-                        color={currentStep > 0 ? colors.white : 'transparent'}
-                    />
-                </TouchableOpacity>
-                <View style={styles.headerCenter}>
-                    <Text style={styles.headerTitle}>{steps[currentStep].title}</Text>
-                    <Text style={styles.headerSubtitle}>{steps[currentStep].subtitle}</Text>
-                </View>
-                <View style={{ width: 24 }} />
-            </LinearGradient>
+                <LinearGradient colors={gradients.primaryStrong} style={styles.header}>
+                    <View style={styles.headerBg} />
+                    <View style={styles.headerContent}>
+                        <View style={styles.avatarWrap}>
+                            <View style={styles.avatarRing} />
+                            <View style={styles.avatarInner}>
+                                <Ionicons name="sparkles" size={22} color={colors.white} />
+                            </View>
+                            <View style={styles.statusBadge}>
+                                <Text style={styles.statusBadgeText}>AI</Text>
+                            </View>
+                        </View>
 
-            {/* Progress Bar */}
-            <View style={styles.progressContainer}>
-                <View style={styles.progressBar}>
-                    <View
-                        style={[
-                            styles.progressFill,
-                            { width: `${((currentStep + 1) / totalSteps) * 100}%` },
-                        ]}
-                    />
-                </View>
-                <Text style={styles.progressText}>
-                    Step {currentStep + 1} of {totalSteps}
-                </Text>
-            </View>
+                        <View style={styles.headerInfo}>
+                            <Text style={styles.headerTitle}>Trip Planner AI</Text>
+                            <View style={styles.headerStatus}>
+                                <View style={styles.statusDot} />
+                                <Text style={styles.statusText}>Online • Ready to help</Text>
+                            </View>
+                        </View>
 
-            {/* Step Content */}
-            <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
-                {renderStepContent()}
-            </ScrollView>
+                        <View style={styles.headerActions}>
+                            <TouchableOpacity
+                                style={styles.headerActionBtn}
+                                onPress={() => router.push('/(tabs)/favorites')}
+                            >
+                                <Ionicons name="heart" size={18} color={colors.white} />
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={styles.headerActionBtn}
+                                onPress={() => router.push('/(tabs)/profile')}
+                            >
+                                <Ionicons name="ellipsis-vertical" size={18} color={colors.white} />
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </LinearGradient>
 
-            {/* Navigation */}
-            <View style={styles.footer}>
-                <Button
-                    title={currentStep === totalSteps - 1 ? 'Generate Trip' : 'Continue'}
-                    onPress={handleNext}
-                    disabled={!canProceed()}
-                    loading={isGenerating}
-                    size="lg"
-                    icon={
-                        <Ionicons
-                            name={currentStep === totalSteps - 1 ? 'sparkles' : 'arrow-forward'}
-                            size={20}
-                            color={colors.white}
+                <ScrollView
+                    ref={scrollRef}
+                    style={styles.messages}
+                    contentContainerStyle={styles.messagesContent}
+                    showsVerticalScrollIndicator={false}
+                >
+                    {messages.map((msg) => (
+                        <View
+                            key={msg.id}
+                            style={[
+                                styles.messageRow,
+                                msg.type === 'user' ? styles.messageRowUser : styles.messageRowAi,
+                            ]}
+                        >
+                            {msg.type === 'ai' ? (
+                                <View style={styles.aiAvatar}>
+                                    <Ionicons name="sparkles" size={14} color={colors.white} />
+                                </View>
+                            ) : null}
+                            <View
+                                style={[
+                                    styles.bubble,
+                                    msg.type === 'user' ? styles.bubbleUser : styles.bubbleAi,
+                                ]}
+                            >
+                                <Text
+                                    style={[
+                                        styles.bubbleText,
+                                        msg.type === 'user' ? styles.bubbleTextUser : styles.bubbleTextAi,
+                                    ]}
+                                >
+                                    {msg.content}
+                                </Text>
+                            </View>
+                            <Text style={styles.timeText}>{msg.time}</Text>
+                        </View>
+                    ))}
+                </ScrollView>
+
+                <View style={styles.inputSection}>
+                    <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={styles.suggestions}
+                    >
+                        {suggestions.map((item) => (
+                            <TouchableOpacity
+                                key={item}
+                                style={styles.suggestionChip}
+                                onPress={() => handleSuggestion(item)}
+                            >
+                                <Ionicons name="sparkles" size={12} color="#047857" />
+                                <Text style={styles.suggestionText}>{item}</Text>
+                            </TouchableOpacity>
+                        ))}
+                    </ScrollView>
+
+                    <View style={[styles.inputContainer, focused && styles.inputFocused]}>
+                        <TouchableOpacity style={styles.inputAction}>
+                            <Ionicons name="add" size={18} color="#94A3B8" />
+                        </TouchableOpacity>
+                        <TextInput
+                            value={input}
+                            onChangeText={setInput}
+                            placeholder="Ask anything about your trip..."
+                            placeholderTextColor="#94A3B8"
+                            style={styles.input}
+                            onFocus={() => setFocused(true)}
+                            onBlur={() => setFocused(false)}
                         />
-                    }
-                />
-            </View>
+                        <TouchableOpacity
+                            style={[styles.sendBtn, sendEnabled && styles.sendBtnActive]}
+                            onPress={handleSend}
+                            activeOpacity={0.85}
+                        >
+                            <Ionicons name="send" size={18} color={sendEnabled ? colors.white : '#94A3B8'} />
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </KeyboardAvoidingView>
         </SafeAreaView>
     );
 }
 
 const styles = StyleSheet.create({
+    safeArea: {
+        flex: 1,
+        backgroundColor: colors.background.DEFAULT,
+    },
     container: {
         flex: 1,
         backgroundColor: colors.background.DEFAULT,
     },
     header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: spacing.xl,
-        paddingVertical: spacing.lg,
-    },
-    headerCenter: {
-        alignItems: 'center',
-    },
-    headerTitle: {
-        fontSize: fontSize['2xl'],
-        fontWeight: '700',
-        color: colors.white,
-    },
-    headerSubtitle: {
-        fontSize: fontSize.sm,
-        color: 'rgba(255,255,255,0.8)',
-        marginTop: 2,
-    },
-    progressContainer: {
-        paddingHorizontal: spacing.xl,
-        paddingVertical: spacing.md,
-    },
-    progressBar: {
-        height: 6,
-        backgroundColor: colors.background.tertiary,
-        borderRadius: 3,
+        padding: 16,
+        paddingBottom: 20,
+        borderBottomLeftRadius: 28,
+        borderBottomRightRadius: 28,
         overflow: 'hidden',
     },
-    progressFill: {
-        height: '100%',
-        backgroundColor: colors.primary.DEFAULT,
-        borderRadius: 3,
+    headerBg: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'transparent',
+        opacity: 0.9,
     },
-    progressText: {
-        fontSize: fontSize.xs,
-        color: colors.text.muted,
-        textAlign: 'center',
-        marginTop: spacing.xs,
-    },
-    scrollContent: {
-        flex: 1,
-    },
-    stepContent: {
-        padding: spacing.xl,
-    },
-    searchContainer: {
+    headerContent: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: colors.white,
-        borderRadius: borderRadius.lg,
-        paddingHorizontal: spacing.md,
-        paddingVertical: spacing.sm,
-        marginBottom: spacing.lg,
-        ...shadows.sm,
+        gap: 14,
     },
-    searchInput: {
-        flex: 1,
-        marginLeft: spacing.sm,
-        fontSize: fontSize.base,
-        color: colors.text.primary,
-        paddingVertical: spacing.sm,
+    avatarWrap: {
+        width: 52,
+        height: 52,
+        position: 'relative',
     },
-    sectionLabel: {
-        fontSize: fontSize.sm,
-        fontWeight: '600',
-        color: colors.text.muted,
-        marginBottom: spacing.md,
+    avatarRing: {
+        position: 'absolute',
+        top: -3,
+        right: -3,
+        bottom: -3,
+        left: -3,
+        borderRadius: 999,
+        borderWidth: 2,
+        borderColor: 'rgba(255,255,255,0.6)',
     },
-    chipsGrid: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: spacing.sm,
-    },
-    destinationChip: {
-        flexDirection: 'row',
+    avatarInner: {
+        width: 52,
+        height: 52,
+        borderRadius: 26,
+        backgroundColor: 'rgba(255,255,255,0.2)',
         alignItems: 'center',
-        paddingHorizontal: spacing.md,
-        paddingVertical: spacing.sm,
-        borderRadius: borderRadius.full,
-        backgroundColor: colors.white,
-        borderWidth: 1.5,
-        borderColor: colors.background.tertiary,
-        gap: spacing.xs,
+        justifyContent: 'center',
+        borderWidth: 2,
+        borderColor: 'rgba(255,255,255,0.3)',
     },
-    destinationChipSelected: {
-        backgroundColor: colors.primary.DEFAULT,
-        borderColor: colors.primary.DEFAULT,
+    statusBadge: {
+        position: 'absolute',
+        bottom: -6,
+        right: -6,
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        backgroundColor: '#10B981',
+        borderRadius: 8,
+        borderWidth: 2,
+        borderColor: colors.white,
     },
-    chipEmoji: {
+    statusBadgeText: {
+        fontSize: 9,
+        fontFamily: fonts.bodyBold,
+        color: colors.white,
+    },
+    headerInfo: {
+        flex: 1,
+    },
+    headerTitle: {
         fontSize: 18,
-    },
-    chipLabel: {
-        fontSize: fontSize.sm,
-        fontWeight: '500',
-        color: colors.text.secondary,
-    },
-    chipLabelSelected: {
+        fontFamily: fonts.bodyBold,
         color: colors.white,
     },
-    optionsGrid: {
+    headerStatus: {
         flexDirection: 'row',
-        flexWrap: 'wrap',
-        justifyContent: 'space-between',
-        gap: spacing.md,
-    },
-    optionCard: {
-        width: (width - spacing.xl * 2 - spacing.md) / 2,
-        backgroundColor: colors.white,
-        borderRadius: borderRadius.lg,
-        padding: spacing.lg,
         alignItems: 'center',
+        gap: 6,
+        marginTop: 4,
+    },
+    statusDot: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+        backgroundColor: '#10B981',
+    },
+    statusText: {
+        fontSize: 12,
+        color: 'rgba(255,255,255,0.85)',
+        fontFamily: fonts.body,
+    },
+    headerActions: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
+    headerActionBtn: {
+        width: 38,
+        height: 38,
+        borderRadius: 12,
+        backgroundColor: 'rgba(255,255,255,0.15)',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.2)',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    messages: {
+        flex: 1,
+    },
+    messagesContent: {
+        padding: 16,
+        gap: 14,
+    },
+    messageRow: {
+        maxWidth: '90%',
+    },
+    messageRowAi: {
+        alignSelf: 'flex-start',
+    },
+    messageRowUser: {
+        alignSelf: 'flex-end',
+        alignItems: 'flex-end',
+    },
+    aiAvatar: {
+        width: 28,
+        height: 28,
+        borderRadius: 14,
+        backgroundColor: colors.primary.DEFAULT,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 6,
+    },
+    bubble: {
+        borderRadius: 18,
+        paddingVertical: 12,
+        paddingHorizontal: 14,
+    },
+    bubbleAi: {
+        backgroundColor: colors.white,
         ...shadows.sm,
     },
-    optionCardSelected: {
+    bubbleUser: {
         backgroundColor: colors.primary.DEFAULT,
     },
-    optionLabel: {
-        fontSize: fontSize.base,
-        fontWeight: '700',
+    bubbleText: {
+        fontSize: 14,
+        lineHeight: 20,
+        fontFamily: fonts.body,
+    },
+    bubbleTextAi: {
         color: colors.text.primary,
-        marginTop: spacing.sm,
     },
-    optionLabelSelected: {
+    bubbleTextUser: {
         color: colors.white,
     },
-    optionDesc: {
-        fontSize: fontSize.xs,
-        color: colors.text.muted,
-        marginTop: 2,
+    timeText: {
+        fontSize: 11,
+        color: colors.text.light,
+        marginTop: 4,
+        fontFamily: fonts.body,
     },
-    optionDescSelected: {
-        color: 'rgba(255,255,255,0.8)',
+    inputSection: {
+        paddingHorizontal: 16,
+        paddingTop: 12,
+        paddingBottom: 16,
+        backgroundColor: colors.white,
+        borderTopWidth: 1,
+        borderTopColor: 'rgba(226,232,240,0.8)',
+        ...shadows.sm,
     },
-    budgetContainer: {
-        alignItems: 'center',
+    suggestions: {
+        paddingBottom: 12,
+        gap: 8,
     },
-    budgetLabel: {
-        fontSize: fontSize.base,
-        fontWeight: '600',
-        color: colors.text.secondary,
-        marginBottom: spacing.lg,
-    },
-    budgetInputContainer: {
+    suggestionChip: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: colors.white,
-        borderRadius: borderRadius.xl,
-        paddingHorizontal: spacing.xl,
-        paddingVertical: spacing.lg,
-        ...shadows.md,
+        gap: 6,
+        paddingHorizontal: 14,
+        paddingVertical: 8,
+        backgroundColor: '#F0FDFA',
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: '#A7F3D0',
     },
-    currencySymbol: {
-        fontSize: 32,
-        fontWeight: '700',
-        color: colors.primary.DEFAULT,
+    suggestionText: {
+        fontSize: 13,
+        fontFamily: fonts.bodyMedium,
+        color: '#047857',
     },
-    budgetInput: {
-        fontSize: 40,
-        fontWeight: '700',
-        color: colors.text.primary,
-        minWidth: 120,
-        textAlign: 'center',
-    },
-    budgetPresets: {
+    inputContainer: {
         flexDirection: 'row',
-        gap: spacing.sm,
-        marginTop: spacing.xl,
+        alignItems: 'center',
+        gap: 8,
+        paddingHorizontal: 10,
+        paddingVertical: 8,
+        backgroundColor: '#F8FAFC',
+        borderRadius: 24,
+        borderWidth: 2,
+        borderColor: '#E2E8F0',
     },
-    budgetPreset: {
-        paddingHorizontal: spacing.md,
-        paddingVertical: spacing.sm,
-        borderRadius: borderRadius.full,
+    inputFocused: {
         backgroundColor: colors.white,
-        borderWidth: 1.5,
-        borderColor: colors.background.tertiary,
-    },
-    budgetPresetSelected: {
-        backgroundColor: colors.primary.DEFAULT,
         borderColor: colors.primary.DEFAULT,
+        shadowColor: colors.primary.DEFAULT,
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.12,
+        shadowRadius: 8,
+        elevation: 2,
     },
-    budgetPresetText: {
-        fontSize: fontSize.sm,
-        fontWeight: '600',
-        color: colors.text.secondary,
-    },
-    budgetPresetTextSelected: {
-        color: colors.white,
-    },
-    interestsGrid: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: spacing.sm,
-    },
-    interestChip: {
-        flexDirection: 'row',
+    inputAction: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
         alignItems: 'center',
-        paddingHorizontal: spacing.md,
-        paddingVertical: spacing.sm,
-        borderRadius: borderRadius.full,
-        backgroundColor: colors.white,
-        borderWidth: 1.5,
-        borderColor: colors.primary.DEFAULT,
-        gap: spacing.xs,
+        justifyContent: 'center',
     },
-    interestChipSelected: {
+    input: {
+        flex: 1,
+        fontSize: 15,
+        fontFamily: fonts.body,
+        color: '#1E293B',
+        paddingVertical: 6,
+    },
+    sendBtn: {
+        width: 42,
+        height: 42,
+        borderRadius: 21,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#E2E8F0',
+    },
+    sendBtnActive: {
         backgroundColor: colors.primary.DEFAULT,
-    },
-    interestLabel: {
-        fontSize: fontSize.sm,
-        fontWeight: '600',
-        color: colors.primary.DEFAULT,
-    },
-    interestLabelSelected: {
-        color: colors.white,
-    },
-    footer: {
-        padding: spacing.xl,
-        paddingBottom: spacing.xxl,
-        backgroundColor: colors.white,
-        ...shadows.lg,
+        ...shadows.sm,
     },
 });

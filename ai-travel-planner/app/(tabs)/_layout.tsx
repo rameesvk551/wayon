@@ -1,30 +1,30 @@
 import React from 'react';
+import { View, StyleSheet } from 'react-native';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, fontSize } from '../../theme';
+import { colors } from '../../theme';
 
 export default function TabsLayout() {
     return (
         <Tabs
             screenOptions={{
                 headerShown: false,
-                tabBarActiveTintColor: colors.primary.DEFAULT,
+                tabBarShowLabel: false,
+                tabBarActiveTintColor: colors.white,
                 tabBarInactiveTintColor: colors.text.muted,
                 tabBarStyle: {
-                    backgroundColor: colors.white,
+                    backgroundColor: '#F5F0E8',
                     borderTopWidth: 0,
-                    elevation: 10,
+                    elevation: 12,
                     shadowColor: '#000',
                     shadowOffset: { width: 0, height: -4 },
                     shadowOpacity: 0.1,
-                    shadowRadius: 12,
-                    height: 85,
-                    paddingBottom: 25,
-                    paddingTop: 10,
-                },
-                tabBarLabelStyle: {
-                    fontSize: fontSize.xs,
-                    fontWeight: '600',
+                    shadowRadius: 16,
+                    height: 88,
+                    paddingBottom: 28,
+                    paddingTop: 14,
+                    borderTopLeftRadius: 28,
+                    borderTopRightRadius: 28,
                 },
             }}
         >
@@ -32,17 +32,21 @@ export default function TabsLayout() {
                 name="home"
                 options={{
                     title: 'Home',
-                    tabBarIcon: ({ color, size }) => (
-                        <Ionicons name="home" size={size} color={color} />
+                    tabBarIcon: ({ color, size, focused }) => (
+                        <View style={[styles.tabButton, focused && styles.tabButtonActive]}>
+                            <Ionicons name="home" size={size} color={color} />
+                        </View>
                     ),
                 }}
             />
             <Tabs.Screen
                 name="planner"
                 options={{
-                    title: 'Plan Trip',
-                    tabBarIcon: ({ color, size }) => (
-                        <Ionicons name="sparkles" size={size} color={color} />
+                    title: 'Explore',
+                    tabBarIcon: ({ color, size, focused }) => (
+                        <View style={[styles.tabButton, focused && styles.tabButtonActive]}>
+                            <Ionicons name="grid" size={size} color={color} />
+                        </View>
                     ),
                 }}
             />
@@ -50,8 +54,10 @@ export default function TabsLayout() {
                 name="trips"
                 options={{
                     title: 'My Trips',
-                    tabBarIcon: ({ color, size }) => (
-                        <Ionicons name="briefcase" size={size} color={color} />
+                    tabBarIcon: ({ color, size, focused }) => (
+                        <View style={[styles.tabButton, focused && styles.tabButtonActive]}>
+                            <Ionicons name="briefcase" size={size} color={color} />
+                        </View>
                     ),
                 }}
             />
@@ -59,8 +65,10 @@ export default function TabsLayout() {
                 name="favorites"
                 options={{
                     title: 'Favorites',
-                    tabBarIcon: ({ color, size }) => (
-                        <Ionicons name="heart" size={size} color={color} />
+                    tabBarIcon: ({ color, size, focused }) => (
+                        <View style={[styles.tabButton, focused && styles.tabButtonActive]}>
+                            <Ionicons name="heart" size={size} color={color} />
+                        </View>
                     ),
                 }}
             />
@@ -68,11 +76,31 @@ export default function TabsLayout() {
                 name="profile"
                 options={{
                     title: 'Profile',
-                    tabBarIcon: ({ color, size }) => (
-                        <Ionicons name="person" size={size} color={color} />
+                    tabBarIcon: ({ color, size, focused }) => (
+                        <View style={[styles.tabButton, focused && styles.tabButtonActive]}>
+                            <Ionicons name="person" size={size} color={color} />
+                        </View>
                     ),
                 }}
             />
         </Tabs>
     );
 }
+
+const styles = StyleSheet.create({
+    tabButton: {
+        width: 48,
+        height: 48,
+        borderRadius: 14,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    tabButtonActive: {
+        backgroundColor: '#F97316',
+        shadowColor: '#F97316',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.35,
+        shadowRadius: 10,
+        elevation: 6,
+    },
+});
