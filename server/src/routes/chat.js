@@ -563,6 +563,242 @@ const callItineraryServiceDirect = async (attractions, meta) => {
   }
 };
 
+// ═══════════════════════════════════════════════════════════════════════════
+// DIRECT PDF GENERATION (no LLM)
+// Calls pdf-service directly from chat.js using itinerary / attraction data
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Build a PDF-service request body from simple params and call the service.
+ * Returns { pdfBase64, pageCount } or null on failure.
+ */
+const callPdfServiceDirect = async ({ destination, totalDays, startDate, activities }) => {
+  const pdfService = config.services.pdf;
+  const start = startDate || new Date().toISOString().split("T")[0];
+
+  // Spread activities across days
+  const perDay = Math.max(1, Math.ceil(activities.length / totalDays));
+  const startTimes = ["09:00", "10:30", "12:00", "14:00", "15:30", "17:00", "19:00"];
+  const days = [];
+
+  for (let d = 0; d < totalDays; d++) {
+    const dayDate = new Date(start);
+    dayDate.setDate(dayDate.getDate() + d);
+    const dateStr = dayDate.toISOString().split("T")[0];
+    const city = destination.split(",")[0].trim();
+
+    const slice = activities.slice(d * perDay, (d + 1) * perDay);
+    const dayActivities = slice.length > 0
+      ? slice
+      : [{ name: `Explore ${city} – Day ${d + 1}` }];
+
+    days.push({
+      dayNumber: d + 1,
+      date: dateStr,
+      city,
+      activities: dayActivities.map((a, idx) => ({
+        name: a.name || a,
+        description: a.description || "",
+        duration: a.duration || "2 hours",
+        startTime: a.startTime || startTimes[idx % startTimes.length],
+        category: a.category || "sightseeing",
+      })),
+    });
+  }
+
+  // Map markers from activities with coordinates
+  const markers = [];
+  activities.forEach((a, idx) => {
+    if (a.lat && a.lng) {
+      markers.push({
+        id: `m${idx}`,
+        label: String(idx + 1),
+        lat: a.lat,
+        lng: a.lng,
+        title: a.name || `Attraction ${idx + 1}`,
+        category: a.category || "sightseeing",
+      });
+    }
+  });
+
+  const centerLat = markers.length
+    ? markers.reduce((s, m) => s + m.lat, 0) / markers.length
+    : 0;
+  const centerLng = markers.length
+    ? markers.reduce((s, m) => s + m.lng, 0) / markers.length
+    : 0;
+
+  const endDate = new Date(start);
+  endDate.setDate(endDate.getDate() + totalDays - 1);
+
+  const body = {
+    trip: {
+      title: `${destination} — ${totalDays}-Day Itinerary`,
+      destination,
+      dateRange: { start, end: endDate.toISOString().split("T")[0] },
+      totalDays,
+    },
+    map: {
+      style: "goa-infographic",
+      center: { lat: centerLat, lng: centerLng },
+      zoom: 12,
+      markers,
+    },
+    days,
+    output: { format: "A4", includeInfographicCover: true },
+  };
+
+  logChat("info", "DIRECT-PDF", `📄 Calling PDF service directly`, {
+    destination,
+    totalDays,
+    activityCount: activities.length,
+    dayCount: days.length,
+  });
+
+  try {
+    const response = await requestJson({
+      baseUrl: pdfService.baseUrl,
+      path: pdfService.path,
+      method: pdfService.method,
+      body,
+      timeoutMs: 35000,
+      headers: { accept: "application/json" },
+    });
+
+    if (!response.ok) {
+      logChat("error", "DIRECT-PDF", `❌ PDF service error`, {
+        status: response.status,
+        error: response.json || response.text?.slice(0, 300),
+      });
+      return null;
+    }
+
+    const result = response.json;
+    logChat("success", "DIRECT-PDF", `✅ PDF generated`, {
+      pageCount: result?.pageCount,
+      base64Length: result?.pdfBytesBase64?.length || 0,
+    });
+
+    return {
+      pdfBase64: result.pdfBytesBase64,
+      pageCount: result.pageCount || 1,
+    };
+  } catch (error) {
+    logChat("error", "DIRECT-PDF", `💥 PDF call failed`, { error: error.message });
+    return null;
+  }
+};
+
+/**
+ * Detect if user is asking for a PDF download / generation and extract
+ * trip details from the message + session context.
+ */
+const parsePdfRequest = (text, sessionMessages) => {
+  if (!text || typeof text !== "string") return null;
+  const lower = text.toLowerCase();
+
+  const pdfPatterns = [
+    /\bpdf\b/i,
+    /\bdownload.*itinerary\b/i,
+    /\bgenerate.*pdf\b/i,
+    /\bdownload.*pdf\b/i,
+    /\bitinerary.*pdf\b/i,
+    /\bcreate.*pdf\b/i,
+    /\bexport.*itinerary\b/i,
+    /\bsave.*itinerary\b/i,
+    /\bprint.*itinerary\b/i,
+  ];
+
+  if (!pdfPatterns.some((p) => p.test(lower))) return null;
+  console.log("[parsePdfRequest] PDF intent detected in:", text.slice(0, 80));
+
+  // Try to extract info from the current message
+  const destMatch = text.match(/(?:for|to|in|of)\s+([A-Z][a-zA-Z\s,]+?)(?:\s+(?:trip|itinerary|pdf|please|thanks|$))/i);
+  const dayMatch = text.match(/(\d+)\s*(?:day|days)/i);
+
+  let destination = destMatch ? destMatch[1].trim() : null;
+  let totalDays = dayMatch ? parseInt(dayMatch[1]) : null;
+  let activities = [];
+
+  // Mine session history for attraction/itinerary data using the same
+  // approach as extractToolResults (proven to work with LangChain messages)
+  if (Array.isArray(sessionMessages)) {
+    // Use extractToolResults for reliable parsing of tool messages
+    const toolResults = extractToolResults(sessionMessages);
+    console.log("[parsePdfRequest] Found", toolResults.length, "tool results in session");
+
+    for (const tr of toolResults) {
+      // From attraction tool results
+      if (tr.service === "attraction" && tr.ok && tr.data) {
+        const attrs = tr.data.attractions || (Array.isArray(tr.data) ? tr.data : null);
+        if (Array.isArray(attrs)) {
+          console.log("[parsePdfRequest] Found", attrs.length, "attractions from attraction service");
+          activities.push(...attrs.map((a) => ({
+            name: a.name,
+            lat: a.lat || a.geometry?.location?.lat,
+            lng: a.lng || a.geometry?.location?.lng,
+            category: a.category || a.types?.[0] || "sightseeing",
+            description: a.description || "",
+          })));
+        }
+        if (!destination && tr.request?.city) {
+          destination = tr.request.city;
+        }
+      }
+      // From itinerary tool results
+      if (tr.service === "itinerary" && tr.ok && tr.data) {
+        const data = tr.data.data || tr.data;
+        if (!destination) destination = data.destination;
+        if (!totalDays) totalDays = data.numDays;
+        if (data.dailyPlan) {
+          activities = data.dailyPlan.flatMap((d) =>
+            (d.stops || []).map((s) => ({
+              name: s.name,
+              lat: s.lat,
+              lng: s.lng,
+              category: s.category || "sightseeing",
+              description: s.description || "",
+            }))
+          );
+        }
+      }
+    }
+
+    // Fallback: also search for attraction data in raw message content
+    // (handles cases where extractToolResults misses something)
+    if (activities.length === 0) {
+      for (const msg of sessionMessages) {
+        const raw = typeof msg.content === "string" ? msg.content : "";
+        if (raw.length < 10) continue;
+        try {
+          const parsed = JSON.parse(raw);
+          if (parsed.service === "attraction" && parsed.ok && parsed.data) {
+            const attrs = parsed.data.attractions || (Array.isArray(parsed.data) ? parsed.data : null);
+            if (Array.isArray(attrs) && attrs.length > 0) {
+              console.log("[parsePdfRequest] Fallback: found", attrs.length, "attractions via raw parse");
+              activities.push(...attrs.map((a) => ({
+                name: a.name,
+                lat: a.lat || a.geometry?.location?.lat,
+                lng: a.lng || a.geometry?.location?.lng,
+                category: a.category || a.types?.[0] || "sightseeing",
+                description: a.description || "",
+              })));
+              if (!destination && parsed.request?.city) destination = parsed.request.city;
+            }
+          }
+        } catch { /* not JSON, skip */ }
+      }
+    }
+  }
+
+  console.log("[parsePdfRequest] Result:", { destination, totalDays, activityCount: activities.length });
+  if (!destination) destination = "Your Destination";
+  if (!totalDays) totalDays = Math.max(1, Math.ceil(activities.length / 4)) || 3;
+  if (activities.length === 0) return null; // nothing to put in the PDF
+
+  return { destination, totalDays, activities };
+};
+
 const detectUserIntent = (userText) => {
   if (!userText || typeof userText !== "string") return null;
   const text = userText.toLowerCase().trim();
@@ -785,6 +1021,78 @@ router.post("/chat", async (req, res) => {
     }
     // ── END DIRECT ITINERARY BYPASS ──────────────────────────────────
 
+    // ── DIRECT PDF BYPASS ────────────────────────────────────────────
+    // When user asks for PDF, skip LLM entirely — use session data
+    const pdfRequest = parsePdfRequest(message, session.messages);
+    if (pdfRequest) {
+      logChat("info", "CHAT-API", `📄 PDF request detected — bypassing LLM`, {
+        destination: pdfRequest.destination,
+        totalDays: pdfRequest.totalDays,
+        activityCount: pdfRequest.activities.length,
+      });
+
+      const pdfResult = await callPdfServiceDirect({
+        destination: pdfRequest.destination,
+        totalDays: pdfRequest.totalDays,
+        startDate: new Date().toISOString().split("T")[0],
+        activities: pdfRequest.activities,
+      });
+
+      if (pdfResult?.pdfBase64) {
+        const pdfId = storePdf(pdfResult.pdfBase64, pdfResult.pageCount, pdfRequest.destination);
+        const totalDuration = Date.now() - startTime;
+        logChat("success", "CHAT-API", `🏁 Request [${requestId}] completed via DIRECT PDF in ${totalDuration}ms`);
+        console.log(`${"█".repeat(70)}\n`);
+
+        return res.json({
+          sessionId: session.id,
+          schemaVersion: "2026-02-05",
+          message: `Your ${pdfRequest.totalDays}-day ${pdfRequest.destination} itinerary PDF is ready!`,
+          structured: {
+            reply: `Your ${pdfRequest.totalDays}-day ${pdfRequest.destination} itinerary PDF is ready to download!`,
+            summary: `Includes ${pdfRequest.activities.length} activities across ${pdfRequest.totalDays} days.`,
+            recommendations: [],
+            next_questions: [
+              "Would you like to adjust the itinerary?",
+              "Search for hotels near these attractions?",
+              "Find flights to this destination?",
+            ],
+          },
+          pdf: {
+            downloadUrl: `/api/chat/download-pdf/${pdfId}`,
+            pageCount: pdfResult.pageCount,
+            sizeBytes: Math.round(pdfResult.pdfBase64.length * 3 / 4),
+          },
+          intent: { name: "itinerary_pdf", confidence: 0.99, slots: { destination: pdfRequest.destination } },
+          ui: {
+            version: "2026-02-05",
+            blocks: [{
+              blockVersion: 1,
+              type: "pdf_download",
+              downloadUrl: `/api/chat/download-pdf/${pdfId}`,
+              pageCount: pdfResult.pageCount,
+              destination: pdfRequest.destination,
+              text: `Your ${pdfRequest.totalDays}-day itinerary PDF is ready to download.`,
+            }],
+          },
+          uiBlocks: {
+            blocks: [{
+              blockVersion: 1,
+              type: "pdf_download",
+              downloadUrl: `/api/chat/download-pdf/${pdfId}`,
+              pageCount: pdfResult.pageCount,
+              destination: pdfRequest.destination,
+              text: `Your ${pdfRequest.totalDays}-day itinerary PDF is ready to download.`,
+            }],
+          },
+          errors: [],
+          toolCalls: [],
+        });
+      }
+      logChat("warn", "CHAT-API", `⚠️ Direct PDF generation failed, falling back to LLM`);
+    }
+    // ── END DIRECT PDF BYPASS ────────────────────────────────────────
+
     // Enhance the user message with intent hints for the model
     const detectedIntent = detectUserIntent(message);
     let finalMessageText = message;
@@ -887,6 +1195,38 @@ router.post("/chat/stream", async (req, res) => {
       }
     }
     // ── END DIRECT ITINERARY BYPASS (stream) ─────────────────────────
+
+    // ── DIRECT PDF BYPASS (stream) ──────────────────────────────────
+    const streamPdfReq = parsePdfRequest(message, session.messages);
+    if (streamPdfReq) {
+      console.log("[Stream] PDF bypass triggered:", streamPdfReq);
+      sendEvent("meta", { sessionId: session.id });
+      sendEvent("token", { content: "Generating your trip PDF… " });
+
+      const pdfResult = await callPdfServiceDirect(streamPdfReq);
+      if (pdfResult) {
+        const stored = storePdf(pdfResult.pdfBase64);
+        const reply =
+          `Here is your **${streamPdfReq.destination}** trip itinerary PDF!\n\n` +
+          `📄 [Download your PDF](${stored.downloadUrl})\n\n` +
+          `The PDF contains a ${streamPdfReq.totalDays || 3}-day itinerary` +
+          (streamPdfReq.activities?.length ? ` covering: ${streamPdfReq.activities.slice(0, 3).map(a => a.name || a).join(", ")}…` : ".") +
+          `\n\nWould you like to modify anything?`;
+
+        sendEvent("final", {
+          text: reply,
+          pdf: { downloadUrl: stored.downloadUrl, pageCount: pdfResult.pageCount },
+          type: "pdf_generated",
+        });
+        session.messages.push({ role: "user", content: message });
+        session.messages.push({ role: "assistant", content: reply });
+        res.end();
+        return;
+      }
+      // If PDF service failed, fall through to LLM
+      sendEvent("token", { content: "(PDF service unavailable, using AI instead)\n" });
+    }
+    // ── END DIRECT PDF BYPASS (stream) ──────────────────────────────
 
     // Enhance the user message with intent hints for the model
     const streamIntent = detectUserIntent(message);

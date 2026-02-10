@@ -27,7 +27,7 @@ const config = {
       method: (process.env.HOTEL_METHOD || "GET").toUpperCase(),
     },
     flight: {
-      baseUrl: process.env.FLIGHT_SERVICE || "http://localhost:4002",
+      baseUrl: process.env.FLIGHT_SERVICE || "http://localhost:4012",
       path: process.env.FLIGHT_PATH || "/api/flights/search",
       method: (process.env.FLIGHT_METHOD || "POST").toUpperCase(),
     },
@@ -62,7 +62,7 @@ const config = {
       method: (process.env.TRANSPORT_METHOD || "POST").toUpperCase(),
     },
     itinerary: {
-      baseUrl: process.env.ITINERARY_SERVICE || "http://localhost:4010",
+      baseUrl: process.env.ITINERARY_SERVICE || "http://localhost:4011",
       path: process.env.ITINERARY_PATH || "/api/v1/generate-itinerary",
       method: (process.env.ITINERARY_METHOD || "POST").toUpperCase(),
     },

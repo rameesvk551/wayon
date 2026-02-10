@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
-import { Home, Compass, LayoutGrid, Heart, User } from 'lucide-react';
+import { Compass, Hotel, Map, Bot } from 'lucide-react';
+import AppHeader from '../AppHeader';
 
 interface MobileLayoutProps {
     children: React.ReactNode;
@@ -8,11 +9,10 @@ interface MobileLayoutProps {
 }
 
 const tabs = [
-    { id: 'home', label: 'Home', icon: Home },
-    { id: 'discover', label: 'Discover', icon: Compass },
-    { id: 'chat', label: 'Explore', icon: LayoutGrid },
-    { id: 'favorites', label: 'Favorites', icon: Heart },
-    { id: 'profile', label: 'Profile', icon: User },
+    { id: 'tours', label: 'Tours', icon: Compass },
+    { id: 'hotels', label: 'Hotels', icon: Hotel },
+    { id: 'planner', label: 'Planner', icon: Map },
+    { id: 'bot', label: 'Bot', icon: Bot },
 ];
 
 export const MobileLayout: React.FC<MobileLayoutProps> = ({
@@ -22,6 +22,9 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({
 }) => {
     return (
         <div className="mobile-app-container">
+            {/* App Header */}
+            <AppHeader />
+
             {/* Main Content Area */}
             <main className="mobile-content">
                 {children}
@@ -54,6 +57,9 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({
                                     className={isActive ? 'text-white' : 'text-gray-500'}
                                 />
                             </motion.div>
+                            <span className={`mobile-tab-label ${isActive ? 'active' : ''}`}>
+                                {tab.label}
+                            </span>
                         </button>
                     );
                 })}

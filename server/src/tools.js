@@ -242,16 +242,87 @@ export const buildTools = () => {
     }),
   });
 
+  // ── PDF tool: keep schema FLAT so small LLMs (functiongemma) can fill it.
+  //    The heavy lifting happens in mapInput which builds the complex body
+  //    the pdf-service expects.
   const itineraryPdf = createRestTool({
     name: "generate_itinerary_pdf",
-    description: "Generate a PDF itinerary from a prepared trip plan.",
+    description:
+      "Generate a downloadable PDF itinerary. Provide the trip name, destination, " +
+      "number of days, start date, and a comma-separated list of attraction/activity " +
+      "names the traveler wants to visit. Example activities: " +
+      "'Eiffel Tower, Louvre Museum, Notre-Dame, Montmartre, Seine River Cruise'.",
     serviceKey: "pdf",
     schema: z.object({
-      tripName: z.string().describe("Short name of the trip"),
-      travelerName: z.string().optional().describe("Primary traveler name"),
-      email: z.string().optional().describe("Email to send the PDF to"),
-      itinerary: z.any().describe("Structured itinerary data or markdown content")
+      tripName: z.string().describe("Short title, e.g. '3 Days in Paris'"),
+      destination: z.string().describe("Main destination city and country, e.g. 'Paris, France'"),
+      totalDays: z.number().int().min(1).max(30).describe("Number of trip days"),
+      startDate: z.string().optional().describe("Trip start date YYYY-MM-DD, default today"),
+      activities: z.string().describe(
+        "Comma-separated list of attraction/activity names to spread across days"
+      ),
     }),
+    mapInput: (input) => {
+      // Parse the flat comma-separated activities string into an array of names
+      const activityNames = (input.activities || "")
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+
+      const totalDays = input.totalDays || 3;
+      const destination = input.destination || "Unknown";
+      const start = input.startDate || new Date().toISOString().split("T")[0];
+
+      // Spread activities roughly evenly across days
+      const perDay = Math.max(1, Math.ceil(activityNames.length / totalDays));
+      const days = [];
+      const startTimes = ["09:00", "10:30", "12:00", "14:00", "15:30", "17:00", "19:00"];
+
+      for (let d = 0; d < totalDays; d++) {
+        const dayDate = new Date(start);
+        dayDate.setDate(dayDate.getDate() + d);
+        const dateStr = dayDate.toISOString().split("T")[0];
+
+        const slice = activityNames.slice(d * perDay, (d + 1) * perDay);
+        // Ensure every day has at least one activity
+        const dayActivities = slice.length > 0
+          ? slice
+          : [`Explore ${destination} – Day ${d + 1}`];
+
+        days.push({
+          dayNumber: d + 1,
+          date: dateStr,
+          city: destination.split(",")[0].trim(),
+          activities: dayActivities.map((name, idx) => ({
+            name,
+            description: "",
+            duration: "2 hours",
+            startTime: startTimes[idx % startTimes.length],
+            category: "sightseeing",
+          })),
+        });
+      }
+
+      const endDate = new Date(start);
+      endDate.setDate(endDate.getDate() + totalDays - 1);
+
+      return {
+        trip: {
+          title: input.tripName || `Trip to ${destination}`,
+          destination,
+          dateRange: { start, end: endDate.toISOString().split("T")[0] },
+          totalDays,
+        },
+        map: {
+          style: "goa-infographic",
+          center: { lat: 0, lng: 0 },
+          zoom: 12,
+          markers: [],
+        },
+        days,
+        output: { format: "A4", includeInfographicCover: true },
+      };
+    },
   });
 
   const weatherLookup = createRestTool({

@@ -98,27 +98,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
 
     return (
         <div className="home-screen">
-            {/* Header Section */}
-            <header className="home-header">
-                <div className="home-header-left">
-                    <div className="home-user-avatar">
-                        <img
-                            src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&q=80"
-                            alt="User"
-                        />
-                    </div>
-                    <div className="home-user-info">
-                        <span className="home-welcome-text">Welcome Back</span>
-                        <h1 className="home-user-name">Ronald Richards</h1>
-                    </div>
-                </div>
-                <div className="home-header-right">
-                    <button className="home-notification-btn">
-                        <span className="notification-icon">🔔</span>
-                    </button>
-                </div>
-            </header>
-
             {/* Search Bar */}
             <div className="home-search-container">
                 <div className="home-search-bar">

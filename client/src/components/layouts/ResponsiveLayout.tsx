@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Home, Compass, LayoutGrid, Heart, User, Sparkles, Menu, X } from 'lucide-react';
+import { Compass, Hotel, Map, Bot, Sparkles, Menu, X } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
 interface ResponsiveLayoutProps {
@@ -9,11 +9,10 @@ interface ResponsiveLayoutProps {
 }
 
 const tabs = [
-    { id: 'home', label: 'Home', icon: Home },
-    { id: 'discover', label: 'Discover', icon: Compass },
-    { id: 'chat', label: 'Explore', icon: LayoutGrid },
-    { id: 'favorites', label: 'Favorites', icon: Heart },
-    { id: 'profile', label: 'Profile', icon: User },
+    { id: 'tours', label: 'Tours', icon: Compass },
+    { id: 'hotels', label: 'Hotels', icon: Hotel },
+    { id: 'planner', label: 'Planner', icon: Map },
+    { id: 'bot', label: 'Bot', icon: Bot },
 ];
 
 export const ResponsiveLayout: React.FC<ResponsiveLayoutProps> = ({
@@ -151,7 +150,7 @@ export const ResponsiveLayout: React.FC<ResponsiveLayoutProps> = ({
                 <div className="sidebar-footer">
                     <button
                         className="sidebar-ai-button"
-                        onClick={() => onTabChange('chat')}
+                        onClick={() => onTabChange('bot')}
                     >
                         <Sparkles size={20} />
                         {!sidebarCollapsed && <span>Ask AI Assistant</span>}

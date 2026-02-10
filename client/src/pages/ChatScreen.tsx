@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
 import { AnimatePresence } from 'framer-motion';
-import { ChatHeader } from '../components/chat/ChatHeader';
 import { ChatMessage } from '../components/chat/ChatMessage';
 import { InlineAIInput } from '../components/molecules/InlineAIInput';
 import type { TripPreferences, Message, Attraction, ChatApiResponse } from '../types/chat';
@@ -732,9 +731,6 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onNavigate }) => {
 
     return (
         <div className="mobile-chat-screen">
-            {/* Chat Header */}
-            <ChatHeader onNavigate={onNavigate} />
-
             {/* Messages Area */}
             <div className="mobile-chat-messages">
                 <AnimatePresence>

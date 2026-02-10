@@ -9,9 +9,14 @@ export default function TabsLayout() {
         <Tabs
             screenOptions={{
                 headerShown: false,
-                tabBarShowLabel: false,
-                tabBarActiveTintColor: colors.white,
+                tabBarShowLabel: true,
+                tabBarActiveTintColor: '#F97316',
                 tabBarInactiveTintColor: colors.text.muted,
+                tabBarLabelStyle: {
+                    fontSize: 11,
+                    fontWeight: '600',
+                    marginTop: 2,
+                },
                 tabBarStyle: {
                     backgroundColor: '#F5F0E8',
                     borderTopWidth: 0,
@@ -29,12 +34,23 @@ export default function TabsLayout() {
             }}
         >
             <Tabs.Screen
-                name="home"
+                name="tours"
                 options={{
-                    title: 'Home',
+                    title: 'Tours',
                     tabBarIcon: ({ color, size, focused }) => (
                         <View style={[styles.tabButton, focused && styles.tabButtonActive]}>
-                            <Ionicons name="home" size={size} color={color} />
+                            <Ionicons name="compass" size={size} color={focused ? colors.white : color} />
+                        </View>
+                    ),
+                }}
+            />
+            <Tabs.Screen
+                name="hotels"
+                options={{
+                    title: 'Hotels',
+                    tabBarIcon: ({ color, size, focused }) => (
+                        <View style={[styles.tabButton, focused && styles.tabButtonActive]}>
+                            <Ionicons name="bed" size={size} color={focused ? colors.white : color} />
                         </View>
                     ),
                 }}
@@ -42,46 +58,41 @@ export default function TabsLayout() {
             <Tabs.Screen
                 name="planner"
                 options={{
-                    title: 'Explore',
+                    title: 'Planner',
                     tabBarIcon: ({ color, size, focused }) => (
                         <View style={[styles.tabButton, focused && styles.tabButtonActive]}>
-                            <Ionicons name="grid" size={size} color={color} />
+                            <Ionicons name="map" size={size} color={focused ? colors.white : color} />
                         </View>
                     ),
                 }}
+            />
+            <Tabs.Screen
+                name="bot"
+                options={{
+                    title: 'Bot',
+                    tabBarIcon: ({ color, size, focused }) => (
+                        <View style={[styles.tabButton, focused && styles.tabButtonActive]}>
+                            <Ionicons name="chatbubble-ellipses" size={size} color={focused ? colors.white : color} />
+                        </View>
+                    ),
+                }}
+            />
+            {/* Hidden tabs - still accessible but not shown in tab bar */}
+            <Tabs.Screen
+                name="home"
+                options={{ href: null }}
             />
             <Tabs.Screen
                 name="trips"
-                options={{
-                    title: 'My Trips',
-                    tabBarIcon: ({ color, size, focused }) => (
-                        <View style={[styles.tabButton, focused && styles.tabButtonActive]}>
-                            <Ionicons name="briefcase" size={size} color={color} />
-                        </View>
-                    ),
-                }}
+                options={{ href: null }}
             />
             <Tabs.Screen
                 name="favorites"
-                options={{
-                    title: 'Favorites',
-                    tabBarIcon: ({ color, size, focused }) => (
-                        <View style={[styles.tabButton, focused && styles.tabButtonActive]}>
-                            <Ionicons name="heart" size={size} color={color} />
-                        </View>
-                    ),
-                }}
+                options={{ href: null }}
             />
             <Tabs.Screen
                 name="profile"
-                options={{
-                    title: 'Profile',
-                    tabBarIcon: ({ color, size, focused }) => (
-                        <View style={[styles.tabButton, focused && styles.tabButtonActive]}>
-                            <Ionicons name="person" size={size} color={color} />
-                        </View>
-                    ),
-                }}
+                options={{ href: null }}
             />
         </Tabs>
     );
