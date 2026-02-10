@@ -336,12 +336,27 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onNavigate }) => {
         summary?: string;
         recommendations?: unknown[];
         next_questions?: string[];
+        distance_summaries?: string[];
+        distances?: string[];
     }) => {
         if (!structured) return undefined;
         const blocks: UIResponse['blocks'] = [];
 
         if (structured.summary) {
             blocks.push({ type: 'text', content: structured.summary, format: 'plain' });
+        }
+
+        const distList = structured.distance_summaries || structured.distances;
+        if (Array.isArray(distList) && distList.length > 0) {
+            blocks.push({ type: 'title', text: 'Day-by-day distances', level: 3 });
+            blocks.push({
+                type: 'list',
+                ordered: false,
+                items: distList.map((line, index) => ({
+                    id: `dist-${index}`,
+                    text: typeof line === 'string' ? line : JSON.stringify(line)
+                }))
+            });
         }
 
         if (Array.isArray(structured.recommendations) && structured.recommendations.length > 0) {

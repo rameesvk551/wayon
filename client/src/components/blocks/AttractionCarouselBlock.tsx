@@ -36,33 +36,37 @@ const AttractionCard: React.FC<{
             className={`
                 overflow-hidden
                 bg-white p-1.5
-                border border-black/[0.08] transition-all duration-300
+                transition-all duration-300
                 cursor-pointer
-                shadow-sm hover:shadow-xl
+                ${isSelected
+                    ? 'border-2 border-[var(--color-primary)] shadow-[0_0_0_3px_var(--color-primary-light),0_4px_16px_rgba(13,148,136,0.18)] bg-gradient-to-br from-[rgba(13,148,136,0.03)] to-white'
+                    : 'border border-black/[0.08] shadow-sm hover:shadow-xl'
+                }
                 ${isHighlighted
-                    ? 'border-[var(--color-primary)] ring-4 ring-[var(--color-primary-light)]'
-                    : 'border-black/[0.08]'
+                    ? 'ring-4 ring-[var(--color-primary-light)]'
+                    : ''
                 }
             `}
         >
             <button
                 className={`
                     absolute top-3 right-3 z-10
-                    h-8 w-8 rounded-full
+                    h-9 w-9 rounded-full
                     flex items-center justify-center
-                    border-2 transition-all duration-200
+                    transition-all duration-300
                     ${isSelected
-                        ? 'bg-[var(--color-primary)] border-[var(--color-primary)] text-white'
-                        : 'bg-white/90 border-white/70 text-[var(--color-text-muted)]'
+                        ? 'bg-[var(--color-primary)] border-[2.5px] border-[var(--color-primary)] text-white scale-110 shadow-[0_2px_12px_rgba(13,148,136,0.5)]'
+                        : 'bg-white border-[3px] border-gray-400 text-gray-400 shadow-[0_2px_8px_rgba(0,0,0,0.25)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] hover:scale-110'
                     }
                 `}
+                style={isSelected ? { animation: 'selectPop 0.3s cubic-bezier(0.34,1.56,0.64,1)' } : {}}
                 onClick={(event) => {
                     event.stopPropagation();
                     onToggleSelect();
                 }}
                 aria-label={isSelected ? 'Remove from itinerary' : 'Add to itinerary'}
             >
-                {isSelected ? <CheckCircle2 size={16} /> : <div className="h-3.5 w-3.5 rounded-full border border-current" />}
+                {isSelected ? <CheckCircle2 size={20} /> : <span className="block h-3.5 w-3.5 rounded-full" />}
             </button>
             {/* Image */}
             <div className="relative h-40 overflow-hidden" style={{ borderRadius: '4%' }}>
@@ -275,48 +279,53 @@ export const AttractionCarouselBlock: React.FC<AttractionCarouselBlockProps> = (
     const selectedAttractions = attractions.filter((attraction) => selectedAttractionIds.includes(attraction.id));
 
     return (
-        <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
-        >
-            {/* Header */}
-            {title && (
-                <h2 className="text-lg font-bold text-[var(--color-text-primary)] mb-4">
-                    {title}
-                </h2>
-            )}
+        <>
+            {/* Attractions card container */}
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4 }}
+                className="attraction-carousel-container"
+            >
+                {/* Header */}
+                {title && (
+                    <div className="attraction-carousel-header">
+                        <h2>{title}</h2>
+                        {selectedAttractionIds.length > 0 && (
+                            <span className="attraction-carousel-badge">
+                                {selectedAttractionIds.length} selected
+                            </span>
+                        )}
+                    </div>
+                )}
 
-            {/* Two cards per row */}
-            <div className="grid grid-cols-2 gap-4">
-                {attractions.map((attraction) => (
-                    <AttractionCard
-                        key={attraction.id}
-                        attraction={attraction}
-                        isHighlighted={highlightedAttractionId === attraction.id}
-                        isSelected={selectedAttractionIds.includes(attraction.id)}
-                        onClick={() => handleAttractionClick(attraction)}
-                        onToggleSelect={() => toggleSelection(attraction.id)}
-                    />
-                ))}
-            </div>
+                {/* Scrollable attractions grid */}
+                <div className="attraction-carousel-scroll">
+                    <div className="grid grid-cols-2 gap-3">
+                        {attractions.map((attraction) => (
+                            <AttractionCard
+                                key={attraction.id}
+                                attraction={attraction}
+                                isHighlighted={highlightedAttractionId === attraction.id}
+                                isSelected={selectedAttractionIds.includes(attraction.id)}
+                                onClick={() => handleAttractionClick(attraction)}
+                                onToggleSelect={() => toggleSelection(attraction.id)}
+                            />
+                        ))}
+                    </div>
+                </div>
+            </motion.div>
 
+            {/* Build itinerary — sticky bar flush above chat input */}
             {onBuildItinerary && (
-                <div className="mt-4">
+                <div className="build-itinerary-sticky-bar">
                     <button
-                        className={`
-                            w-full rounded-xl px-4 py-3 text-sm font-semibold
-                            transition-all duration-200
-                            ${selectedAttractionIds.length > 0
-                                ? 'bg-[var(--color-primary)] text-white shadow-md hover:shadow-lg'
-                                : 'bg-[var(--color-border-light)] text-[var(--color-text-muted)] cursor-not-allowed'
-                            }
-                        `}
+                        className={`build-itinerary-btn ${selectedAttractionIds.length > 0 ? 'active' : 'disabled'}`}
                         onClick={() => onBuildItinerary(selectedAttractions)}
                         disabled={selectedAttractionIds.length === 0}
                     >
                         {selectedAttractionIds.length > 0
-                            ? `Build itinerary with ${selectedAttractionIds.length} attraction${selectedAttractionIds.length > 1 ? 's' : ''}`
+                            ? `🗺️ Build itinerary with ${selectedAttractionIds.length} attraction${selectedAttractionIds.length > 1 ? 's' : ''}`
                             : 'Select attractions to build itinerary'}
                     </button>
                 </div>
@@ -327,6 +336,6 @@ export const AttractionCarouselBlock: React.FC<AttractionCarouselBlockProps> = (
                 isOpen={isModalOpen}
                 onClose={handleModalClose}
             />
-        </motion.div>
+        </>
     );
 };

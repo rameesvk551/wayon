@@ -445,6 +445,7 @@ const callItineraryServiceDirect = async (attractions, meta) => {
       unassigned: (data?.unassigned || []).map((u) => u.name || u.id),
       summary: data?.summary,
       notes: data?.notes,
+      distances: distanceLines,
     });
 
     // Build tool-results array so builders.js can process it
@@ -461,6 +462,32 @@ const callItineraryServiceDirect = async (attractions, meta) => {
     const dailyStopNames = (data.dailyPlan || []).map(
       (d) => `Day ${d.day}: ${d.stops?.map((s) => s.name).join(" → ") || "rest"}`
     );
+    const dailyDistanceLines = distanceLines.length > 0 ? distanceLines : null;
+
+  // Distance summaries for logging + UI (fallback Haversine if missing)
+  const toRad = (v) => (v * Math.PI) / 180;
+  const haversineKm = (a, b) => {
+    const R = 6371;
+    const dLat = toRad(b.lat - a.lat);
+    const dLng = toRad(b.lng - a.lng);
+    const lat1 = toRad(a.lat);
+    const lat2 = toRad(b.lat);
+    const h = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+    return 2 * R * Math.asin(Math.sqrt(h));
+  };
+  const distanceLines = (data.dailyPlan || []).flatMap((day) => {
+    if (!Array.isArray(day.stops) || day.stops.length < 2) return [];
+    const legs = [];
+    for (let i = 1; i < day.stops.length; i += 1) {
+      const prev = day.stops[i - 1];
+      const curr = day.stops[i];
+      const distKm = Number.isFinite(curr.distanceFromPrevKm)
+        ? curr.distanceFromPrevKm
+        : haversineKm({ lat: prev.lat, lng: prev.lng }, { lat: curr.lat, lng: curr.lng });
+      legs.push(`Day ${day.day}: ${prev.name} → ${curr.name} ${distKm.toFixed(2)} km`);
+    }
+    return legs;
+  });
 
     // Build the plan first so we can use actual counts in the reply
     const activeDays = (data.dailyPlan || []).filter((d) => (d.stops || []).length > 0);
@@ -471,6 +498,8 @@ const callItineraryServiceDirect = async (attractions, meta) => {
       reply: `Here is your optimised ${actualDays}-day itinerary for ${destination} with ${assignedCount} attractions!`,
       summary: `Generated in ${data.summary?.algorithmMs ?? 0}ms using TOPTW algorithm.`,
       recommendations: dailyStopNames,
+      ...(dailyDistanceLines && { distance_summaries: dailyDistanceLines }),
+      ...(dailyDistanceLines && { distances: dailyDistanceLines }),
       next_questions: [
         "Would you like to adjust any day?",
         "Search for hotels near these attractions?",

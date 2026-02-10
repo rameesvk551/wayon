@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
     MapPin, Calendar, Clock, Train, Car, Plane, Bus,
     Camera, Sparkles, CheckCircle2, AlertCircle,
-    Palmtree, Building, ChevronRight
+    Palmtree, Building, FileDown, Loader2
 } from 'lucide-react';
 
 // Types matching the backend itinerary-generator output
@@ -188,6 +188,70 @@ export const ItineraryDisplay: React.FC<ItineraryDisplayProps> = ({
     transportMode,
     isLoading = false,
 }) => {
+    const [pdfLoading, setPdfLoading] = useState(false);
+
+    const handleGeneratePdf = async () => {
+        setPdfLoading(true);
+        try {
+            const pdfServiceUrl = 'http://localhost:4010';
+            const payload = {
+                destination: itinerary.destination,
+                totalDays: itinerary.totalDays,
+                days: itinerary.dailyPlan.map((day) => {
+                    if (isSightseeingDay(day)) {
+                        return {
+                            day: day.day,
+                            city: day.region || itinerary.destination,
+                            activities: day.activities.map((a) => ({
+                                name: a,
+                                description: a,
+                                duration: `${(day.totalDurationHours / day.activities.length).toFixed(1)}h`,
+                                category: 'sightseeing',
+                            })),
+                        };
+                    }
+                    if (isTravelDay(day)) {
+                        return {
+                            day: day.day,
+                            city: itinerary.destination,
+                            activities: [{ name: 'Travel', description: day.description, duration: 'Full day', category: 'travel' }],
+                        };
+                    }
+                    // leisure
+                    return {
+                        day: day.day,
+                        city: itinerary.destination,
+                        activities: [{ name: 'Leisure', description: (day as LeisureDayPlan).description, duration: 'Full day', category: 'leisure' }],
+                    };
+                }),
+                output: { format: 'A4', includeInfographicCover: true },
+            };
+
+            const response = await fetch(`${pdfServiceUrl}/api/v1/generate-itinerary-pdf`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Accept: 'application/pdf' },
+                body: JSON.stringify(payload),
+            });
+
+            if (!response.ok) throw new Error(`PDF generation failed (${response.status})`);
+
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `${itinerary.destination.replace(/\s+/g, '-')}-itinerary.pdf`;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+        } catch (err) {
+            console.error('PDF generation error:', err);
+            alert('Failed to generate PDF. Make sure the PDF service is running.');
+        } finally {
+            setPdfLoading(false);
+        }
+    };
+
     if (isLoading) {
         return <ItinerarySkeleton />;
     }
@@ -282,13 +346,13 @@ export const ItineraryDisplay: React.FC<ItineraryDisplayProps> = ({
                 transition={{ delay: 0.6 }}
                 className="itinerary-actions"
             >
-                <button className="itinerary-action-btn primary">
-                    <Sparkles size={18} />
-                    Save Itinerary
-                </button>
-                <button className="itinerary-action-btn secondary">
-                    <ChevronRight size={18} />
-                    Book Now
+                <button
+                    className="itinerary-action-btn primary"
+                    onClick={handleGeneratePdf}
+                    disabled={pdfLoading}
+                >
+                    {pdfLoading ? <Loader2 size={18} className="animate-spin" /> : <FileDown size={18} />}
+                    {pdfLoading ? 'Generating…' : 'Generate PDF'}
                 </button>
             </motion.div>
         </div>

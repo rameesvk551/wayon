@@ -49,6 +49,8 @@ export interface ListItem {
     text: string;
     icon?: string;
     subItems?: ListItem[];
+    // Optional heading for accessibility (not rendered by default)
+    title?: string;
 }
 
 // ===== BLOCK TYPES =====

@@ -403,6 +403,59 @@ export const buildBlocksFromTools = (toolResults) => {
             blocks.push({ type: "alert", level: "info", text: note });
           }
 
+          // Distance rollup (straight-line km between consecutive stops)
+          const haversineKm = (a, b) => {
+            const toRad = (v) => (v * Math.PI) / 180;
+            const R = 6371; // km
+            const dLat = toRad(b.lat - a.lat);
+            const dLng = toRad(b.lng - a.lng);
+            const lat1 = toRad(a.lat);
+            const lat2 = toRad(b.lat);
+            const h =
+              Math.sin(dLat / 2) ** 2 +
+              Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+            return 2 * R * Math.asin(Math.sqrt(h));
+          };
+
+          const distanceSummaries = dailyPlan
+            .map((day) => {
+              if (!Array.isArray(day.stops) || day.stops.length < 2) return null;
+              const legs = [];
+              for (let i = 1; i < day.stops.length; i += 1) {
+                const prev = day.stops[i - 1];
+                const curr = day.stops[i];
+
+                const distKm = Number.isFinite(curr.distanceFromPrevKm)
+                  ? curr.distanceFromPrevKm
+                  : haversineKm(
+                    { lat: prev.lat, lng: prev.lng },
+                    { lat: curr.lat, lng: curr.lng },
+                  );
+
+                legs.push(`${prev.name} → ${curr.name} ${distKm.toFixed(2)} km`);
+              }
+              return legs.length > 0
+                ? { day: day.day, text: `Day ${day.day}: ${legs.join("; ")}` }
+                : null;
+            })
+            .filter(Boolean);
+
+          if (distanceSummaries.length > 0) {
+            blocks.push({
+              type: "title",
+              level: 3,
+              text: "Day-by-day straight-line gaps (km)",
+            });
+            blocks.push({
+              type: "list",
+              ordered: false,
+              items: distanceSummaries.map((entry, idx) => ({
+                id: `dist-${idx + 1}`,
+                text: entry.text,
+              })),
+            });
+          }
+
           // Timeline per day
           for (const day of dailyPlan) {
             blocks.push({

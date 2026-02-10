@@ -184,12 +184,32 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
             );
         }
 
+        // Clean message content — strip function call artifacts from AI responses
+        const cleanContent = (() => {
+            if (!message.content) return '';
+            let text = message.content;
+            // Remove function call markers and surrounding garbage
+            text = text.replace(/<\/?end_function_call>/gi, '');
+            text = text.replace(/<\/?function_call>/gi, '');
+            text = text.replace(/<\/?tool_call>/gi, '');
+            text = text.replace(/<\/?end_tool_call>/gi, '');
+            // Remove lone braces/brackets that are leftovers from JSON
+            text = text.replace(/^\s*[{}[\]]\s*$/gm, '');
+            text = text.trim();
+            return text;
+        })();
+
+        // If there are renderable blocks and content is empty/garbage, hide the bubble
+        const showBubble = cleanContent.length > 0 && !(renderableResponse && cleanContent.length < 5);
+
         // Text + schema blocks (ai or user)
         return (
             <>
-                <div className={`mobile-chat-bubble ${message.type}`}>
-                    {message.content && <p>{message.content}</p>}
-                </div>
+                {showBubble && (
+                    <div className={`mobile-chat-bubble ${message.type}`}>
+                        <p>{cleanContent}</p>
+                    </div>
+                )}
                 {message.type === 'ai' && renderableResponse && (
                     <div className="mobile-chat-interactive">
                         <ChatRenderer
