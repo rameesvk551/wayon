@@ -32,15 +32,16 @@ const AttractionCard: React.FC<{
             whileHover={{ scale: 1.02, y: -4 }}
             whileTap={{ scale: 0.98 }}
             onClick={onClick}
+            style={{ borderRadius: '5%' }}
             className={`
-                rounded-2xl overflow-hidden
-                bg-white
-                border-2 transition-all duration-300
+                overflow-hidden
+                bg-white p-1.5
+                border border-black/[0.08] transition-all duration-300
                 cursor-pointer
-                shadow-md hover:shadow-xl
+                shadow-sm hover:shadow-xl
                 ${isHighlighted
                     ? 'border-[var(--color-primary)] ring-4 ring-[var(--color-primary-light)]'
-                    : 'border-[var(--color-border)]'
+                    : 'border-black/[0.08]'
                 }
             `}
         >
@@ -64,7 +65,7 @@ const AttractionCard: React.FC<{
                 {isSelected ? <CheckCircle2 size={16} /> : <div className="h-3.5 w-3.5 rounded-full border border-current" />}
             </button>
             {/* Image */}
-            <div className="relative h-40 overflow-hidden">
+            <div className="relative h-40 overflow-hidden" style={{ borderRadius: '4%' }}>
                 <img
                     src={attraction.image || 'https://images.unsplash.com/photo-1499856871958-5b9627545d1a?w=400'}
                     alt={attraction.name}
