@@ -14,6 +14,8 @@ import DiscoverPage from './pages/DiscoverPage';
 import PlanPage from './pages/PlanPage';
 import ReviewPage from './pages/ReviewPage';
 import HotelListingPage from './pages/HotelListingPage';
+import ToursListingPage from './pages/ToursListingPage';
+import TourDetailPage from './pages/TourDetailPage';
 import './index.css';
 
 // Layout wrapper that includes AppHeader for non-auth pages
@@ -31,7 +33,7 @@ const MobileApp: React.FC = () => {
   const renderScreen = () => {
     switch (activeTab) {
       case 'tours':
-        return <ToursScreen />;
+        return <ToursListingPage />;
       case 'hotels':
         return <HotelListingPage />;
       case 'planner':
@@ -71,6 +73,8 @@ function App() {
         <Route path="/plan/new" element={<WithHeader><PlanPage /></WithHeader>} />
         <Route path="/review/:tripId" element={<WithHeader><ReviewPage /></WithHeader>} />
         <Route path="/hotels" element={<WithHeader><HotelListingPage /></WithHeader>} />
+        <Route path="/tours" element={<ToursListingPage />} />
+        <Route path="/tours/:tourId" element={<TourDetailPage />} />
 
         {/* Auth Routes (no header) */}
         {/* <Route path="/login" element={<LoginPage />} /> */}
