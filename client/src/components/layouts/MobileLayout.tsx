@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Compass, Hotel, Map, Bot } from 'lucide-react';
+import { Compass, Hotel, Map, Bot, Shield } from 'lucide-react';
 import AppHeader from '../AppHeader';
 
 interface MobileLayoutProps {
@@ -11,6 +11,7 @@ interface MobileLayoutProps {
 const tabs = [
     { id: 'tours', label: 'Tours', icon: Compass },
     { id: 'hotels', label: 'Hotels', icon: Hotel },
+    { id: 'visa', label: 'Visa', icon: Shield },
     { id: 'planner', label: 'Planner', icon: Map },
     { id: 'bot', label: 'Bot', icon: Bot },
 ];
