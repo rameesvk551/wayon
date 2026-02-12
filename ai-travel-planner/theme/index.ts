@@ -55,10 +55,10 @@ export const colors = {
 };
 
 export const gradients = {
-    primary: ["#0B7C7A", "#118AB2"],
-    primaryStrong: ["#0B7C7A", "#0D8B8A", "#118AB2"],
-    accent: ["#FF7A59", "#F25F3A"],
-    home: ["#F97316", "#EA580C"],
+    primary: ["#0B7C7A", "#118AB2"] as const,
+    primaryStrong: ["#0B7C7A", "#0D8B8A", "#118AB2"] as const,
+    accent: ["#FF7A59", "#F25F3A"] as const,
+    home: ["#F97316", "#EA580C"] as const,
 };
 
 export const fonts = {

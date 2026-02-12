@@ -289,7 +289,7 @@ const parseSelectedAttractions = (text) => {
     let visitDuration = 60; // default
     if (durationMatch) {
       const durText = durationMatch[1].toLowerCase();
-      const hourM = durText.match(/(\d+)\s*h/); 
+      const hourM = durText.match(/(\d+)\s*h/);
       const minM = durText.match(/(\d+)\s*min/);
       if (hourM) visitDuration = parseInt(hourM[1]) * 60;
       if (minM) visitDuration += parseInt(minM[1]);
@@ -428,6 +428,31 @@ const callItineraryServiceDirect = async (attractions, meta) => {
       });
     }
 
+    // Distance summaries for logging + UI (fallback Haversine if missing)
+    const toRad = (v) => (v * Math.PI) / 180;
+    const haversineKm = (a, b) => {
+      const R = 6371;
+      const dLat = toRad(b.lat - a.lat);
+      const dLng = toRad(b.lng - a.lng);
+      const lat1 = toRad(a.lat);
+      const lat2 = toRad(b.lat);
+      const h = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+      return 2 * R * Math.asin(Math.sqrt(h));
+    };
+    const distanceLines = (data.dailyPlan || []).flatMap((day) => {
+      if (!Array.isArray(day.stops) || day.stops.length < 2) return [];
+      const legs = [];
+      for (let i = 1; i < day.stops.length; i += 1) {
+        const prev = day.stops[i - 1];
+        const curr = day.stops[i];
+        const distKm = Number.isFinite(curr.distanceFromPrevKm)
+          ? curr.distanceFromPrevKm
+          : haversineKm({ lat: prev.lat, lng: prev.lng }, { lat: curr.lat, lng: curr.lng });
+        legs.push(`Day ${day.day}: ${prev.name} → ${curr.name} ${distKm.toFixed(2)} km`);
+      }
+      return legs;
+    });
+
     logChat("info", "DIRECT-ITINERARY", `📥 RESPONSE DATA`, {
       success: result?.success,
       numDays: data?.numDays,
@@ -463,31 +488,6 @@ const callItineraryServiceDirect = async (attractions, meta) => {
       (d) => `Day ${d.day}: ${d.stops?.map((s) => s.name).join(" → ") || "rest"}`
     );
     const dailyDistanceLines = distanceLines.length > 0 ? distanceLines : null;
-
-  // Distance summaries for logging + UI (fallback Haversine if missing)
-  const toRad = (v) => (v * Math.PI) / 180;
-  const haversineKm = (a, b) => {
-    const R = 6371;
-    const dLat = toRad(b.lat - a.lat);
-    const dLng = toRad(b.lng - a.lng);
-    const lat1 = toRad(a.lat);
-    const lat2 = toRad(b.lat);
-    const h = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
-    return 2 * R * Math.asin(Math.sqrt(h));
-  };
-  const distanceLines = (data.dailyPlan || []).flatMap((day) => {
-    if (!Array.isArray(day.stops) || day.stops.length < 2) return [];
-    const legs = [];
-    for (let i = 1; i < day.stops.length; i += 1) {
-      const prev = day.stops[i - 1];
-      const curr = day.stops[i];
-      const distKm = Number.isFinite(curr.distanceFromPrevKm)
-        ? curr.distanceFromPrevKm
-        : haversineKm({ lat: prev.lat, lng: prev.lng }, { lat: curr.lat, lng: curr.lng });
-      legs.push(`Day ${day.day}: ${prev.name} → ${curr.name} ${distKm.toFixed(2)} km`);
-    }
-    return legs;
-  });
 
     // Build the plan first so we can use actual counts in the reply
     const activeDays = (data.dailyPlan || []).filter((d) => (d.stops || []).length > 0);

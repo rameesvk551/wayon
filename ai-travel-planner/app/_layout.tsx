@@ -35,12 +35,7 @@ export default function RootLayout() {
         if (!isReady) return;
 
         const inAuthGroup = segments[0] === '(auth)';
-        const inTabsGroup = segments[0] === '(tabs)';
-
-        if (!isAuthenticated && inTabsGroup) {
-            // Redirect to onboarding if not authenticated
-            router.replace('/onboarding');
-        } else if (isAuthenticated && inAuthGroup) {
+        if (isAuthenticated && inAuthGroup) {
             // Redirect to home if authenticated
             router.replace('/(tabs)/home');
         }
@@ -62,6 +57,7 @@ export default function RootLayout() {
                 <Stack.Screen name="onboarding" />
                 <Stack.Screen name="(auth)" />
                 <Stack.Screen name="(tabs)" />
+                <Stack.Screen name="tour/[tourId]" />
             </Stack>
         </SafeAreaProvider>
     );

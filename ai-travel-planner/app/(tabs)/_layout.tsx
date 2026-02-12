@@ -34,6 +34,17 @@ export default function TabsLayout() {
             }}
         >
             <Tabs.Screen
+                name="home"
+                options={{
+                    title: 'Discover',
+                    tabBarIcon: ({ color, size, focused }) => (
+                        <View style={[styles.tabButton, focused && styles.tabButtonActive]}>
+                            <Ionicons name="globe-outline" size={size} color={focused ? colors.white : color} />
+                        </View>
+                    ),
+                }}
+            />
+            <Tabs.Screen
                 name="tours"
                 options={{
                     title: 'Tours',
@@ -51,6 +62,17 @@ export default function TabsLayout() {
                     tabBarIcon: ({ color, size, focused }) => (
                         <View style={[styles.tabButton, focused && styles.tabButtonActive]}>
                             <Ionicons name="bed" size={size} color={focused ? colors.white : color} />
+                        </View>
+                    ),
+                }}
+            />
+            <Tabs.Screen
+                name="visa"
+                options={{
+                    title: 'Visa',
+                    tabBarIcon: ({ color, size, focused }) => (
+                        <View style={[styles.tabButton, focused && styles.tabButtonActive]}>
+                            <Ionicons name="shield-checkmark-outline" size={size} color={focused ? colors.white : color} />
                         </View>
                     ),
                 }}
@@ -78,10 +100,6 @@ export default function TabsLayout() {
                 }}
             />
             {/* Hidden tabs - still accessible but not shown in tab bar */}
-            <Tabs.Screen
-                name="home"
-                options={{ href: null }}
-            />
             <Tabs.Screen
                 name="trips"
                 options={{ href: null }}

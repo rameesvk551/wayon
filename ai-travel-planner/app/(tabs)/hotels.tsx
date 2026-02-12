@@ -1,153 +1,201 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
     View,
     Text,
     StyleSheet,
     ScrollView,
     TouchableOpacity,
-    Image,
     TextInput,
+    Image,
+    ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useHotelStore } from '../../store';
+import {
+    allAmenities,
+    sortOptions,
+    type SortOption,
+} from '../../data/hotelListingData';
 import { colors, spacing, shadows, fonts } from '../../theme';
 
-const featuredHotels = [
-    {
-        id: 'h1',
-        name: 'The Grand Palace',
-        image: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400&q=80',
-        rating: 4.9,
-        location: 'Paris, France',
-        price: '$320',
-        priceUnit: '/night',
-        amenities: ['WiFi', 'Pool', 'Spa'],
-    },
-    {
-        id: 'h2',
-        name: 'Ocean Breeze Resort',
-        image: 'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=400&q=80',
-        rating: 4.8,
-        location: 'Maldives',
-        price: '$480',
-        priceUnit: '/night',
-        amenities: ['Beach', 'Pool', 'Dining'],
-    },
-    {
-        id: 'h3',
-        name: 'Mountain Lodge',
-        image: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=400&q=80',
-        rating: 4.7,
-        location: 'Swiss Alps',
-        price: '$250',
-        priceUnit: '/night',
-        amenities: ['WiFi', 'Skiing', 'Spa'],
-    },
-    {
-        id: 'h4',
-        name: 'Urban Boutique Hotel',
-        image: 'https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=400&q=80',
-        rating: 4.6,
-        location: 'Tokyo, Japan',
-        price: '$180',
-        priceUnit: '/night',
-        amenities: ['WiFi', 'Gym', 'Bar'],
-    },
-];
-
-const filters = ['All', 'Luxury', 'Resort', 'Boutique', 'Budget'];
-
 export default function HotelsScreen() {
-    const router = useRouter();
-    const [search, setSearch] = useState('');
-    const [activeFilter, setActiveFilter] = useState('All');
+    const searchQuery = useHotelStore((s) => s.searchQuery);
+    const setSearchQuery = useHotelStore((s) => s.setSearchQuery);
+    const filters = useHotelStore((s) => s.filters);
+    const setFilters = useHotelStore((s) => s.setFilters);
+    const sortBy = useHotelStore((s) => s.sortBy);
+    const setSortBy = useHotelStore((s) => s.setSortBy);
+    const viewMode = useHotelStore((s) => s.viewMode);
+    const setViewMode = useHotelStore((s) => s.setViewMode);
+    const wishlist = useHotelStore((s) => s.wishlist);
+    const toggleWishlist = useHotelStore((s) => s.toggleWishlist);
+    const hotels = useHotelStore((s) => s.getDisplayedHotels());
+    const hasMore = useHotelStore((s) => s.hasMore);
+    const isLoading = useHotelStore((s) => s.isLoading);
+    const loadMore = useHotelStore((s) => s.loadMore);
+    const resetFilters = useHotelStore((s) => s.resetFilters);
+    const activeFilterCount = useHotelStore((s) => s.getActiveFilterCount());
+
+    const toggleAmenity = (amenity: string) => {
+        if (filters.amenities.includes(amenity)) {
+            setFilters({ amenities: filters.amenities.filter((item) => item !== amenity) });
+            return;
+        }
+        setFilters({ amenities: [...filters.amenities, amenity] });
+    };
+
+    const popularAmenities = allAmenities.slice(0, 8);
 
     return (
         <SafeAreaView style={styles.container}>
-            <ScrollView showsVerticalScrollIndicator={false}>
-                {/* Header */}
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
                 <View style={styles.header}>
-                    <Text style={styles.title}>Hotels</Text>
-                    <Text style={styles.subtitle}>Find the perfect stay</Text>
-                </View>
-
-                {/* Search */}
-                <View style={styles.searchContainer}>
-                    <Ionicons name="search" size={20} color={colors.text.muted} />
-                    <TextInput
-                        style={styles.searchInput}
-                        placeholder="Search hotels..."
-                        placeholderTextColor={colors.text.muted}
-                        value={search}
-                        onChangeText={setSearch}
-                    />
-                    <TouchableOpacity>
-                        <Ionicons name="options-outline" size={20} color={colors.text.primary} />
+                    <Text style={styles.title}>Hotel Listings</Text>
+                    <TouchableOpacity style={styles.resetButton} onPress={resetFilters}>
+                        <Ionicons name="refresh-outline" size={16} color={colors.primary.DEFAULT} />
+                        <Text style={styles.resetButtonText}>Reset</Text>
                     </TouchableOpacity>
                 </View>
 
-                {/* Filters */}
-                <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.filtersContainer}
-                >
-                    {filters.map((f) => (
-                        <TouchableOpacity
-                            key={f}
-                            style={[
-                                styles.filterChip,
-                                activeFilter === f && styles.filterChipActive,
-                            ]}
-                            onPress={() => setActiveFilter(f)}
-                        >
-                            <Text
-                                style={[
-                                    styles.filterText,
-                                    activeFilter === f && styles.filterTextActive,
-                                ]}
+                <View style={styles.searchRow}>
+                    <Ionicons name="search-outline" size={18} color={colors.text.muted} />
+                    <TextInput
+                        value={searchQuery}
+                        onChangeText={setSearchQuery}
+                        style={styles.searchInput}
+                        placeholder="Search hotels, landmark, location..."
+                        placeholderTextColor={colors.text.muted}
+                    />
+                </View>
+
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
+                    {sortOptions.map((option) => {
+                        const active = sortBy === option.value;
+                        return (
+                            <TouchableOpacity
+                                key={option.value}
+                                style={[styles.sortChip, active && styles.sortChipActive]}
+                                onPress={() => setSortBy(option.value as SortOption)}
                             >
-                                {f}
-                            </Text>
-                        </TouchableOpacity>
-                    ))}
+                                <Text style={[styles.sortChipText, active && styles.sortChipTextActive]}>
+                                    {option.label}
+                                </Text>
+                            </TouchableOpacity>
+                        );
+                    })}
                 </ScrollView>
 
-                {/* Hotel Cards */}
-                <View style={styles.hotelsList}>
-                    {featuredHotels.map((hotel) => (
-                        <TouchableOpacity key={hotel.id} style={styles.hotelCard} activeOpacity={0.85}>
-                            <Image source={{ uri: hotel.image }} style={styles.hotelImage} />
-                            <View style={styles.hotelInfo}>
-                                <View style={styles.hotelHeader}>
-                                    <Text style={styles.hotelName}>{hotel.name}</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
+                    {popularAmenities.map((amenity) => {
+                        const active = filters.amenities.includes(amenity);
+                        return (
+                            <TouchableOpacity
+                                key={amenity}
+                                style={[styles.filterChip, active && styles.filterChipActive]}
+                                onPress={() => toggleAmenity(amenity)}
+                            >
+                                <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>
+                                    {amenity}
+                                </Text>
+                            </TouchableOpacity>
+                        );
+                    })}
+                </ScrollView>
+
+                <View style={styles.metaRow}>
+                    <Text style={styles.metaText}>
+                        {hotels.length} hotels shown {activeFilterCount > 0 ? `(${activeFilterCount} filters)` : ''}
+                    </Text>
+                    <View style={styles.viewSwitcher}>
+                        <TouchableOpacity
+                            style={[styles.viewButton, viewMode === 'list' && styles.viewButtonActive]}
+                            onPress={() => setViewMode('list')}
+                        >
+                            <Ionicons name="list-outline" size={16} color={viewMode === 'list' ? colors.white : colors.text.secondary} />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={[styles.viewButton, viewMode === 'map' && styles.viewButtonActive]}
+                            onPress={() => setViewMode('map')}
+                        >
+                            <Ionicons name="map-outline" size={16} color={viewMode === 'map' ? colors.white : colors.text.secondary} />
+                        </TouchableOpacity>
+                    </View>
+                </View>
+
+                {viewMode === 'map' ? (
+                    <View style={styles.mapModeContainer}>
+                        {hotels.map((hotel) => (
+                            <View key={hotel.id} style={styles.mapItem}>
+                                <View style={styles.mapDot} />
+                                <View style={styles.mapItemBody}>
+                                    <Text style={styles.mapItemTitle}>{hotel.name}</Text>
+                                    <Text style={styles.mapItemMeta}>
+                                        {hotel.location} • {hotel.distance} • {hotel.coordinates.lat.toFixed(3)}, {hotel.coordinates.lng.toFixed(3)}
+                                    </Text>
+                                </View>
+                            </View>
+                        ))}
+                    </View>
+                ) : (
+                    hotels.map((hotel) => (
+                        <View key={hotel.id} style={styles.card}>
+                            <Image source={{ uri: hotel.images[0] }} style={styles.cardImage} />
+                            <TouchableOpacity
+                                style={styles.wishlistButton}
+                                onPress={() => toggleWishlist(hotel.id)}
+                                hitSlop={10}
+                            >
+                                <Ionicons
+                                    name={wishlist.has(hotel.id) ? 'heart' : 'heart-outline'}
+                                    size={18}
+                                    color={wishlist.has(hotel.id) ? '#EF4444' : colors.white}
+                                />
+                            </TouchableOpacity>
+                            <View style={styles.cardBody}>
+                                <View style={styles.titleRow}>
+                                    <Text numberOfLines={1} style={styles.cardTitle}>
+                                        {hotel.name}
+                                    </Text>
                                     <View style={styles.ratingBadge}>
-                                        <Ionicons name="star" size={12} color="#fff" />
+                                        <Ionicons name="star" size={12} color="#F59E0B" />
                                         <Text style={styles.ratingText}>{hotel.rating}</Text>
                                     </View>
                                 </View>
-                                <View style={styles.locationRow}>
-                                    <Ionicons name="location-outline" size={14} color={colors.text.muted} />
-                                    <Text style={styles.locationText}>{hotel.location}</Text>
-                                </View>
-                                <View style={styles.amenitiesRow}>
-                                    {hotel.amenities.map((a) => (
-                                        <View key={a} style={styles.amenityTag}>
-                                            <Text style={styles.amenityText}>{a}</Text>
-                                        </View>
+                                <Text style={styles.cardSubTitle}>
+                                    {hotel.location} • {hotel.landmark} • {hotel.distance}
+                                </Text>
+                                <View style={styles.amenityRow}>
+                                    {hotel.amenities.slice(0, 3).map((amenity) => (
+                                        <Text key={amenity} style={styles.amenityPill}>
+                                            {amenity}
+                                        </Text>
                                     ))}
+                                    {hotel.isAIRecommended ? <Text style={styles.aiPill}>AI Pick</Text> : null}
                                 </View>
                                 <View style={styles.priceRow}>
-                                    <Text style={styles.price}>{hotel.price}</Text>
-                                    <Text style={styles.priceUnit}>{hotel.priceUnit}</Text>
+                                    <Text style={styles.price}>{hotel.currency}{hotel.price}</Text>
+                                    {hotel.originalPrice ? (
+                                        <Text style={styles.oldPrice}>{hotel.currency}{hotel.originalPrice}</Text>
+                                    ) : null}
+                                    <Text style={styles.perNight}>/night</Text>
                                 </View>
                             </View>
-                        </TouchableOpacity>
-                    ))}
-                </View>
+                        </View>
+                    ))
+                )}
 
-                <View style={{ height: 30 }} />
+                {isLoading ? (
+                    <ActivityIndicator size="small" color={colors.primary.DEFAULT} style={styles.loader} />
+                ) : null}
+
+                {hasMore && !isLoading ? (
+                    <TouchableOpacity style={styles.loadMoreButton} onPress={loadMore}>
+                        <Text style={styles.loadMoreText}>Load More Hotels</Text>
+                    </TouchableOpacity>
+                ) : null}
+
+                <View style={styles.bottomSpacer} />
             </ScrollView>
         </SafeAreaView>
     );
@@ -156,142 +204,285 @@ export default function HotelsScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#FAFAF7',
+        backgroundColor: colors.background.DEFAULT,
+    },
+    content: {
+        paddingHorizontal: spacing.lg,
+        paddingTop: spacing.sm,
     },
     header: {
-        paddingHorizontal: spacing.lg,
-        paddingTop: spacing.lg,
-        paddingBottom: spacing.sm,
-    },
-    title: {
-        fontSize: 28,
-        fontWeight: '800',
-        color: colors.text.primary,
-    },
-    subtitle: {
-        fontSize: 15,
-        color: colors.text.muted,
-        marginTop: 4,
-    },
-    searchContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#F0ECE3',
-        marginHorizontal: spacing.lg,
-        borderRadius: 16,
-        paddingHorizontal: 16,
-        paddingVertical: 12,
-        marginBottom: spacing.md,
-    },
-    searchInput: {
-        flex: 1,
-        marginLeft: 10,
-        fontSize: 15,
-        color: colors.text.primary,
-    },
-    filtersContainer: {
-        paddingHorizontal: spacing.lg,
-        gap: 10,
-        marginBottom: spacing.lg,
-    },
-    filterChip: {
-        paddingHorizontal: 18,
-        paddingVertical: 10,
-        borderRadius: 24,
-        backgroundColor: '#F0ECE3',
-    },
-    filterChipActive: {
-        backgroundColor: '#F97316',
-    },
-    filterText: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: colors.text.muted,
-    },
-    filterTextActive: {
-        color: '#fff',
-    },
-    hotelsList: {
-        paddingHorizontal: spacing.lg,
-        gap: 16,
-    },
-    hotelCard: {
-        backgroundColor: '#fff',
-        borderRadius: 20,
-        overflow: 'hidden',
-        ...shadows.card,
-    },
-    hotelImage: {
-        width: '100%',
-        height: 180,
-    },
-    hotelInfo: {
-        padding: 16,
-    },
-    hotelHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
     },
-    hotelName: {
-        fontSize: 17,
-        fontWeight: '700',
+    title: {
+        fontSize: 24,
+        fontFamily: fonts.bodyBold,
         color: colors.text.primary,
+    },
+    resetButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        borderRadius: 12,
+        backgroundColor: colors.primary.subtle,
+    },
+    resetButtonText: {
+        fontSize: 12,
+        fontFamily: fonts.bodySemibold,
+        color: colors.primary.DEFAULT,
+    },
+    searchRow: {
+        marginTop: spacing.md,
+        backgroundColor: colors.white,
+        borderRadius: 14,
+        borderWidth: 1,
+        borderColor: colors.border.DEFAULT,
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 12,
+        height: 48,
+        gap: 8,
+    },
+    searchInput: {
         flex: 1,
+        fontFamily: fonts.body,
+        color: colors.text.primary,
+        fontSize: 14,
+    },
+    row: {
+        marginTop: spacing.md,
+        gap: 8,
+        paddingBottom: 2,
+    },
+    sortChip: {
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: 16,
+        backgroundColor: colors.white,
+        borderWidth: 1,
+        borderColor: colors.border.DEFAULT,
+    },
+    sortChipActive: {
+        backgroundColor: colors.secondary.DEFAULT,
+        borderColor: colors.secondary.DEFAULT,
+    },
+    sortChipText: {
+        fontFamily: fonts.bodySemibold,
+        fontSize: 12,
+        color: colors.text.secondary,
+    },
+    sortChipTextActive: {
+        color: colors.white,
+    },
+    filterChip: {
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: 16,
+        backgroundColor: colors.white,
+        borderWidth: 1,
+        borderColor: colors.border.DEFAULT,
+    },
+    filterChipActive: {
+        backgroundColor: colors.primary.DEFAULT,
+        borderColor: colors.primary.DEFAULT,
+    },
+    filterChipText: {
+        fontFamily: fonts.bodySemibold,
+        fontSize: 12,
+        color: colors.text.secondary,
+    },
+    filterChipTextActive: {
+        color: colors.white,
+    },
+    metaRow: {
+        marginTop: spacing.md,
+        marginBottom: spacing.sm,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    metaText: {
+        fontSize: 12,
+        color: colors.text.muted,
+        fontFamily: fonts.body,
+    },
+    viewSwitcher: {
+        flexDirection: 'row',
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: colors.border.DEFAULT,
+        overflow: 'hidden',
+    },
+    viewButton: {
+        width: 36,
+        height: 32,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: colors.white,
+    },
+    viewButtonActive: {
+        backgroundColor: colors.primary.DEFAULT,
+    },
+    card: {
+        backgroundColor: colors.white,
+        borderRadius: 18,
+        overflow: 'hidden',
+        marginBottom: spacing.md,
+        ...shadows.sm,
+    },
+    cardImage: {
+        width: '100%',
+        height: 190,
+    },
+    wishlistButton: {
+        position: 'absolute',
+        top: 10,
+        right: 10,
+        width: 34,
+        height: 34,
+        borderRadius: 17,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: 'rgba(15,23,42,0.45)',
+    },
+    cardBody: {
+        padding: 14,
+    },
+    titleRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        gap: 8,
+    },
+    cardTitle: {
+        flex: 1,
+        fontSize: 16,
+        color: colors.text.primary,
+        fontFamily: fonts.bodyBold,
     },
     ratingBadge: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#F97316',
+        gap: 4,
+        borderRadius: 10,
+        backgroundColor: '#FFFBEB',
         paddingHorizontal: 8,
         paddingVertical: 4,
-        borderRadius: 12,
-        gap: 4,
     },
     ratingText: {
-        fontSize: 12,
-        fontWeight: '700',
-        color: '#fff',
+        fontSize: 11,
+        fontFamily: fonts.bodySemibold,
+        color: '#B45309',
     },
-    locationRow: {
+    cardSubTitle: {
+        marginTop: 6,
+        fontSize: 12,
+        color: colors.text.muted,
+        fontFamily: fonts.body,
+    },
+    amenityRow: {
+        marginTop: 10,
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 4,
-        marginTop: 6,
+        gap: 6,
+        flexWrap: 'wrap',
     },
-    locationText: {
-        fontSize: 13,
-        color: colors.text.muted,
-    },
-    amenitiesRow: {
-        flexDirection: 'row',
-        gap: 8,
-        marginTop: 10,
-    },
-    amenityTag: {
-        backgroundColor: '#F0ECE3',
-        paddingHorizontal: 10,
-        paddingVertical: 5,
-        borderRadius: 10,
-    },
-    amenityText: {
+    amenityPill: {
+        borderRadius: 12,
+        backgroundColor: colors.background.tertiary,
+        paddingHorizontal: 8,
+        paddingVertical: 4,
         fontSize: 11,
-        fontWeight: '600',
-        color: colors.text.muted,
+        color: colors.text.secondary,
+        fontFamily: fonts.bodyMedium,
+    },
+    aiPill: {
+        borderRadius: 12,
+        backgroundColor: '#DCFCE7',
+        color: '#166534',
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        fontSize: 11,
+        fontFamily: fonts.bodySemibold,
     },
     priceRow: {
+        marginTop: 12,
         flexDirection: 'row',
         alignItems: 'baseline',
-        marginTop: 12,
+        gap: 6,
     },
     price: {
         fontSize: 20,
-        fontWeight: '800',
-        color: '#F97316',
+        fontFamily: fonts.bodyBold,
+        color: colors.primary.DEFAULT,
     },
-    priceUnit: {
+    oldPrice: {
         fontSize: 13,
+        color: colors.text.light,
+        textDecorationLine: 'line-through',
+        fontFamily: fonts.body,
+    },
+    perNight: {
+        fontSize: 12,
         color: colors.text.muted,
-        marginLeft: 2,
+        fontFamily: fonts.body,
+    },
+    mapModeContainer: {
+        borderRadius: 16,
+        backgroundColor: colors.white,
+        padding: 12,
+        gap: 10,
+        ...shadows.sm,
+    },
+    mapItem: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        gap: 10,
+        paddingBottom: 10,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.border.light,
+    },
+    mapDot: {
+        width: 10,
+        height: 10,
+        borderRadius: 5,
+        backgroundColor: colors.primary.DEFAULT,
+        marginTop: 5,
+    },
+    mapItemBody: {
+        flex: 1,
+    },
+    mapItemTitle: {
+        color: colors.text.primary,
+        fontFamily: fonts.bodySemibold,
+        fontSize: 13,
+    },
+    mapItemMeta: {
+        marginTop: 2,
+        color: colors.text.muted,
+        fontFamily: fonts.body,
+        fontSize: 11,
+    },
+    loader: {
+        marginVertical: spacing.sm,
+    },
+    loadMoreButton: {
+        alignSelf: 'center',
+        marginTop: spacing.sm,
+        backgroundColor: colors.primary.DEFAULT,
+        borderRadius: 14,
+        paddingHorizontal: 18,
+        paddingVertical: 10,
+    },
+    loadMoreText: {
+        color: colors.white,
+        fontSize: 13,
+        fontFamily: fonts.bodySemibold,
+    },
+    bottomSpacer: {
+        height: 96,
     },
 });

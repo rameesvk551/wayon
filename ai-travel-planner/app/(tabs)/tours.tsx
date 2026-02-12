@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
     View,
     Text,
@@ -7,131 +7,197 @@ import {
     TouchableOpacity,
     Image,
     TextInput,
+    ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useTourStore } from '../../store';
+import {
+    tourCategories,
+    tourSortOptions,
+    type TourCategory,
+    type TourSortOption,
+} from '../../data/tourListingData';
 import { colors, spacing, shadows, fonts } from '../../theme';
 
-const featuredTours = [
-    {
-        id: 't1',
-        name: 'Bali Adventure',
-        image: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=400&q=80',
-        rating: 4.9,
-        duration: '5 Days',
-        price: '$899',
-        location: 'Indonesia',
-    },
-    {
-        id: 't2',
-        name: 'Swiss Alps Trek',
-        image: 'https://images.unsplash.com/photo-1531366936337-7c912a4589a7?w=400&q=80',
-        rating: 4.8,
-        duration: '7 Days',
-        price: '$1,299',
-        location: 'Switzerland',
-    },
-    {
-        id: 't3',
-        name: 'Tokyo Culture Tour',
-        image: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=400&q=80',
-        rating: 4.7,
-        duration: '4 Days',
-        price: '$750',
-        location: 'Japan',
-    },
-    {
-        id: 't4',
-        name: 'Santorini Escape',
-        image: 'https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?w=400&q=80',
-        rating: 4.9,
-        duration: '6 Days',
-        price: '$1,100',
-        location: 'Greece',
-    },
+const durationFilters: Array<{ label: string; value: string }> = [
+    { label: 'All', value: 'all' },
+    { label: '1-3 days', value: '1-3' },
+    { label: '4-7 days', value: '4-7' },
+    { label: '7+ days', value: '7+' },
 ];
-
-const categories = ['All', 'Adventure', 'Cultural', 'Beach', 'Mountain', 'City'];
 
 export default function ToursScreen() {
     const router = useRouter();
-    const [search, setSearch] = useState('');
-    const [activeCategory, setActiveCategory] = useState('All');
+
+    const searchQuery = useTourStore((s) => s.searchQuery);
+    const setSearchQuery = useTourStore((s) => s.setSearchQuery);
+    const filters = useTourStore((s) => s.filters);
+    const setFilters = useTourStore((s) => s.setFilters);
+    const sortBy = useTourStore((s) => s.sortBy);
+    const setSortBy = useTourStore((s) => s.setSortBy);
+    const resetFilters = useTourStore((s) => s.resetFilters);
+    const wishlist = useTourStore((s) => s.wishlist);
+    const toggleWishlist = useTourStore((s) => s.toggleWishlist);
+    const tours = useTourStore((s) => s.getDisplayedTours());
+    const hasMore = useTourStore((s) => s.hasMore);
+    const isLoading = useTourStore((s) => s.isLoading);
+    const loadMore = useTourStore((s) => s.loadMore);
+    const activeFilterCount = useTourStore((s) => s.getActiveFilterCount());
+
+    const toggleCategory = (category: TourCategory) => {
+        if (filters.categories.includes(category)) {
+            setFilters({ categories: filters.categories.filter((item) => item !== category) });
+            return;
+        }
+        setFilters({ categories: [...filters.categories, category] });
+    };
 
     return (
         <SafeAreaView style={styles.container}>
-            <ScrollView showsVerticalScrollIndicator={false}>
-                {/* Header */}
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
                 <View style={styles.header}>
-                    <Text style={styles.title}>Discover Tours</Text>
-                    <Text style={styles.subtitle}>Find your next adventure</Text>
+                    <Text style={styles.title}>Tour Listings</Text>
+                    <TouchableOpacity style={styles.resetButton} onPress={resetFilters}>
+                        <Ionicons name="refresh-outline" size={16} color={colors.primary.DEFAULT} />
+                        <Text style={styles.resetButtonText}>Reset</Text>
+                    </TouchableOpacity>
                 </View>
 
-                {/* Search */}
-                <View style={styles.searchContainer}>
-                    <Ionicons name="search" size={20} color={colors.text.muted} />
+                <View style={styles.searchRow}>
+                    <Ionicons name="search-outline" size={18} color={colors.text.muted} />
                     <TextInput
+                        value={searchQuery}
+                        onChangeText={setSearchQuery}
                         style={styles.searchInput}
-                        placeholder="Search tours..."
+                        placeholder="Search tours, location, country..."
                         placeholderTextColor={colors.text.muted}
-                        value={search}
-                        onChangeText={setSearch}
                     />
                 </View>
 
-                {/* Categories */}
-                <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.categoriesContainer}
-                >
-                    {categories.map((cat) => (
-                        <TouchableOpacity
-                            key={cat}
-                            style={[
-                                styles.categoryChip,
-                                activeCategory === cat && styles.categoryChipActive,
-                            ]}
-                            onPress={() => setActiveCategory(cat)}
-                        >
-                            <Text
-                                style={[
-                                    styles.categoryText,
-                                    activeCategory === cat && styles.categoryTextActive,
-                                ]}
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
+                    {tourSortOptions.map((option) => {
+                        const active = sortBy === option.value;
+                        return (
+                            <TouchableOpacity
+                                key={option.value}
+                                style={[styles.sortChip, active && styles.sortChipActive]}
+                                onPress={() => setSortBy(option.value as TourSortOption)}
                             >
-                                {cat}
-                            </Text>
-                        </TouchableOpacity>
-                    ))}
+                                <Text style={[styles.sortChipText, active && styles.sortChipTextActive]}>
+                                    {option.label}
+                                </Text>
+                            </TouchableOpacity>
+                        );
+                    })}
                 </ScrollView>
 
-                {/* Tour Cards */}
-                <View style={styles.toursGrid}>
-                    {featuredTours.map((tour) => (
-                        <TouchableOpacity key={tour.id} style={styles.tourCard} activeOpacity={0.85}>
-                            <Image source={{ uri: tour.image }} style={styles.tourImage} />
-                            <View style={styles.tourInfo}>
-                                <Text style={styles.tourName}>{tour.name}</Text>
-                                <View style={styles.tourMeta}>
-                                    <Ionicons name="location-outline" size={14} color={colors.text.muted} />
-                                    <Text style={styles.tourLocation}>{tour.location}</Text>
-                                </View>
-                                <View style={styles.tourFooter}>
-                                    <View style={styles.ratingRow}>
-                                        <Ionicons name="star" size={14} color="#F59E0B" />
-                                        <Text style={styles.ratingText}>{tour.rating}</Text>
-                                    </View>
-                                    <Text style={styles.tourDuration}>{tour.duration}</Text>
-                                    <Text style={styles.tourPrice}>{tour.price}</Text>
-                                </View>
-                            </View>
-                        </TouchableOpacity>
-                    ))}
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
+                    {durationFilters.map((option) => {
+                        const active = filters.duration === option.value;
+                        return (
+                            <TouchableOpacity
+                                key={option.value}
+                                style={[styles.filterChip, active && styles.filterChipActive]}
+                                onPress={() => setFilters({ duration: option.value })}
+                            >
+                                <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>
+                                    {option.label}
+                                </Text>
+                            </TouchableOpacity>
+                        );
+                    })}
+                </ScrollView>
+
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
+                    {tourCategories.map((category) => {
+                        const active = filters.categories.includes(category);
+                        return (
+                            <TouchableOpacity
+                                key={category}
+                                style={[styles.filterChip, active && styles.filterChipActive]}
+                                onPress={() => toggleCategory(category)}
+                            >
+                                <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>
+                                    {category}
+                                </Text>
+                            </TouchableOpacity>
+                        );
+                    })}
+                </ScrollView>
+
+                <View style={styles.metaRow}>
+                    <Text style={styles.metaText}>
+                        {tours.length} tours shown {activeFilterCount > 0 ? `(${activeFilterCount} filters)` : ''}
+                    </Text>
                 </View>
 
-                <View style={{ height: 30 }} />
+                {tours.map((tour) => (
+                    <TouchableOpacity
+                        key={tour.id}
+                        style={styles.card}
+                        activeOpacity={0.92}
+                        onPress={() => router.push(`/tour/${tour.id}` as never)}
+                    >
+                        <View>
+                            <Image source={{ uri: tour.images[0] }} style={styles.cardImage} />
+                            <TouchableOpacity
+                                style={styles.wishlistButton}
+                                onPress={() => toggleWishlist(tour.id)}
+                                hitSlop={10}
+                            >
+                                <Ionicons
+                                    name={wishlist.has(tour.id) ? 'heart' : 'heart-outline'}
+                                    size={18}
+                                    color={wishlist.has(tour.id) ? '#EF4444' : colors.white}
+                                />
+                            </TouchableOpacity>
+                            <View style={styles.ratingBadge}>
+                                <Ionicons name="star" size={12} color="#F59E0B" />
+                                <Text style={styles.ratingBadgeText}>
+                                    {tour.rating} ({tour.reviewCount})
+                                </Text>
+                            </View>
+                        </View>
+
+                        <View style={styles.cardBody}>
+                            <Text numberOfLines={1} style={styles.cardTitle}>
+                                {tour.name}
+                            </Text>
+                            <View style={styles.locationRow}>
+                                <Ionicons name="location-outline" size={14} color={colors.text.muted} />
+                                <Text style={styles.locationText}>
+                                    {tour.location}, {tour.country}
+                                </Text>
+                            </View>
+                            <View style={styles.infoRow}>
+                                <Text style={styles.infoPill}>{tour.duration}</Text>
+                                <Text style={styles.infoPill}>Group {tour.groupSize}</Text>
+                                {tour.isAIRecommended ? <Text style={styles.aiPill}>AI Pick</Text> : null}
+                            </View>
+                            <View style={styles.priceRow}>
+                                <Text style={styles.price}>{tour.currency}{tour.price}</Text>
+                                {tour.originalPrice ? (
+                                    <Text style={styles.oldPrice}>{tour.currency}{tour.originalPrice}</Text>
+                                ) : null}
+                                <Text style={styles.perText}>/person</Text>
+                            </View>
+                        </View>
+                    </TouchableOpacity>
+                ))}
+
+                {isLoading ? (
+                    <ActivityIndicator size="small" color={colors.primary.DEFAULT} style={styles.loader} />
+                ) : null}
+
+                {hasMore && !isLoading ? (
+                    <TouchableOpacity style={styles.loadMoreButton} onPress={loadMore}>
+                        <Text style={styles.loadMoreText}>Load More Tours</Text>
+                    </TouchableOpacity>
+                ) : null}
+
+                <View style={styles.bottomSpacer} />
             </ScrollView>
         </SafeAreaView>
     );
@@ -140,117 +206,230 @@ export default function ToursScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#FAFAF7',
+        backgroundColor: colors.background.DEFAULT,
+    },
+    content: {
+        paddingHorizontal: spacing.lg,
+        paddingTop: spacing.sm,
     },
     header: {
-        paddingHorizontal: spacing.lg,
-        paddingTop: spacing.lg,
-        paddingBottom: spacing.sm,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
     },
     title: {
-        fontSize: 28,
-        fontWeight: '800',
+        fontSize: 24,
+        fontFamily: fonts.bodyBold,
         color: colors.text.primary,
     },
-    subtitle: {
-        fontSize: 15,
-        color: colors.text.muted,
-        marginTop: 4,
-    },
-    searchContainer: {
+    resetButton: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#F0ECE3',
-        marginHorizontal: spacing.lg,
-        borderRadius: 16,
-        paddingHorizontal: 16,
-        paddingVertical: 12,
-        marginBottom: spacing.md,
+        gap: 4,
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        borderRadius: 12,
+        backgroundColor: colors.primary.subtle,
+    },
+    resetButtonText: {
+        fontSize: 12,
+        fontFamily: fonts.bodySemibold,
+        color: colors.primary.DEFAULT,
+    },
+    searchRow: {
+        marginTop: spacing.md,
+        backgroundColor: colors.white,
+        borderRadius: 14,
+        borderWidth: 1,
+        borderColor: colors.border.DEFAULT,
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 12,
+        height: 48,
+        gap: 8,
     },
     searchInput: {
         flex: 1,
-        marginLeft: 10,
-        fontSize: 15,
+        fontFamily: fonts.body,
         color: colors.text.primary,
+        fontSize: 14,
     },
-    categoriesContainer: {
-        paddingHorizontal: spacing.lg,
-        gap: 10,
-        marginBottom: spacing.lg,
+    row: {
+        marginTop: spacing.md,
+        gap: 8,
+        paddingBottom: 2,
     },
-    categoryChip: {
+    sortChip: {
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: 16,
+        backgroundColor: colors.white,
+        borderWidth: 1,
+        borderColor: colors.border.DEFAULT,
+    },
+    sortChipActive: {
+        backgroundColor: colors.secondary.DEFAULT,
+        borderColor: colors.secondary.DEFAULT,
+    },
+    sortChipText: {
+        fontFamily: fonts.bodySemibold,
+        fontSize: 12,
+        color: colors.text.secondary,
+    },
+    sortChipTextActive: {
+        color: colors.white,
+    },
+    filterChip: {
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: 16,
+        backgroundColor: colors.white,
+        borderWidth: 1,
+        borderColor: colors.border.DEFAULT,
+    },
+    filterChipActive: {
+        backgroundColor: colors.primary.DEFAULT,
+        borderColor: colors.primary.DEFAULT,
+    },
+    filterChipText: {
+        fontFamily: fonts.bodySemibold,
+        fontSize: 12,
+        color: colors.text.secondary,
+    },
+    filterChipTextActive: {
+        color: colors.white,
+    },
+    metaRow: {
+        marginTop: spacing.md,
+        marginBottom: spacing.sm,
+    },
+    metaText: {
+        fontSize: 12,
+        color: colors.text.muted,
+        fontFamily: fonts.body,
+    },
+    card: {
+        backgroundColor: colors.white,
+        borderRadius: 18,
+        overflow: 'hidden',
+        marginBottom: spacing.md,
+        ...shadows.sm,
+    },
+    cardImage: {
+        width: '100%',
+        height: 190,
+    },
+    wishlistButton: {
+        position: 'absolute',
+        top: 10,
+        right: 10,
+        width: 34,
+        height: 34,
+        borderRadius: 17,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: 'rgba(15,23,42,0.45)',
+    },
+    ratingBadge: {
+        position: 'absolute',
+        bottom: 10,
+        left: 10,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        backgroundColor: 'rgba(0,0,0,0.62)',
+        borderRadius: 12,
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+    },
+    ratingBadgeText: {
+        fontSize: 11,
+        color: colors.white,
+        fontFamily: fonts.bodySemibold,
+    },
+    cardBody: {
+        padding: 14,
+    },
+    cardTitle: {
+        fontSize: 16,
+        color: colors.text.primary,
+        fontFamily: fonts.bodyBold,
+    },
+    locationRow: {
+        marginTop: 6,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+    },
+    locationText: {
+        fontSize: 12,
+        color: colors.text.muted,
+        fontFamily: fonts.body,
+    },
+    infoRow: {
+        marginTop: 10,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        flexWrap: 'wrap',
+    },
+    infoPill: {
+        borderRadius: 12,
+        backgroundColor: colors.background.tertiary,
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        fontSize: 11,
+        color: colors.text.secondary,
+        fontFamily: fonts.bodyMedium,
+    },
+    aiPill: {
+        borderRadius: 12,
+        backgroundColor: '#DCFCE7',
+        color: '#166534',
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        fontSize: 11,
+        fontFamily: fonts.bodySemibold,
+    },
+    priceRow: {
+        marginTop: 12,
+        flexDirection: 'row',
+        alignItems: 'baseline',
+        gap: 6,
+    },
+    price: {
+        fontSize: 20,
+        fontFamily: fonts.bodyBold,
+        color: colors.primary.DEFAULT,
+    },
+    oldPrice: {
+        fontSize: 13,
+        color: colors.text.light,
+        textDecorationLine: 'line-through',
+        fontFamily: fonts.body,
+    },
+    perText: {
+        fontSize: 12,
+        color: colors.text.muted,
+        fontFamily: fonts.body,
+    },
+    loader: {
+        marginVertical: spacing.sm,
+    },
+    loadMoreButton: {
+        alignSelf: 'center',
+        marginTop: spacing.sm,
+        backgroundColor: colors.primary.DEFAULT,
+        borderRadius: 14,
         paddingHorizontal: 18,
         paddingVertical: 10,
-        borderRadius: 24,
-        backgroundColor: '#F0ECE3',
     },
-    categoryChipActive: {
-        backgroundColor: '#F97316',
-    },
-    categoryText: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: colors.text.muted,
-    },
-    categoryTextActive: {
-        color: '#fff',
-    },
-    toursGrid: {
-        paddingHorizontal: spacing.lg,
-        gap: 16,
-    },
-    tourCard: {
-        backgroundColor: '#fff',
-        borderRadius: 20,
-        overflow: 'hidden',
-        ...shadows.card,
-    },
-    tourImage: {
-        width: '100%',
-        height: 180,
-    },
-    tourInfo: {
-        padding: 16,
-    },
-    tourName: {
-        fontSize: 17,
-        fontWeight: '700',
-        color: colors.text.primary,
-    },
-    tourMeta: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 4,
-        marginTop: 6,
-    },
-    tourLocation: {
+    loadMoreText: {
+        color: colors.white,
         fontSize: 13,
-        color: colors.text.muted,
+        fontFamily: fonts.bodySemibold,
     },
-    tourFooter: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        marginTop: 12,
-    },
-    ratingRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 4,
-    },
-    ratingText: {
-        fontSize: 13,
-        fontWeight: '600',
-        color: colors.text.primary,
-    },
-    tourDuration: {
-        fontSize: 13,
-        color: colors.text.muted,
-        fontWeight: '500',
-    },
-    tourPrice: {
-        fontSize: 16,
-        fontWeight: '800',
-        color: '#F97316',
+    bottomSpacer: {
+        height: 96,
     },
 });

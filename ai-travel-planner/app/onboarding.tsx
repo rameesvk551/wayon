@@ -22,7 +22,7 @@ interface OnboardingSlide {
     subtitle: string;
     description: string;
     icon: string;
-    colors: [string, string];
+    colors: readonly [string, string];
 }
 
 const slides: OnboardingSlide[] = [
