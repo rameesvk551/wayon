@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, MapPin, Star, Wifi, Waves, Dumbbell, UtensilsCrossed, SlidersHorizontal } from 'lucide-react';
+import { Search, MapPin, Star, SlidersHorizontal } from 'lucide-react';
 
 const featuredHotels = [
     {

@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import {
     MapPin, Calendar, Clock, Train, Car, Plane, Bus,
     Camera, Sparkles, CheckCircle2, AlertCircle,
-    Palmtree, Building, FileDown, Loader2
+    Palmtree, Building, FileDown, Loader2, PencilLine
 } from 'lucide-react';
 
 // Types matching the backend itinerary-generator output
@@ -38,6 +39,7 @@ interface ItineraryOutput {
 
 interface ItineraryDisplayProps {
     itinerary: ItineraryOutput;
+    itineraryTripId?: string;
     preferences?: {
         companions?: string;
         budget?: string;
@@ -184,11 +186,13 @@ const DayCard: React.FC<{ day: DayPlan; index: number }> = ({ day, index }) => {
 // Main Itinerary Display Component
 export const ItineraryDisplay: React.FC<ItineraryDisplayProps> = ({
     itinerary,
+    itineraryTripId,
     preferences,
     transportMode,
     isLoading = false,
 }) => {
     const [pdfLoading, setPdfLoading] = useState(false);
+    const navigate = useNavigate();
 
     const handleGeneratePdf = async () => {
         setPdfLoading(true);
@@ -353,6 +357,14 @@ export const ItineraryDisplay: React.FC<ItineraryDisplayProps> = ({
                 >
                     {pdfLoading ? <Loader2 size={18} className="animate-spin" /> : <FileDown size={18} />}
                     {pdfLoading ? 'Generating…' : 'Generate PDF'}
+                </button>
+                <button
+                    className="itinerary-action-btn secondary"
+                    onClick={() => navigate(`/itinerary/${itineraryTripId || 'demo'}/edit`)}
+                    type="button"
+                >
+                    <PencilLine size={18} />
+                    Edit Itinerary
                 </button>
             </motion.div>
         </div>

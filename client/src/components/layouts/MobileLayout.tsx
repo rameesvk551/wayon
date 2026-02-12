@@ -1,5 +1,6 @@
-import { motion } from 'framer-motion';
-import { Compass, Hotel, Map, Bot, Shield } from 'lucide-react';
+import { useState, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Compass, Hotel, Home, Bot, Shield, Map, Plus, X } from 'lucide-react';
 import AppHeader from '../AppHeader';
 
 interface MobileLayoutProps {
@@ -8,12 +9,21 @@ interface MobileLayoutProps {
     onTabChange: (tab: string) => void;
 }
 
-const tabs = [
+const leftTabs = [
+    { id: 'home', label: 'Home', icon: Home },
     { id: 'tours', label: 'Tours', icon: Compass },
+];
+
+const rightTabs = [
     { id: 'hotels', label: 'Hotels', icon: Hotel },
-    { id: 'visa', label: 'Visa', icon: Shield },
-    { id: 'planner', label: 'Planner', icon: Map },
-    { id: 'bot', label: 'Bot', icon: Bot },
+    { id: 'bot', label: 'AI', icon: Bot },
+];
+
+/* Extra actions revealed by the FAB */
+const fabActions = [
+    { id: 'visa', label: 'Visa', icon: Shield, color: '#6366F1' },
+    { id: 'planner', label: 'Plan Trip', icon: Map, color: '#F59E0B' },
+    { id: 'bot', label: 'AI Chat', icon: Bot, color: '#10B981' },
 ];
 
 export const MobileLayout: React.FC<MobileLayoutProps> = ({
@@ -21,49 +31,161 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({
     activeTab,
     onTabChange
 }) => {
+    const [fabOpen, setFabOpen] = useState(false);
+
+    const toggleFab = useCallback(() => setFabOpen((s) => !s), []);
+
+    const handleFabAction = useCallback((id: string) => {
+        setFabOpen(false);
+        onTabChange(id);
+    }, [onTabChange]);
+
+    const renderTab = (tab: typeof leftTabs[0]) => {
+        const Icon = tab.icon;
+        const isActive = activeTab === tab.id;
+
+        return (
+            <button
+                key={tab.id}
+                onClick={() => onTabChange(tab.id)}
+                className={`mnav-tab ${isActive ? 'mnav-tab--active' : ''}`}
+                aria-label={tab.label}
+            >
+                <motion.div
+                    className="mnav-tab__icon"
+                    initial={false}
+                    animate={{
+                        scale: isActive ? 1 : 1,
+                        y: isActive ? -1 : 0,
+                    }}
+                    transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                >
+                    <Icon size={22} strokeWidth={isActive ? 2.5 : 1.8} />
+                </motion.div>
+                <span className="mnav-tab__label">{tab.label}</span>
+                {isActive && (
+                    <motion.div
+                        className="mnav-tab__dot"
+                        layoutId="activeTabDot"
+                        transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+                    />
+                )}
+            </button>
+        );
+    };
+
     return (
         <div className="mobile-app-container">
-            {/* App Header */}
             <AppHeader />
 
-            {/* Main Content Area */}
             <main className="mobile-content">
                 {children}
             </main>
 
-            {/* Bottom Tab Navigation - 5 Icons */}
-            <nav className="mobile-bottom-nav">
-                {tabs.map((tab) => {
-                    const Icon = tab.icon;
-                    const isActive = activeTab === tab.id;
+            {/* Scrim overlay when FAB is open */}
+            <AnimatePresence>
+                {fabOpen && (
+                    <motion.div
+                        className="mnav-scrim"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        onClick={() => setFabOpen(false)}
+                    />
+                )}
+            </AnimatePresence>
 
-                    return (
-                        <button
-                            key={tab.id}
-                            onClick={() => onTabChange(tab.id)}
-                            className={`mobile-tab-button ${isActive ? 'active' : ''}`}
+            {/* FAB radial action menu */}
+            <AnimatePresence>
+                {fabOpen && (
+                    <div className="mnav-fab-menu">
+                        {fabActions.map((action, i) => {
+                            const Icon = action.icon;
+                            const angle = -90 - 45 + i * 45; // arc from ~-135 to ~-45 degrees
+                            const radius = 100;
+                            const rad = (angle * Math.PI) / 180;
+                            const x = Math.cos(rad) * radius;
+                            const y = Math.sin(rad) * radius;
+
+                            return (
+                                <motion.button
+                                    key={action.id}
+                                    className="mnav-fab-action"
+                                    style={{ '--fab-color': action.color } as React.CSSProperties}
+                                    initial={{ opacity: 0, x: 0, y: 0, scale: 0.3 }}
+                                    animate={{ opacity: 1, x, y, scale: 1 }}
+                                    exit={{ opacity: 0, x: 0, y: 0, scale: 0.3 }}
+                                    transition={{
+                                        type: 'spring',
+                                        stiffness: 400,
+                                        damping: 22,
+                                        delay: i * 0.05,
+                                    }}
+                                    onClick={() => handleFabAction(action.id)}
+                                >
+                                    <Icon size={20} strokeWidth={2} />
+                                    <span className="mnav-fab-action__label">{action.label}</span>
+                                </motion.button>
+                            );
+                        })}
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* Bottom Navigation Bar */}
+            <nav className="mnav">
+                <div className="mnav__bar">
+                    {/* Left tabs */}
+                    <div className="mnav__group">
+                        {leftTabs.map(renderTab)}
+                    </div>
+
+                    {/* Center FAB */}
+                    <div className="mnav__fab-wrapper">
+                        <motion.button
+                            className={`mnav__fab ${fabOpen ? 'mnav__fab--open' : ''}`}
+                            onClick={toggleFab}
+                            whileTap={{ scale: 0.92 }}
+                            aria-label={fabOpen ? 'Close menu' : 'Open menu'}
                         >
                             <motion.div
                                 initial={false}
-                                animate={{
-                                    scale: isActive ? 1.1 : 1,
-                                    y: isActive ? -2 : 0
-                                }}
-                                transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-                                className="mobile-tab-icon-wrapper"
+                                animate={{ rotate: fabOpen ? 0 : 0 }}
+                                transition={{ type: 'spring', stiffness: 400, damping: 20 }}
                             >
-                                <Icon
-                                    size={22}
-                                    strokeWidth={isActive ? 2.5 : 1.5}
-                                    className={isActive ? 'text-white' : 'text-gray-500'}
-                                />
+                                <AnimatePresence mode="wait" initial={false}>
+                                    {fabOpen ? (
+                                        <motion.div
+                                            key="close"
+                                            initial={{ rotate: -90, opacity: 0 }}
+                                            animate={{ rotate: 0, opacity: 1 }}
+                                            exit={{ rotate: 90, opacity: 0 }}
+                                            transition={{ duration: 0.15 }}
+                                        >
+                                            <X size={26} strokeWidth={2.5} />
+                                        </motion.div>
+                                    ) : (
+                                        <motion.div
+                                            key="plus"
+                                            initial={{ rotate: 90, opacity: 0 }}
+                                            animate={{ rotate: 0, opacity: 1 }}
+                                            exit={{ rotate: -90, opacity: 0 }}
+                                            transition={{ duration: 0.15 }}
+                                        >
+                                            <Plus size={26} strokeWidth={2.5} />
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
                             </motion.div>
-                            <span className={`mobile-tab-label ${isActive ? 'active' : ''}`}>
-                                {tab.label}
-                            </span>
-                        </button>
-                    );
-                })}
+                        </motion.button>
+                    </div>
+
+                    {/* Right tabs */}
+                    <div className="mnav__group">
+                        {rightTabs.map(renderTab)}
+                    </div>
+                </div>
             </nav>
         </div>
     );

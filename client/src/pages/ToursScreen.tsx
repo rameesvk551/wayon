@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, MapPin, Star, Clock, Filter } from 'lucide-react';
+import { Search, MapPin, Star, Clock } from 'lucide-react';
 
 const featuredTours = [
     {

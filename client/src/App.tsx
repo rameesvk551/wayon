@@ -3,12 +3,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { MobileLayout } from './components/layouts/MobileLayout';
 import AppHeader from './components/AppHeader';
 import ToursScreen from './pages/ToursScreen';
-import HotelsScreen from './pages/HotelsScreen';
 import ChatScreen from './pages/ChatScreen';
-import HomeScreen from './pages/HomeScreen';
-import TripsScreen from './pages/TripsScreen';
-import FavoritesScreen from './pages/FavoritesScreen';
-import ProfileScreen from './pages/ProfileScreen';
 import { MapProvider } from './store/MapContext';
 import DiscoverPage from './pages/DiscoverPage';
 import PlanPage from './pages/PlanPage';
@@ -18,6 +13,7 @@ import ToursListingPage from './pages/ToursListingPage';
 import TourDetailPage from './pages/TourDetailPage';
 import VisaCheckerPage from './pages/VisaCheckerPage';
 import VisaExplorerPage from './pages/VisaExplorerPage';
+import ItineraryEditorPage from './pages/ItineraryEditorPage';
 import './index.css';
 
 // Layout wrapper that includes AppHeader for non-auth pages
@@ -30,21 +26,18 @@ const WithHeader: React.FC<{ children: React.ReactNode }> = ({ children }) => (
 
 // Main Mobile App with Tab Navigation
 const MobileApp: React.FC = () => {
-  const [activeTab, setActiveTab] = useState('tours');
+  const [activeTab, setActiveTab] = useState('home');
   const [visaSubTab, setVisaSubTab] = useState<'checker' | 'explorer'>('checker');
 
   const renderScreen = () => {
     switch (activeTab) {
+      case 'home':
+        return <HomeScreen onNavigate={setActiveTab} />;
       case 'tours':
         return <ToursListingPage />;
       case 'hotels':
         return <HotelListingPage />;
       case 'planner':
-        return (
-          <MapProvider>
-            <ChatScreen onNavigate={setActiveTab} />
-          </MapProvider>
-        );
       case 'bot':
         return (
           <MapProvider>
@@ -58,7 +51,7 @@ const MobileApp: React.FC = () => {
           <VisaExplorerPage />
         );
       default:
-        return <ToursScreen />;
+        return <HomeScreen onNavigate={setActiveTab} />;
     }
   };
 
@@ -104,6 +97,7 @@ function App() {
         <Route path="/tours/:tourId" element={<TourDetailPage />} />
         <Route path="/visa-checker" element={<VisaCheckerPage />} />
         <Route path="/visa-explorer" element={<VisaExplorerPage />} />
+        <Route path="/itinerary/:tripId/edit" element={<ItineraryEditorPage />} />
 
         {/* Auth Routes (no header) */}
         {/* <Route path="/login" element={<LoginPage />} /> */}

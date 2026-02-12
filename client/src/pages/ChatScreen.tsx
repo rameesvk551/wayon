@@ -618,7 +618,8 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onNavigate }) => {
                     return {
                         ...msg,
                         isLoading: false,
-                        itineraryData: itinerary
+                        itineraryData: itinerary,
+                        itineraryTripId: 'demo'
                     };
                 }
 
@@ -697,7 +698,8 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onNavigate }) => {
                         return {
                             ...msg,
                             isLoading: false,
-                            itineraryData: itinerary
+                            itineraryData: itinerary,
+                            itineraryTripId: 'demo'
                         };
                     }
 

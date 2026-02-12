@@ -64,6 +64,7 @@ export interface Message {
     interactiveType?: 'destination' | 'companions' | 'budget' | 'dates' | 'hotel_dates' | 'location' | 'transport' | 'attractions' | 'interests' | 'summary' | 'itinerary';
     timestamp: Date;
     itineraryData?: ItineraryOutput;
+    itineraryTripId?: string;
     isLoading?: boolean;
 }
 

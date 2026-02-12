@@ -163,6 +163,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
                     <div className="mobile-chat-interactive">
                         <ItineraryDisplay 
                             itinerary={message.itineraryData}
+                            itineraryTripId={message.itineraryTripId}
                             preferences={{
                                 companions: preferences.companions || undefined,
                                 budget: preferences.budget || undefined,
