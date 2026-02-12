@@ -38,8 +38,12 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "222ebf24-ab7d-46cb-89b8-94db924248aa"
+        "projectId": "dc58eabb-1374-4633-80a8-3fdfd15fff51"
       }
-    }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "owner": "mahamood"
   }
 }
