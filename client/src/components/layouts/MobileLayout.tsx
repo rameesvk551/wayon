@@ -102,9 +102,14 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({
                     <div className="mnav-fab-menu">
                         {fabActions.map((action, i) => {
                             const Icon = action.icon;
-                            const angle = -90 - 45 + i * 45; // arc from ~-135 to ~-45 degrees
-                            const radius = 100;
-                            const rad = (angle * Math.PI) / 180;
+                            const total = fabActions.length;
+                            // Spread evenly across a 140° arc centered above the FAB
+                            const spreadAngle = 140;
+                            const startAngle = 180 + (180 - spreadAngle) / 2; // start from left
+                            const step = spreadAngle / (total - 1);
+                            const angleDeg = startAngle + i * step;
+                            const radius = 95;
+                            const rad = (angleDeg * Math.PI) / 180;
                             const x = Math.cos(rad) * radius;
                             const y = Math.sin(rad) * radius;
 
@@ -113,14 +118,14 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({
                                     key={action.id}
                                     className="mnav-fab-action"
                                     style={{ '--fab-color': action.color } as React.CSSProperties}
-                                    initial={{ opacity: 0, x: 0, y: 0, scale: 0.3 }}
+                                    initial={{ opacity: 0, x: 0, y: 0, scale: 0.2 }}
                                     animate={{ opacity: 1, x, y, scale: 1 }}
-                                    exit={{ opacity: 0, x: 0, y: 0, scale: 0.3 }}
+                                    exit={{ opacity: 0, x: 0, y: 0, scale: 0.2 }}
                                     transition={{
                                         type: 'spring',
-                                        stiffness: 400,
-                                        damping: 22,
-                                        delay: i * 0.05,
+                                        stiffness: 380,
+                                        damping: 20,
+                                        delay: i * 0.04,
                                     }}
                                     onClick={() => handleFabAction(action.id)}
                                 >

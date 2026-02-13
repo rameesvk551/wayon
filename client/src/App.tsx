@@ -1,14 +1,17 @@
 import { useState } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { MobileLayout } from './components/layouts/MobileLayout';
+import StandaloneMobileLayout from './components/layouts/StandaloneMobileLayout';
 import AppHeader from './components/AppHeader';
-import ToursScreen from './pages/ToursScreen';
+import { HomeScreen } from './pages/HomeScreen';
 import ChatScreen from './pages/ChatScreen';
 import { MapProvider } from './store/MapContext';
 import DiscoverPage from './pages/DiscoverPage';
 import PlanPage from './pages/PlanPage';
 import ReviewPage from './pages/ReviewPage';
 import HotelListingPage from './pages/HotelListingPage';
+import BudgetTrackerPage from './pages/BudgetTrackerPage';
+import PackingAssistantPage from './pages/PackingAssistantPage';
 import ToursListingPage from './pages/ToursListingPage';
 import TourDetailPage from './pages/TourDetailPage';
 import VisaCheckerPage from './pages/VisaCheckerPage';
@@ -93,6 +96,8 @@ function App() {
         <Route path="/plan/new" element={<WithHeader><PlanPage /></WithHeader>} />
         <Route path="/review/:tripId" element={<WithHeader><ReviewPage /></WithHeader>} />
         <Route path="/hotels" element={<WithHeader><HotelListingPage /></WithHeader>} />
+        <Route path="/budget-tracker" element={<StandaloneMobileLayout><BudgetTrackerPage /></StandaloneMobileLayout>} />
+        <Route path="/packing-assistant" element={<StandaloneMobileLayout><PackingAssistantPage /></StandaloneMobileLayout>} />
         <Route path="/tours" element={<ToursListingPage />} />
         <Route path="/tours/:tourId" element={<TourDetailPage />} />
         <Route path="/visa-checker" element={<VisaCheckerPage />} />

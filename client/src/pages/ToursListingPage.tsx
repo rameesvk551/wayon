@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
+import { ChevronRight, CheckSquare, WalletCards } from 'lucide-react';
 import { TourSearchBar } from '../components/organisms/TourSearchBar';
 import { TourFilterBar } from '../components/organisms/TourFilterBar';
 import { TourFilterBottomSheet } from '../components/organisms/TourFilterBottomSheet';
@@ -83,6 +84,45 @@ const ToursListingPage: React.FC = () => {
 
             {/* Filter Bar */}
             <TourFilterBar onOpenFilters={openFilters} onOpenSort={openSort} />
+
+            {/* Assistant Navigation Buttons */}
+            <section className="mb-3 px-4">
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    <button
+                        type="button"
+                        onClick={() => navigate('/budget-tracker')}
+                        className="flex items-center justify-between rounded-2xl bg-white px-3 py-3 text-left shadow-sm ring-1 ring-slate-200/70 transition hover:shadow-md"
+                    >
+                        <div className="flex items-center gap-2.5">
+                            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
+                                <WalletCards size={16} />
+                            </span>
+                            <div>
+                                <p className="text-sm font-semibold text-slate-900">Budget Tracker</p>
+                                <p className="text-xs text-slate-500">Track trip expenses</p>
+                            </div>
+                        </div>
+                        <ChevronRight size={16} className="text-slate-500" />
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={() => navigate('/packing-assistant')}
+                        className="flex items-center justify-between rounded-2xl bg-white px-3 py-3 text-left shadow-sm ring-1 ring-slate-200/70 transition hover:shadow-md"
+                    >
+                        <div className="flex items-center gap-2.5">
+                            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-sky-100 text-sky-700">
+                                <CheckSquare size={16} />
+                            </span>
+                            <div>
+                                <p className="text-sm font-semibold text-slate-900">Packing Assistant</p>
+                                <p className="text-xs text-slate-500">Smart checklist</p>
+                            </div>
+                        </div>
+                        <ChevronRight size={16} className="text-slate-500" />
+                    </button>
+                </div>
+            </section>
 
             {/* Active Filter Chips */}
             <AnimatePresence>
