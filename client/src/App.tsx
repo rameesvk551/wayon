@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
 import { MobileLayout } from './components/layouts/MobileLayout';
 import StandaloneMobileLayout from './components/layouts/StandaloneMobileLayout';
-import AppHeader from './components/AppHeader';
+
 import { HomeScreen } from './pages/HomeScreen';
 import ChatScreen from './pages/ChatScreen';
 import { MapProvider } from './store/MapContext';
@@ -17,14 +17,14 @@ import TourDetailPage from './pages/TourDetailPage';
 import VisaCheckerPage from './pages/VisaCheckerPage';
 import VisaExplorerPage from './pages/VisaExplorerPage';
 import ItineraryEditorPage from './pages/ItineraryEditorPage';
+import AttractionDiscoveryPage from './pages/AttractionDiscoveryPage';
+import AttractionSearchPage from './pages/AttractionSearchPage';
+import AttractionDetailPage from './pages/AttractionDetailPage';
 import './index.css';
 
-// Layout wrapper that includes AppHeader for non-auth pages
+// Layout wrapper for non-auth pages
 const WithHeader: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <>
-    <AppHeader />
-    {children}
-  </>
+  <>{children}</>
 );
 
 // Main Mobile App with Tab Navigation
@@ -38,6 +38,8 @@ const MobileApp: React.FC = () => {
         return <HomeScreen onNavigate={setActiveTab} />;
       case 'tours':
         return <ToursListingPage />;
+      case 'discover':
+        return <AttractionDiscoveryPage />;
       case 'hotels':
         return <HotelListingPage />;
       case 'planner':
@@ -53,6 +55,10 @@ const MobileApp: React.FC = () => {
         ) : (
           <VisaExplorerPage />
         );
+      case 'budget':
+        return <BudgetTrackerPage />;
+      case 'packing':
+        return <PackingAssistantPage />;
       default:
         return <HomeScreen onNavigate={setActiveTab} />;
     }
@@ -83,6 +89,25 @@ const MobileApp: React.FC = () => {
   );
 };
 
+// Wrapper for standalone routes that need the bottom nav
+const MobileNavWrapper: React.FC<{ children: React.ReactNode; activeTab: string }> = ({ children, activeTab }) => {
+  const navigate = useNavigate();
+  const handleTabChange = (tab: string) => {
+    const routes: Record<string, string> = {
+      home: '/',
+      discover: '/attractions',
+      hotels: '/',
+      bot: '/',
+    };
+    navigate(routes[tab] || '/');
+  };
+  return (
+    <MobileLayout activeTab={activeTab} onTabChange={handleTabChange}>
+      {children}
+    </MobileLayout>
+  );
+};
+
 function App() {
   return (
     <BrowserRouter>
@@ -100,6 +125,19 @@ function App() {
         <Route path="/packing-assistant" element={<StandaloneMobileLayout><PackingAssistantPage /></StandaloneMobileLayout>} />
         <Route path="/tours" element={<ToursListingPage />} />
         <Route path="/tours/:tourId" element={<TourDetailPage />} />
+        <Route path="/attractions" element={
+          <MobileNavWrapper activeTab="discover">
+            <AttractionDiscoveryPage />
+          </MobileNavWrapper>
+        } />
+        <Route path="/attractions/:city" element={
+          <MobileNavWrapper activeTab="discover">
+            <AttractionSearchPage />
+          </MobileNavWrapper>
+        } />
+        <Route path="/attractions/:city/:id" element={
+          <AttractionDetailPage />
+        } />
         <Route path="/visa-checker" element={<VisaCheckerPage />} />
         <Route path="/visa-explorer" element={<VisaExplorerPage />} />
         <Route path="/itinerary/:tripId/edit" element={<ItineraryEditorPage />} />
@@ -113,3 +151,4 @@ function App() {
 }
 
 export default App;
+

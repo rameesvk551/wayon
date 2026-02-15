@@ -15,7 +15,7 @@ const BudgetTrackerPage = () => {
   };
 
   return (
-    <div className="sb-page no-scrollbar overflow-y-auto">
+    <div className="sb-page overflow-hidden">
       <motion.header
         initial={{ y: -10, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}

@@ -82,16 +82,19 @@
 
 .sb-page {
   background: linear-gradient(180deg, #E8ECF4 0%, #DEE3ED 100%);
-  min-height: 100%;
-  padding: 20px 16px 40px;
+  height: 100%;
+  padding: 10px 14px 12px;
   font-family: 'Sora', 'Inter', 'Segoe UI', Tahoma, sans-serif;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .sb-header {
   display: flex;
   align-items: center;
-  gap: 14px;
-  margin-bottom: 24px;
+  gap: 12px;
+  margin-bottom: 10px;
 }
 
 .sb-back-btn {
@@ -125,28 +128,36 @@
 .sb-container {
   background: white;
   border-radius: 28px;
-  padding: 20px 20px 24px;
+  padding: 12px 16px 14px;
   box-shadow:
     0 8px 32px rgba(15, 23, 42, 0.08),
     0 2px 6px rgba(15, 23, 42, 0.04);
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .sb-donut-wrapper {
   display: flex;
   justify-content: center;
-  padding: 4px 0 24px;
+  padding: 2px 0 10px;
 }
 
 .sb-donut-svg {
-  width: 220px;
-  height: 220px;
+  width: 170px;
+  height: 170px;
 }
 
 .sb-category-list {
   display: flex;
   flex-direction: column;
-  gap: 18px;
-  margin-bottom: 20px;
+  gap: 10px;
+  margin-bottom: 10px;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .sb-category-row {
@@ -159,9 +170,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 14px;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
   flex-shrink: 0;
 }
 
@@ -174,7 +185,7 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
 }
 
 .sb-cat-name {
@@ -226,9 +237,9 @@
 .sb-total-row {
   display: flex;
   align-items: center;
-  padding: 16px 0 12px;
+  padding: 10px 0 6px;
   border-top: 1px solid #F1F5F9;
-  margin-top: 4px;
+  margin-top: 2px;
 }
 
 .sb-total-label {
@@ -257,8 +268,8 @@
   justify-content: center;
   gap: 6px;
   width: 100%;
-  padding: 14px 20px;
-  margin-top: 4px;
+  padding: 8px 16px;
+  margin-top: 2px;
   border-radius: 16px;
   background: transparent;
   border: none;
@@ -707,4 +718,6 @@
 
 .standalone-mobile-content > * {
   height: 100%;
+  overflow-y: hidden;
+  padding-bottom: 0;
 }

@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Compass, Hotel, Home, Bot, Shield, Map, Plus, X } from 'lucide-react';
-import AppHeader from '../AppHeader';
+import { Hotel, Home, Bot, Shield, Plus, X, Binoculars, WalletCards, CheckSquare } from 'lucide-react';
+
 
 interface MobileLayoutProps {
     children: React.ReactNode;
@@ -11,7 +11,7 @@ interface MobileLayoutProps {
 
 const leftTabs = [
     { id: 'home', label: 'Home', icon: Home },
-    { id: 'tours', label: 'Tours', icon: Compass },
+    { id: 'discover', label: 'Discover', icon: Binoculars },
 ];
 
 const rightTabs = [
@@ -21,9 +21,9 @@ const rightTabs = [
 
 /* Extra actions revealed by the FAB */
 const fabActions = [
+    { id: 'budget', label: 'Budget', icon: WalletCards, color: '#059669' },
     { id: 'visa', label: 'Visa', icon: Shield, color: '#6366F1' },
-    { id: 'planner', label: 'Plan Trip', icon: Map, color: '#F59E0B' },
-    { id: 'bot', label: 'AI Chat', icon: Bot, color: '#10B981' },
+    { id: 'packing', label: 'Packing', icon: CheckSquare, color: '#0284C7' },
 ];
 
 export const MobileLayout: React.FC<MobileLayoutProps> = ({
@@ -76,7 +76,6 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({
 
     return (
         <div className="mobile-app-container">
-            <AppHeader />
 
             <main className="mobile-content">
                 {children}
@@ -155,6 +154,7 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({
                             aria-label={fabOpen ? 'Close menu' : 'Open menu'}
                         >
                             <motion.div
+                                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                                 initial={false}
                                 animate={{ rotate: fabOpen ? 0 : 0 }}
                                 transition={{ type: 'spring', stiffness: 400, damping: 20 }}
@@ -163,6 +163,7 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({
                                     {fabOpen ? (
                                         <motion.div
                                             key="close"
+                                            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                                             initial={{ rotate: -90, opacity: 0 }}
                                             animate={{ rotate: 0, opacity: 1 }}
                                             exit={{ rotate: 90, opacity: 0 }}
@@ -173,6 +174,7 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({
                                     ) : (
                                         <motion.div
                                             key="plus"
+                                            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                                             initial={{ rotate: 90, opacity: 0 }}
                                             animate={{ rotate: 0, opacity: 1 }}
                                             exit={{ rotate: -90, opacity: 0 }}
