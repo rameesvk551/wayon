@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { HotelSearchBar } from '../components/organisms/HotelSearchBar';
 import { FilterBar } from '../components/organisms/FilterBar';
@@ -11,7 +11,13 @@ import { useHotelStore } from '../store/useHotelStore';
 const HotelListingPage: React.FC = () => {
     const [isFilterOpen, setIsFilterOpen] = useState(false);
     const [filterTab, setFilterTab] = useState<'sort' | 'filters'>('filters');
-    const { viewMode, filters, sortBy, setFilters, setSortBy } = useHotelStore();
+
+    // Use individual selectors for proper re-rendering
+    const viewMode = useHotelStore((s) => s.viewMode);
+    const filters = useHotelStore((s) => s.filters);
+    const sortBy = useHotelStore((s) => s.sortBy);
+    const setFilters = useHotelStore((s) => s.setFilters);
+    const setSortBy = useHotelStore((s) => s.setSortBy);
 
     const openFilters = () => {
         setFilterTab('filters');

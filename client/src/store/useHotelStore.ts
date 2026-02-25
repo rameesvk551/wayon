@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import { mockHotels, type HotelListingItem, type SortOption } from '../data/hotelListingData';
+import { type HotelListingItem, type SortOption } from '../data/hotelListingData';
+import { searchHotels, getDefaultDates } from '../services/hotelApi';
 
 interface HotelFilters {
     priceRange: [number, number];
@@ -9,6 +10,9 @@ interface HotelFilters {
 }
 
 interface HotelStoreState {
+    // Data
+    hotels: HotelListingItem[];
+
     // Search
     searchQuery: string;
     destination: string;
@@ -32,6 +36,8 @@ interface HotelStoreState {
     isLoading: boolean;
     hasMore: boolean;
     error: string | null;
+    cursor: number;
+    totalResults: number;
 
     // Actions
     setSearchQuery: (q: string) => void;
@@ -46,6 +52,7 @@ interface HotelStoreState {
     setViewMode: (m: 'list' | 'map') => void;
     loadMore: () => void;
     refresh: () => void;
+    fetchHotels: (opts?: { append?: boolean }) => Promise<void>;
 
     // Derived
     getFilteredHotels: () => HotelListingItem[];
@@ -60,12 +67,17 @@ const defaultFilters: HotelFilters = {
     badges: [],
 };
 
+const defaultDates = getDefaultDates();
+
 export const useHotelStore = create<HotelStoreState>((set, get) => ({
+    // Data
+    hotels: [],
+
     // Search
     searchQuery: '',
     destination: 'Bali, Indonesia',
-    checkIn: '',
-    checkOut: '',
+    checkIn: defaultDates.checkIn,
+    checkOut: defaultDates.checkOut,
     guests: 2,
 
     // Filters
@@ -80,10 +92,12 @@ export const useHotelStore = create<HotelStoreState>((set, get) => ({
 
     // Pagination
     page: 1,
-    pageSize: 6,
+    pageSize: 20,
     isLoading: false,
     hasMore: true,
     error: null,
+    cursor: 0,
+    totalResults: 0,
 
     // Actions
     setSearchQuery: (q) => set({ searchQuery: q }),
@@ -109,34 +123,58 @@ export const useHotelStore = create<HotelStoreState>((set, get) => ({
 
     setViewMode: (m) => set({ viewMode: m }),
 
-    loadMore: () => {
-        const { page, pageSize, isLoading } = get();
+    /**
+     * Fetch hotels from the backend API
+     */
+    fetchHotels: async (opts?: { append?: boolean }) => {
+        const { destination, checkIn, checkOut, guests, pageSize, cursor, isLoading } = get();
+
         if (isLoading) return;
-        const filtered = get().getFilteredHotels();
-        if (page * pageSize >= filtered.length) {
-            set({ hasMore: false });
-            return;
-        }
-        set({ isLoading: true });
-        // Simulated async load
-        setTimeout(() => {
+
+        set({ isLoading: true, error: null });
+
+        try {
+            const result = await searchHotels({
+                destination,
+                checkIn,
+                checkOut,
+                guests,
+                limit: pageSize,
+                cursor: opts?.append ? cursor : 0,
+            });
+
             set((state) => ({
-                page: state.page + 1,
+                hotels: opts?.append
+                    ? [...state.hotels, ...result.hotels]
+                    : result.hotels,
+                cursor: result.cursor,
+                hasMore: result.hasMore,
+                totalResults: result.total,
                 isLoading: false,
-                hasMore: (state.page + 1) * state.pageSize < filtered.length,
+                page: 1,
             }));
-        }, 800);
+        } catch (error: unknown) {
+            const errMsg = error instanceof Error ? error.message : 'Failed to fetch hotels';
+            console.error('Hotel fetch error:', errMsg);
+            set({ error: errMsg, isLoading: false });
+        }
+    },
+
+    loadMore: () => {
+        const { hasMore, isLoading } = get();
+        if (isLoading || !hasMore) return;
+        get().fetchHotels({ append: true });
     },
 
     refresh: () => {
-        set({ page: 1, isLoading: true, hasMore: true, error: null });
-        setTimeout(() => set({ isLoading: false }), 600);
+        set({ hotels: [], cursor: 0, page: 1, hasMore: true, error: null });
+        get().fetchHotels();
     },
 
-    // Derived
+    // Derived — client-side filtering on top of API results
     getFilteredHotels: () => {
-        const { searchQuery, filters, sortBy } = get();
-        let results = [...mockHotels];
+        const { hotels, searchQuery, filters, sortBy } = get();
+        let results = [...hotels];
 
         // Search filter
         if (searchQuery.trim()) {
@@ -200,9 +238,7 @@ export const useHotelStore = create<HotelStoreState>((set, get) => ({
     },
 
     getDisplayedHotels: () => {
-        const { page, pageSize } = get();
-        const filtered = get().getFilteredHotels();
-        return filtered.slice(0, page * pageSize);
+        return get().getFilteredHotels();
     },
 
     getActiveFilterCount: () => {

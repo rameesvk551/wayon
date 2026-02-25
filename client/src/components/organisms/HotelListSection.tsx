@@ -1,4 +1,4 @@
-import React, { useRef, useCallback } from 'react';
+import React, { useRef, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Building2, RefreshCw, WifiOff } from 'lucide-react';
 import { useHotelStore } from '../../store/useHotelStore';
@@ -6,15 +6,30 @@ import { HotelListingCard } from '../blocks/HotelListingCard';
 import { SkeletonCard } from '../atoms/SkeletonCard';
 
 export const HotelListSection: React.FC = () => {
-    const {
-        getDisplayedHotels, getFilteredHotels,
-        isLoading, hasMore, error,
-        loadMore, refresh,
-        wishlist, toggleWishlist,
-    } = useHotelStore();
+    // Subscribe to the actual hotels array and all needed state
+    const hotels = useHotelStore((s) => s.hotels);
+    const isLoading = useHotelStore((s) => s.isLoading);
+    const hasMore = useHotelStore((s) => s.hasMore);
+    const error = useHotelStore((s) => s.error);
+    const loadMore = useHotelStore((s) => s.loadMore);
+    const refresh = useHotelStore((s) => s.refresh);
+    const wishlist = useHotelStore((s) => s.wishlist);
+    const toggleWishlist = useHotelStore((s) => s.toggleWishlist);
+    const fetchHotels = useHotelStore((s) => s.fetchHotels);
+    const getFilteredHotels = useHotelStore((s) => s.getFilteredHotels);
+    const resetFilters = useHotelStore((s) => s.resetFilters);
 
-    const hotels = getDisplayedHotels();
-    const totalFiltered = getFilteredHotels().length;
+    // Get the filtered/displayed hotels from the function
+    const displayedHotels = getFilteredHotels();
+    const totalFiltered = displayedHotels.length;
+
+    // Fetch hotels on mount if empty
+    useEffect(() => {
+        if (hotels.length === 0 && !isLoading && !error) {
+            fetchHotels();
+        }
+    }, [hotels.length, isLoading, error, fetchHotels]);
+
     const observerRef = useRef<HTMLDivElement>(null);
     const pullRef = useRef<HTMLDivElement>(null);
     const touchStartY = useRef(0);
@@ -72,8 +87,19 @@ export const HotelListSection: React.FC = () => {
         );
     }
 
+    // Loading state (initial load)
+    if (isLoading && hotels.length === 0) {
+        return (
+            <div className="space-y-4 p-4">
+                <SkeletonCard />
+                <SkeletonCard />
+                <SkeletonCard />
+            </div>
+        );
+    }
+
     // Empty state
-    if (!isLoading && hotels.length === 0) {
+    if (!isLoading && displayedHotels.length === 0) {
         return (
             <div className="hotel-empty-state">
                 <Building2 size={56} className="text-gray-200" />
@@ -83,7 +109,7 @@ export const HotelListSection: React.FC = () => {
                 </p>
                 <motion.button
                     whileTap={{ scale: 0.95 }}
-                    onClick={() => useHotelStore.getState().resetFilters()}
+                    onClick={resetFilters}
                     className="hotel-retry-btn mt-4"
                 >
                     <RefreshCw size={14} /> Reset Filters
@@ -122,7 +148,7 @@ export const HotelListSection: React.FC = () => {
 
             {/* Hotel cards */}
             <div className="space-y-4">
-                {hotels.map((hotel, index) => (
+                {displayedHotels.map((hotel, index) => (
                     <HotelListingCard
                         key={hotel.id}
                         hotel={hotel}
@@ -148,7 +174,7 @@ export const HotelListSection: React.FC = () => {
             )}
 
             {/* End of list */}
-            {!hasMore && hotels.length > 0 && (
+            {!hasMore && displayedHotels.length > 0 && (
                 <p className="text-center text-xs text-gray-400 py-6">
                     You've seen all {totalFiltered} hotels ✓
                 </p>

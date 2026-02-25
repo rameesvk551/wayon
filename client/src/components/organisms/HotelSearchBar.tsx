@@ -13,6 +13,7 @@ export const HotelSearchBar: React.FC = () => {
         checkOut, setCheckOut,
         guests, setGuests,
         setSearchQuery,
+        fetchHotels,
     } = useHotelStore();
 
     const inputRef = useRef<HTMLInputElement>(null);
@@ -178,7 +179,7 @@ export const HotelSearchBar: React.FC = () => {
             {/* Search Button */}
             <motion.button
                 whileTap={{ scale: 0.97 }}
-                onClick={() => { setIsExpanded(false); setShowSuggestions(false); setSearchQuery(destination); }}
+                onClick={() => { setIsExpanded(false); setShowSuggestions(false); setSearchQuery(destination); fetchHotels(); }}
                 className="hotel-search-btn mt-3"
             >
                 <Search size={16} />

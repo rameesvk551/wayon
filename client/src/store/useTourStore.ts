@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import { mockTours, type TourListingItem, type TourSortOption, type TourCategory } from '../data/tourListingData';
+import type { TourListingItem, TourSortOption, TourCategory } from '../data/tourListingData';
+import { searchTours, getTourById, POPULAR_DESTINATIONS } from '../api/tourApi';
 
 interface TourFilters {
     priceRange: [number, number];
@@ -11,11 +12,19 @@ interface TourFilters {
 }
 
 interface TourStoreState {
+    // Data
+    tours: TourListingItem[];
+    selectedTour: TourListingItem | null;
+
     // Search
     searchQuery: string;
     destination: string;
     date: string;
     tourType: string;
+
+    // Coordinates (for API search)
+    searchLat: number;
+    searchLng: number;
 
     // Filters
     filters: TourFilters;
@@ -33,8 +42,8 @@ interface TourStoreState {
     isLoading: boolean;
     hasMore: boolean;
 
-    // Selected tour (for detail page)
-    selectedTourId: string | null;
+    // Error
+    error: string | null;
 
     // Actions
     setSearchQuery: (q: string) => void;
@@ -46,9 +55,12 @@ interface TourStoreState {
     resetFilters: () => void;
     toggleWishlist: (id: string) => void;
     setViewMode: (m: 'grid' | 'list') => void;
-    setSelectedTourId: (id: string | null) => void;
     loadMore: () => void;
     refresh: () => void;
+
+    // API actions
+    fetchTours: (latitude?: number, longitude?: number) => Promise<void>;
+    fetchTourById: (id: string) => Promise<TourListingItem | null>;
 
     // Derived
     getFilteredTours: () => TourListingItem[];
@@ -67,12 +79,24 @@ const defaultFilters: TourFilters = {
     languages: [],
 };
 
+// Default: Paris
+const DEFAULT_LAT = 48.8566;
+const DEFAULT_LNG = 2.3522;
+
 export const useTourStore = create<TourStoreState>((set, get) => ({
+    // Data
+    tours: [],
+    selectedTour: null,
+
     // Search
     searchQuery: '',
     destination: '',
     date: '',
     tourType: '',
+
+    // Coordinates
+    searchLat: DEFAULT_LAT,
+    searchLng: DEFAULT_LNG,
 
     // Filters
     filters: { ...defaultFilters },
@@ -90,12 +114,23 @@ export const useTourStore = create<TourStoreState>((set, get) => ({
     isLoading: false,
     hasMore: true,
 
-    // Selected tour
-    selectedTourId: null,
+    // Error
+    error: null,
 
-    // Actions
+    // ── Actions ──────────────────────────────────────────────────────────
+
     setSearchQuery: (q) => set({ searchQuery: q, page: 1 }),
-    setDestination: (d) => set({ destination: d }),
+    setDestination: (d) => {
+        // Try to resolve destination name to coordinates
+        const match = POPULAR_DESTINATIONS.find(
+            (dest) => dest.name.toLowerCase().includes(d.toLowerCase())
+        );
+        if (match) {
+            set({ destination: d, searchLat: match.lat, searchLng: match.lng });
+        } else {
+            set({ destination: d });
+        }
+    },
     setDate: (d) => set({ date: d }),
     setTourType: (t) => set({ tourType: t }),
     setSortBy: (s) => set({ sortBy: s, page: 1 }),
@@ -116,7 +151,6 @@ export const useTourStore = create<TourStoreState>((set, get) => ({
         }),
 
     setViewMode: (m) => set({ viewMode: m }),
-    setSelectedTourId: (id) => set({ selectedTourId: id }),
 
     loadMore: () => {
         const { page, pageSize, isLoading } = get();
@@ -133,18 +167,72 @@ export const useTourStore = create<TourStoreState>((set, get) => ({
                 isLoading: false,
                 hasMore: (state.page + 1) * state.pageSize < filtered.length,
             }));
-        }, 600);
+        }, 300);
     },
 
     refresh: () => {
-        set({ page: 1, isLoading: true, hasMore: true });
-        setTimeout(() => set({ isLoading: false }), 400);
+        const { searchLat, searchLng } = get();
+        get().fetchTours(searchLat, searchLng);
     },
 
-    // Derived
+    // ── API Actions ──────────────────────────────────────────────────────
+
+    fetchTours: async (latitude?: number, longitude?: number) => {
+        const lat = latitude || get().searchLat;
+        const lng = longitude || get().searchLng;
+
+        set({ isLoading: true, error: null, page: 1, hasMore: true });
+
+        try {
+            const tours = await searchTours({
+                latitude: lat,
+                longitude: lng,
+                radius: 20,
+                limit: 30,
+            });
+
+            set({
+                tours,
+                isLoading: false,
+                searchLat: lat,
+                searchLng: lng,
+                hasMore: tours.length > get().pageSize,
+            });
+
+            console.log(`✅ Loaded ${tours.length} tours from API`);
+        } catch (error: unknown) {
+            const errMsg = error instanceof Error ? error.message : String(error);
+            console.error('Failed to fetch tours:', errMsg);
+            set({ isLoading: false, error: errMsg });
+        }
+    },
+
+    fetchTourById: async (id: string) => {
+        // Check local cache first
+        const existing = get().tours.find((t) => t.id === id);
+        if (existing) {
+            set({ selectedTour: existing });
+            return existing;
+        }
+
+        // Fetch from API
+        try {
+            const tour = await getTourById(id);
+            if (tour) {
+                set({ selectedTour: tour });
+            }
+            return tour;
+        } catch (error) {
+            console.error('Failed to fetch tour by ID:', error);
+            return null;
+        }
+    },
+
+    // ── Derived ──────────────────────────────────────────────────────────
+
     getFilteredTours: () => {
-        const { searchQuery, filters, sortBy } = get();
-        let results = [...mockTours];
+        const { tours, searchQuery, filters, sortBy } = get();
+        let results = [...tours];
 
         // Text search
         if (searchQuery.trim()) {
@@ -256,13 +344,14 @@ export const useTourStore = create<TourStoreState>((set, get) => ({
     },
 
     getTourById: (id: string) => {
-        return mockTours.find((t) => t.id === id);
+        return get().tours.find((t) => t.id === id);
     },
 
     getRelatedTours: (tourId: string) => {
-        const tour = mockTours.find((t) => t.id === tourId);
+        const tours = get().tours;
+        const tour = tours.find((t) => t.id === tourId);
         if (!tour) return [];
-        return mockTours
+        return tours
             .filter((t) => t.id !== tourId && (t.category === tour.category || t.country === tour.country))
             .slice(0, 4);
     },

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { TourSearchBar } from '../components/organisms/TourSearchBar';
@@ -11,8 +11,15 @@ import { useTourStore } from '../store/useTourStore';
 const ToursListingPage: React.FC = () => {
     const [isFilterOpen, setIsFilterOpen] = useState(false);
     const [filterTab, setFilterTab] = useState<'sort' | 'filters'>('filters');
-    const { filters, sortBy, setFilters, setSortBy } = useTourStore();
+    const { filters, sortBy, setFilters, setSortBy, fetchTours, tours } = useTourStore();
     const navigate = useNavigate();
+
+    // Fetch tours on mount if not already loaded
+    useEffect(() => {
+        if (tours.length === 0) {
+            fetchTours();
+        }
+    }, []);
 
     const openFilters = () => {
         setFilterTab('filters');
