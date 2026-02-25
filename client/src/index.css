@@ -6755,7 +6755,7 @@ p {
 /* ===== VISA PAGES - SHARED ===== */
 .visa-checker-page,
 .visa-explorer-page {
-  padding: 16px 16px 100px;
+  padding: 0 16px 100px;
   overflow-y: auto;
   height: 100%;
   -webkit-overflow-scrolling: touch;
