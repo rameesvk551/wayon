@@ -4,8 +4,8 @@ import { ArrowUpDown, Sparkles, Clock, Trash2 } from 'lucide-react';
 import CountryPicker from '../components/visa/CountryPicker';
 import VisaResultCard from '../components/visa/VisaResultCard';
 import type { Country } from '../data/countries';
-import { getVisaInfo } from '../data/visaData';
 import type { VisaInfo } from '../data/visaData';
+import { checkVisa } from '../api/visaApi';
 
 interface RecentSearch {
     from: string;
@@ -53,23 +53,24 @@ const VisaCheckerPage: React.FC = () => {
         localStorage.setItem('visa-recent-searches', JSON.stringify(updated));
     };
 
-    const handleCheck = () => {
+    const handleCheck = async () => {
         if (!citizenship || !destination) return;
         setIsLoading(true);
         setError(null);
 
-        // Simulate loading
-        setTimeout(() => {
-            const info = getVisaInfo(citizenship.code, destination.code);
-            if (info) {
-                setResult(info);
-                setShowResult(true);
-                saveRecentSearch(citizenship, destination);
-            } else {
-                setError(`Visa information for ${citizenship.name} → ${destination.name} is not available in our database yet. Try India or US passport.`);
-            }
+        try {
+            const info = await checkVisa(citizenship.code, destination.code);
+            setResult(info);
+            setShowResult(true);
+            saveRecentSearch(citizenship, destination);
+        } catch (err: any) {
+            setError(
+                err?.message ||
+                `Visa information for ${citizenship.name} → ${destination.name} is not available right now. Please try again.`
+            );
+        } finally {
             setIsLoading(false);
-        }, 800);
+        }
     };
 
     const handleSwap = () => {
@@ -83,25 +84,25 @@ const VisaCheckerPage: React.FC = () => {
         setResult(null);
     };
 
-    const handleRecentClick = (search: RecentSearch) => {
-        import('../data/countries').then(({ getCountryByCode }) => {
-            const from = getCountryByCode(search.from);
-            const to = getCountryByCode(search.to);
-            if (from && to) {
-                setCitizenship(from);
-                setDestination(to);
-                // Auto-trigger check
-                setIsLoading(true);
-                setTimeout(() => {
-                    const info = getVisaInfo(search.from, search.to);
-                    if (info) {
-                        setResult(info);
-                        setShowResult(true);
-                    }
-                    setIsLoading(false);
-                }, 500);
+    const handleRecentClick = async (search: RecentSearch) => {
+        const { getCountryByCode } = await import('../data/countries');
+        const from = getCountryByCode(search.from);
+        const to = getCountryByCode(search.to);
+        if (from && to) {
+            setCitizenship(from);
+            setDestination(to);
+            setIsLoading(true);
+            setError(null);
+            try {
+                const info = await checkVisa(search.from, search.to);
+                setResult(info);
+                setShowResult(true);
+            } catch {
+                // silently fail for recent searches
+            } finally {
+                setIsLoading(false);
             }
-        });
+        }
     };
 
     const clearRecent = () => {

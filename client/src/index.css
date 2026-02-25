@@ -6755,7 +6755,7 @@ p {
 /* ===== VISA PAGES - SHARED ===== */
 .visa-checker-page,
 .visa-explorer-page {
-  padding: 0 16px 100px;
+  padding: 16px 16px 100px;
   overflow-y: auto;
   height: 100%;
   -webkit-overflow-scrolling: touch;
@@ -7042,7 +7042,7 @@ p {
 .visa-swap-container {
   display: flex;
   justify-content: center;
-  margin: 2px 0;
+  margin: 6px 0;
   position: relative;
   z-index: 5;
 }
@@ -7087,7 +7087,7 @@ p {
   font-weight: 600;
   font-family: inherit;
   cursor: pointer;
-  margin-top: 18px;
+  margin-top: 22px;
   box-shadow: 0 4px 16px rgba(11, 124, 122, 0.3);
   transition: all var(--transition-fast);
 }
@@ -7503,7 +7503,7 @@ p {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 0 12px;
+  padding: 20px 0 16px;
 }
 
 .visa-explorer-passport-info {
@@ -7530,7 +7530,7 @@ p {
 }
 
 .visa-change-passport-btn {
-  padding: 6px 14px;
+  padding: 8px 16px;
   background: var(--color-bg-primary);
   border: 1.5px solid var(--color-border);
   border-radius: var(--radius-full);
@@ -7582,15 +7582,15 @@ p {
 
 /* Tabs */
 .visa-tabs-container {
-  margin-bottom: 12px;
+  margin-bottom: 14px;
 }
 
 .visa-tabs {
   display: flex;
-  gap: 4px;
+  gap: 6px;
   overflow-x: auto;
   scrollbar-width: none;
-  padding-bottom: 2px;
+  padding-bottom: 4px;
 }
 
 .visa-tabs::-webkit-scrollbar {
@@ -7598,7 +7598,7 @@ p {
 }
 
 .visa-tab {
-  padding: 8px 14px;
+  padding: 10px 16px;
   border: none;
   background: transparent;
   border-bottom: 2.5px solid transparent;
@@ -7863,8 +7863,9 @@ p {
 .visa-modal-sheet {
   position: fixed;
   bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
+  left: 0;
+  right: 0;
+  margin: 0 auto;
   width: 100%;
   max-width: 480px;
   max-height: 85vh;

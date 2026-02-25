@@ -1,13 +1,14 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, ArrowDownAZ, TrendingUp, Grid3X3, List, Globe2 } from 'lucide-react';
+import { Search, ArrowDownAZ, TrendingUp, Grid3X3, List, Globe2, Loader2 } from 'lucide-react';
 import CountryPicker from '../components/visa/CountryPicker';
 import CountryCard from '../components/visa/CountryCard';
 import CountryDetailModal from '../components/visa/CountryDetailModal';
 import type { Country } from '../data/countries';
-import { getVisaDataByPassport, getVisaStats, visaStatusConfig } from '../data/visaData';
+import { visaStatusConfig } from '../data/visaData';
 import type { VisaInfo, VisaStatus } from '../data/visaData';
 import { getCountryByCode, regions as allRegions } from '../data/countries';
+import { getVisaMap } from '../api/visaApi';
 
 type SortMode = 'alpha' | 'popular';
 type ViewMode = 'list' | 'grid';
@@ -25,15 +26,47 @@ const VisaExplorerPage: React.FC = () => {
     const [selectedVisa, setSelectedVisa] = useState<VisaInfo | null>(null);
     const [modalOpen, setModalOpen] = useState(false);
 
-    const visaData = useMemo(() => {
-        if (!passport) return [];
-        return getVisaDataByPassport(passport.code);
-    }, [passport]);
+    // Live API state
+    const [visaData, setVisaData] = useState<VisaInfo[]>([]);
+    const [stats, setStats] = useState<{
+        total: number;
+        visaFree: number;
+        evisa: number;
+        visaOnArrival: number;
+        visaRequired: number;
+    } | null>(null);
+    const [isLoadingMap, setIsLoadingMap] = useState(false);
+    const [mapError, setMapError] = useState<string | null>(null);
 
-    const stats = useMemo(() => {
-        if (!passport) return null;
-        return getVisaStats(passport.code);
-    }, [passport]);
+    // Fetch visa map when passport is selected and dashboard shown
+    useEffect(() => {
+        if (!passport || !showDashboard) return;
+
+        let cancelled = false;
+        setIsLoadingMap(true);
+        setMapError(null);
+
+        getVisaMap(passport.code)
+            .then(data => {
+                if (cancelled) return;
+                setVisaData(data.results);
+                setStats({
+                    total: data.total,
+                    ...data.stats,
+                });
+            })
+            .catch(err => {
+                if (cancelled) return;
+                setMapError(err?.message || 'Failed to load visa data');
+                setVisaData([]);
+                setStats(null);
+            })
+            .finally(() => {
+                if (!cancelled) setIsLoadingMap(false);
+            });
+
+        return () => { cancelled = true; };
+    }, [passport, showDashboard]);
 
     const filteredData = useMemo(() => {
         let data = visaData;
@@ -56,7 +89,7 @@ const VisaExplorerPage: React.FC = () => {
             const q = search.toLowerCase();
             data = data.filter(d => {
                 const country = getCountryByCode(d.to);
-                return country?.name.toLowerCase().includes(q) || country?.code.toLowerCase().includes(q);
+                return country?.name.toLowerCase().includes(q) || d.to.toLowerCase().includes(q);
             });
         }
 
@@ -66,7 +99,6 @@ const VisaExplorerPage: React.FC = () => {
             const countryB = getCountryByCode(b.to);
             if (!countryA || !countryB) return 0;
             if (sortMode === 'alpha') return countryA.name.localeCompare(countryB.name);
-            // Popular first
             return (countryB.popular ? 1 : 0) - (countryA.popular ? 1 : 0) || countryA.name.localeCompare(countryB.name);
         });
 
@@ -88,6 +120,8 @@ const VisaExplorerPage: React.FC = () => {
         setActiveTab('all');
         setSearch('');
         setActiveRegion('All Regions');
+        setVisaData([]);
+        setStats(null);
     };
 
     if (!showDashboard) {
@@ -155,7 +189,9 @@ const VisaExplorerPage: React.FC = () => {
                         <span className="visa-explorer-passport-flag">{passport!.flag}</span>
                         <div>
                             <h2 className="visa-explorer-passport-name">{passport!.name} Passport</h2>
-                            <span className="visa-explorer-passport-count">{stats?.total} destinations available</span>
+                            <span className="visa-explorer-passport-count">
+                                {isLoadingMap ? 'Loading...' : `${stats?.total || 0} destinations available`}
+                            </span>
                         </div>
                     </div>
                     <button className="visa-change-passport-btn" onClick={handleChangePassport} type="button">
@@ -163,158 +199,214 @@ const VisaExplorerPage: React.FC = () => {
                     </button>
                 </div>
 
-                {/* Stats Bar */}
-                {stats && (
+                {/* Loading State */}
+                {isLoadingMap && (
                     <motion.div
-                        className="visa-stats-bar"
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.1 }}
+                        className="visa-explorer-loading"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            padding: '60px 20px',
+                            gap: '16px',
+                        }}
                     >
-                        {[
-                            { status: 'visa-free' as VisaStatus, count: stats.visaFree },
-                            { status: 'evisa' as VisaStatus, count: stats.evisa },
-                            { status: 'visa-on-arrival' as VisaStatus, count: stats.visaOnArrival },
-                            { status: 'visa-required' as VisaStatus, count: stats.visaRequired },
-                        ].map(({ status, count }) => (
-                            <div
-                                key={status}
-                                className="visa-stat-item"
-                                style={{ borderColor: visaStatusConfig[status].border }}
-                            >
-                                <span className="visa-stat-count" style={{ color: visaStatusConfig[status].color }}>
-                                    {count}
-                                </span>
-                                <span className="visa-stat-label">{visaStatusConfig[status].label}</span>
-                            </div>
-                        ))}
+                        <motion.div
+                            animate={{ rotate: 360 }}
+                            transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
+                        >
+                            <Loader2 size={32} style={{ color: '#6366f1' }} />
+                        </motion.div>
+                        <p style={{ color: '#64748b', fontSize: '14px' }}>
+                            Fetching visa data for {passport!.name} passport...
+                        </p>
                     </motion.div>
                 )}
 
-                {/* Tabs */}
-                <div className="visa-tabs-container">
-                    <div className="visa-tabs">
+                {/* Error State */}
+                {mapError && !isLoadingMap && (
+                    <motion.div
+                        className="visa-explorer-empty"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        style={{ padding: '40px 20px', textAlign: 'center' }}
+                    >
+                        <span style={{ fontSize: '48px' }}>⚠️</span>
+                        <p style={{ color: '#ef4444', marginTop: '12px' }}>{mapError}</p>
                         <button
-                            className={`visa-tab ${activeTab === 'all' ? 'active' : ''}`}
-                            onClick={() => setActiveTab('all')}
+                            className="visa-explorer-reset-btn"
+                            onClick={() => {
+                                setShowDashboard(false);
+                                setTimeout(() => setShowDashboard(true), 100);
+                            }}
                             type="button"
+                            style={{ marginTop: '12px' }}
                         >
-                            All ({stats?.total})
+                            Retry
                         </button>
-                        {visaTabOrder.map((status) => {
-                            const config = visaStatusConfig[status];
-                            const count = status === 'visa-free' ? stats?.visaFree
-                                : status === 'evisa' ? stats?.evisa
-                                    : status === 'visa-on-arrival' ? stats?.visaOnArrival
-                                        : stats?.visaRequired;
-                            return (
-                                <button
-                                    key={status}
-                                    className={`visa-tab ${activeTab === status ? 'active' : ''}`}
-                                    onClick={() => setActiveTab(status)}
-                                    style={activeTab === status ? { color: config.color, borderColor: config.color } : {}}
-                                    type="button"
-                                >
-                                    {config.emoji} {config.label} ({count})
-                                </button>
-                            );
-                        })}
-                    </div>
-                </div>
+                    </motion.div>
+                )}
 
-                {/* Search & Controls */}
-                <div className="visa-explorer-controls">
-                    <div className="visa-explorer-search">
-                        <Search size={16} className="visa-explorer-search-icon" />
-                        <input
-                            type="text"
-                            placeholder="Search destinations..."
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            className="visa-explorer-search-input"
-                        />
-                    </div>
-
-                    <div className="visa-explorer-toolbar">
-                        {/* Region Chips */}
-                        <div className="visa-explorer-regions">
-                            {allRegions.map((region) => (
-                                <button
-                                    key={region}
-                                    className={`visa-region-chip ${activeRegion === region ? 'active' : ''}`}
-                                    onClick={() => setActiveRegion(region)}
-                                    type="button"
-                                >
-                                    {region}
-                                </button>
-                            ))}
-                        </div>
-
-                        <div className="visa-explorer-sort-view">
-                            {/* Sort Toggle */}
-                            <button
-                                className={`visa-sort-btn ${sortMode === 'alpha' ? 'active' : ''}`}
-                                onClick={() => setSortMode(sortMode === 'alpha' ? 'popular' : 'alpha')}
-                                title={sortMode === 'alpha' ? 'Sorted A-Z' : 'Sorted by Popular'}
-                                type="button"
-                            >
-                                {sortMode === 'alpha' ? <ArrowDownAZ size={16} /> : <TrendingUp size={16} />}
-                            </button>
-
-                            {/* View Toggle */}
-                            <div className="visa-view-toggle">
-                                <button
-                                    className={`visa-view-btn ${viewMode === 'list' ? 'active' : ''}`}
-                                    onClick={() => setViewMode('list')}
-                                    type="button"
-                                >
-                                    <List size={16} />
-                                </button>
-                                <button
-                                    className={`visa-view-btn ${viewMode === 'grid' ? 'active' : ''}`}
-                                    onClick={() => setViewMode('grid')}
-                                    type="button"
-                                >
-                                    <Grid3X3 size={16} />
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Results */}
-                <div className={`visa-explorer-results visa-explorer-results--${viewMode}`}>
-                    <AnimatePresence mode="wait">
-                        {filteredData.length > 0 ? (
-                            filteredData.map((visa, i) => (
-                                <CountryCard
-                                    key={`${visa.from}-${visa.to}`}
-                                    visaInfo={visa}
-                                    viewMode={viewMode}
-                                    onClick={() => handleCountryClick(visa)}
-                                    index={i}
-                                />
-                            ))
-                        ) : (
+                {/* Dashboard Content — only when loaded */}
+                {!isLoadingMap && !mapError && (
+                    <>
+                        {/* Stats Bar */}
+                        {stats && (
                             <motion.div
-                                className="visa-explorer-empty"
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                exit={{ opacity: 0 }}
+                                className="visa-stats-bar"
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.1 }}
                             >
-                                <span className="visa-explorer-empty-icon">🔍</span>
-                                <p>No destinations found matching your criteria</p>
-                                <button
-                                    className="visa-explorer-reset-btn"
-                                    onClick={() => { setSearch(''); setActiveTab('all'); setActiveRegion('All Regions'); }}
-                                    type="button"
-                                >
-                                    Reset Filters
-                                </button>
+                                {[
+                                    { status: 'visa-free' as VisaStatus, count: stats.visaFree },
+                                    { status: 'evisa' as VisaStatus, count: stats.evisa },
+                                    { status: 'visa-on-arrival' as VisaStatus, count: stats.visaOnArrival },
+                                    { status: 'visa-required' as VisaStatus, count: stats.visaRequired },
+                                ].map(({ status, count }) => (
+                                    <div
+                                        key={status}
+                                        className="visa-stat-item"
+                                        style={{ borderColor: visaStatusConfig[status].border }}
+                                    >
+                                        <span className="visa-stat-count" style={{ color: visaStatusConfig[status].color }}>
+                                            {count}
+                                        </span>
+                                        <span className="visa-stat-label">{visaStatusConfig[status].label}</span>
+                                    </div>
+                                ))}
                             </motion.div>
                         )}
-                    </AnimatePresence>
-                </div>
+
+                        {/* Tabs */}
+                        <div className="visa-tabs-container">
+                            <div className="visa-tabs">
+                                <button
+                                    className={`visa-tab ${activeTab === 'all' ? 'active' : ''}`}
+                                    onClick={() => setActiveTab('all')}
+                                    type="button"
+                                >
+                                    All ({stats?.total})
+                                </button>
+                                {visaTabOrder.map((status) => {
+                                    const config = visaStatusConfig[status];
+                                    const count = status === 'visa-free' ? stats?.visaFree
+                                        : status === 'evisa' ? stats?.evisa
+                                            : status === 'visa-on-arrival' ? stats?.visaOnArrival
+                                                : stats?.visaRequired;
+                                    return (
+                                        <button
+                                            key={status}
+                                            className={`visa-tab ${activeTab === status ? 'active' : ''}`}
+                                            onClick={() => setActiveTab(status)}
+                                            style={activeTab === status ? { color: config.color, borderColor: config.color } : {}}
+                                            type="button"
+                                        >
+                                            {config.emoji} {config.label} ({count})
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        {/* Search & Controls */}
+                        <div className="visa-explorer-controls">
+                            <div className="visa-explorer-search">
+                                <Search size={16} className="visa-explorer-search-icon" />
+                                <input
+                                    type="text"
+                                    placeholder="Search destinations..."
+                                    value={search}
+                                    onChange={(e) => setSearch(e.target.value)}
+                                    className="visa-explorer-search-input"
+                                />
+                            </div>
+
+                            <div className="visa-explorer-toolbar">
+                                {/* Region Chips */}
+                                <div className="visa-explorer-regions">
+                                    {allRegions.map((region) => (
+                                        <button
+                                            key={region}
+                                            className={`visa-region-chip ${activeRegion === region ? 'active' : ''}`}
+                                            onClick={() => setActiveRegion(region)}
+                                            type="button"
+                                        >
+                                            {region}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                <div className="visa-explorer-sort-view">
+                                    {/* Sort Toggle */}
+                                    <button
+                                        className={`visa-sort-btn ${sortMode === 'alpha' ? 'active' : ''}`}
+                                        onClick={() => setSortMode(sortMode === 'alpha' ? 'popular' : 'alpha')}
+                                        title={sortMode === 'alpha' ? 'Sorted A-Z' : 'Sorted by Popular'}
+                                        type="button"
+                                    >
+                                        {sortMode === 'alpha' ? <ArrowDownAZ size={16} /> : <TrendingUp size={16} />}
+                                    </button>
+
+                                    {/* View Toggle */}
+                                    <div className="visa-view-toggle">
+                                        <button
+                                            className={`visa-view-btn ${viewMode === 'list' ? 'active' : ''}`}
+                                            onClick={() => setViewMode('list')}
+                                            type="button"
+                                        >
+                                            <List size={16} />
+                                        </button>
+                                        <button
+                                            className={`visa-view-btn ${viewMode === 'grid' ? 'active' : ''}`}
+                                            onClick={() => setViewMode('grid')}
+                                            type="button"
+                                        >
+                                            <Grid3X3 size={16} />
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Results */}
+                        <div className={`visa-explorer-results visa-explorer-results--${viewMode}`}>
+                            <AnimatePresence mode="wait">
+                                {filteredData.length > 0 ? (
+                                    filteredData.map((visa, i) => (
+                                        <CountryCard
+                                            key={`${visa.from}-${visa.to}`}
+                                            visaInfo={visa}
+                                            viewMode={viewMode}
+                                            onClick={() => handleCountryClick(visa)}
+                                            index={i}
+                                        />
+                                    ))
+                                ) : (
+                                    <motion.div
+                                        className="visa-explorer-empty"
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        exit={{ opacity: 0 }}
+                                    >
+                                        <span className="visa-explorer-empty-icon">🔍</span>
+                                        <p>No destinations found matching your criteria</p>
+                                        <button
+                                            className="visa-explorer-reset-btn"
+                                            onClick={() => { setSearch(''); setActiveTab('all'); setActiveRegion('All Regions'); }}
+                                            type="button"
+                                        >
+                                            Reset Filters
+                                        </button>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </div>
+                    </>
+                )}
             </motion.div>
 
             {/* Detail Modal */}
