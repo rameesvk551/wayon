@@ -24,7 +24,7 @@ const popularCategories = [
     { id: 'cat4', name: 'Events', image: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=200&q=80' },
 ];
 
-interface HomeScreenProps {
+export interface HomeScreenProps {
     onNavigate?: (tab: string) => void;
 }
 
@@ -216,3 +216,4 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
 };
 
 export default HomeScreen;
+

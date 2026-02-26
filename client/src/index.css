@@ -1,6 +1,7 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@400;600;700;800&family=Sora:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss";
+@source "../src";
 
-/* ===== APP HEADER COMPONENT ===== */
 .app-header {
   display: flex;
   justify-content: space-between;
@@ -73,8 +74,6 @@
   background: #EBEBEB;
 }
 
-/* ===== GOOGLE FONTS ===== */
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@400;600;700;800&family=Sora:wght@300;400;500;600;700&display=swap');
 
 /* ===== DESIGN TOKENS - 2026 Travel-Inspired Design System ===== */
 :root {
@@ -182,25 +181,27 @@
 }
 
 /* ===== BASE STYLES ===== */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
+@layer base {
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
 
-html {
-  font-size: 16px;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  scroll-behavior: smooth;
-}
+  html {
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    scroll-behavior: smooth;
+  }
 
-body {
-  font-family: 'Sora', 'Segoe UI', Tahoma, sans-serif;
-  background-color: var(--color-bg-primary);
-  color: var(--color-text-primary);
-  line-height: 1.6;
-  min-height: 100vh;
+  body {
+    font-family: 'Sora', 'Segoe UI', Tahoma, sans-serif;
+    background-color: var(--color-bg-primary);
+    color: var(--color-text-primary);
+    line-height: 1.6;
+    min-height: 100vh;
+  }
 }
 
 /* ===== TYPOGRAPHY SCALE ===== */

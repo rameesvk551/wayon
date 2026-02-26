@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
+import DesktopHome from './pages/DesktopHome';
 import { MobileLayout } from './components/layouts/MobileLayout';
 import StandaloneMobileLayout from './components/layouts/StandaloneMobileLayout';
 
@@ -109,11 +110,23 @@ const MobileNavWrapper: React.FC<{ children: React.ReactNode; activeTab: string 
 };
 
 function App() {
+  const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024);
+
+  useEffect(() => {
+    const handleResize = () => setIsDesktop(window.innerWidth >= 1024);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const ResponsiveRoot = () => {
+    return isDesktop ? <DesktopHome /> : <MobileApp />;
+  };
+
   return (
     <BrowserRouter>
       <Routes>
-        {/* Main Mobile App */}
-        <Route path="/" element={<MobileApp />} />
+        {/* Main Home Route: Desktop vs Mobile */}
+        <Route path="/" element={<ResponsiveRoot />} />
 
         {/* Legacy Routes with Header */}
         <Route path="/discover" element={<WithHeader><DiscoverPage /></WithHeader>} />
