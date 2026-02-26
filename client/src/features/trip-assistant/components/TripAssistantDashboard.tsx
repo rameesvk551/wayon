@@ -5,6 +5,7 @@ import { useTripAssistantStore } from '../store/useTripAssistantStore';
 import { BudgetTrackerSection } from './budget/BudgetTrackerSection';
 import { WeatherWidgetSection } from './weather/WeatherWidgetSection';
 import { PackingChecklistSection } from './packing/PackingChecklistSection';
+import { TripSelector } from './TripSelector';
 
 export const TripAssistantDashboard = () => {
   const weatherDays = useTripAssistantStore((state) => state.weatherDays);
@@ -34,7 +35,7 @@ export const TripAssistantDashboard = () => {
         >
           AI Trip Assistant
         </motion.p>
-        <h1 className="mb-2 text-2xl font-semibold text-slate-900">Tokyo Spring Itinerary</h1>
+        <TripSelector />
         {rainInsight.hasRainAlert && (
           <div className="inline-flex items-center gap-2 rounded-full bg-sky-100 px-3 py-1.5 text-xs font-semibold text-sky-900">
             <CalendarClock size={14} />

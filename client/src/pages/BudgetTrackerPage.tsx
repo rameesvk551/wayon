@@ -2,6 +2,7 @@ import { ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { BudgetTrackerSection } from '../features/trip-assistant/components/budget/BudgetTrackerSection';
+import { TripSelector } from '../features/trip-assistant/components/TripSelector';
 import '../features/trip-assistant/styles/tripAssistant.css';
 
 const BudgetTrackerPage = () => {
@@ -32,6 +33,9 @@ const BudgetTrackerPage = () => {
         </button>
         <h1 className="sb-title">Spending Breakdown</h1>
       </motion.header>
+      <div className="px-4 pt-4">
+        <TripSelector />
+      </div>
       <BudgetTrackerSection />
     </div>
   );

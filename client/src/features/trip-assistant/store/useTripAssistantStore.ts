@@ -8,6 +8,8 @@ import type {
   PackingItem,
   WeatherDay,
 } from '../types/tripAssistant.types';
+import { getTripsByUser, updateTrip } from '../../../api/itineraryEditorApi';
+import type { EditableTrip } from '../../../types/itinerary-editor';
 
 interface AddExpensePayload {
   categoryId: BudgetCategoryId;
@@ -22,6 +24,12 @@ interface AddPackingItemPayload {
 }
 
 interface TripAssistantState {
+  trips: EditableTrip[];
+  activeTripId: string | null;
+  isLoadingTrips: boolean;
+  fetchTrips: (userId: string) => Promise<void>;
+  selectTrip: (tripId: string) => void;
+
   totalBudget: number;
   budgetCategories: BudgetCategory[];
   expenses: Expense[];
@@ -51,13 +59,7 @@ const budgetCategories: BudgetCategory[] = [
   { id: 'shopping', label: 'Shopping', allocated: 8000, color: '#8B5CF6', icon: 'ShoppingBag' },
 ];
 
-const expenses: Expense[] = [
-  { id: uid(), categoryId: 'flights', amount: 32600, date: '2026-02-02', note: 'Round trip tickets' },
-  { id: uid(), categoryId: 'stays', amount: 15400, date: '2026-02-03', note: '3 nights advance' },
-  { id: uid(), categoryId: 'food', amount: 2400, date: '2026-02-05', note: 'Cafe and dinner' },
-  { id: uid(), categoryId: 'transport', amount: 1600, date: '2026-02-05', note: 'Airport transfer' },
-  { id: uid(), categoryId: 'activities', amount: 2200, date: '2026-02-06', note: 'Museum pass' },
-];
+
 
 const weatherDays: WeatherDay[] = [
   { id: 'w1', dayLabel: 'Thu', dateISO: '2026-02-12', type: 'sunny', minTemp: 21, maxTemp: 29, humidity: 56, windKph: 8, sunrise: '6:21 AM', feelsLike: 30, rainChance: 6 },
@@ -89,9 +91,36 @@ const packingItems: PackingItem[] = [
 ];
 
 export const useTripAssistantStore = create<TripAssistantState>((set, get) => ({
+  trips: [],
+  activeTripId: null,
+  isLoadingTrips: false,
+  fetchTrips: async (userId: string) => {
+    set({ isLoadingTrips: true });
+    try {
+      const trips = await getTripsByUser(userId);
+      set({ trips, isLoadingTrips: false });
+      if (trips.length > 0 && !get().activeTripId) {
+        get().selectTrip(trips[0].tripId);
+      }
+    } catch (e) {
+      console.error('Failed to fetch trips', e);
+      set({ isLoadingTrips: false });
+    }
+  },
+  selectTrip: (tripId: string) => {
+    const trip = get().trips.find(t => t.tripId === tripId);
+    if (trip) {
+      set({
+        activeTripId: tripId,
+        expenses: (trip.budget as any) || [],
+        packingItems: (trip.packing as any) || packingItems,
+      });
+    }
+  },
+
   totalBudget: 110000,
   budgetCategories,
-  expenses,
+  expenses: [],
   expandedBudgetCategories: {
     flights: false,
     stays: false,
@@ -103,7 +132,7 @@ export const useTripAssistantStore = create<TripAssistantState>((set, get) => ({
   weatherDays,
   selectedWeatherDayId: 'w1',
   packingCategories,
-  packingItems,
+  packingItems: [],
   expandedPackingCategories: {
     essentials: true,
     clothing: true,
@@ -111,7 +140,7 @@ export const useTripAssistantStore = create<TripAssistantState>((set, get) => ({
     documents: true,
     health: false,
   },
-  addExpense: ({ categoryId, amount, date, note }) =>
+  addExpense: ({ categoryId, amount, date, note }) => {
     set((state) => ({
       expenses: [
         {
@@ -127,7 +156,13 @@ export const useTripAssistantStore = create<TripAssistantState>((set, get) => ({
         ...state.expandedBudgetCategories,
         [categoryId]: true,
       },
-    })),
+    }));
+
+    const { activeTripId, expenses } = get();
+    if (activeTripId) {
+      updateTrip(activeTripId, { budget: expenses as any });
+    }
+  },
   toggleBudgetCategory: (categoryId) =>
     set((state) => ({
       expandedBudgetCategories: {
@@ -143,13 +178,19 @@ export const useTripAssistantStore = create<TripAssistantState>((set, get) => ({
         [categoryId]: !state.expandedPackingCategories[categoryId],
       },
     })),
-  togglePackingItem: (itemId) =>
+  togglePackingItem: (itemId) => {
     set((state) => ({
       packingItems: state.packingItems.map((item) =>
         item.id === itemId ? { ...item, checked: !item.checked } : item
       ),
-    })),
-  addPackingItem: ({ label, categoryId }) =>
+    }));
+
+    const { activeTripId, packingItems } = get();
+    if (activeTripId) {
+      updateTrip(activeTripId, { packing: packingItems as any });
+    }
+  },
+  addPackingItem: ({ label, categoryId }) => {
     set((state) => ({
       packingItems: [
         ...state.packingItems,
@@ -164,7 +205,13 @@ export const useTripAssistantStore = create<TripAssistantState>((set, get) => ({
         ...state.expandedPackingCategories,
         [categoryId]: true,
       },
-    })),
+    }));
+
+    const { activeTripId, packingItems } = get();
+    if (activeTripId) {
+      updateTrip(activeTripId, { packing: packingItems as any });
+    }
+  },
   addWeatherSuggestionsToPacking: () => {
     const { weatherDays, packingItems } = get();
     const rainyDays = weatherDays.filter((day) => day.rainChance >= 60);
@@ -195,6 +242,11 @@ export const useTripAssistantStore = create<TripAssistantState>((set, get) => ({
         clothing: true,
       },
     }));
+
+    const { activeTripId, packingItems: updatedPacking } = get();
+    if (activeTripId) {
+      updateTrip(activeTripId, { packing: updatedPacking as any });
+    }
   },
 }));
 

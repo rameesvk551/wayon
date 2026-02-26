@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Hotel, Home, Bot, Shield, Plus, X, Binoculars, WalletCards, CheckSquare } from 'lucide-react';
+import { Hotel, Home, Bot, Shield, Plus, X, Binoculars, WalletCards, CheckSquare, Compass } from 'lucide-react';
 
 
 interface MobileLayoutProps {
@@ -16,6 +16,7 @@ const leftTabs = [
 
 const rightTabs = [
     { id: 'hotels', label: 'Hotels', icon: Hotel },
+    { id: 'tours', label: 'Tours', icon: Compass },
     { id: 'bot', label: 'AI', icon: Bot },
 ];
 

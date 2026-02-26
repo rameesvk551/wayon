@@ -164,6 +164,8 @@ export const TourSearchBar: React.FC = () => {
                     if (tourType) {
                         useTourStore.getState().setFilters({ categories: tourType ? [tourType as any] : [] });
                     }
+                    // Trigger API fetch with resolved coordinates
+                    useTourStore.getState().fetchTours();
                 }}
                 className="tour-search-btn mt-3"
             >

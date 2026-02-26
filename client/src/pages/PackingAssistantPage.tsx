@@ -2,6 +2,7 @@ import { ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { PackingChecklistSection } from '../features/trip-assistant/components/packing/PackingChecklistSection';
+import { TripSelector } from '../features/trip-assistant/components/TripSelector';
 import '../features/trip-assistant/styles/tripAssistant.css';
 
 const PackingAssistantPage = () => {
@@ -32,6 +33,7 @@ const PackingAssistantPage = () => {
           Back
         </button>
       </motion.header>
+      <TripSelector />
       <PackingChecklistSection />
     </div>
   );

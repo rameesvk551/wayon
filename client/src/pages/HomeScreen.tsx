@@ -1,59 +1,8 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Search, Star, MapPin, Sparkles, ChevronRight, Heart } from 'lucide-react';
-
-// Explore Cities dummy data
-const exploreCities: Array<{
-    id: string;
-    name: string;
-    image: string;
-    rating: number;
-    location: string;
-    price: string;
-    priceUnit: string;
-    isFavorite: boolean;
-}> = [
-        {
-            id: 'c1',
-            name: 'Mount Bromo',
-            image: 'https://images.unsplash.com/photo-1589308078059-be1415eab4c3?w=400&q=80',
-            rating: 4.9,
-            location: 'Thailand',
-            price: '$890',
-            priceUnit: '/person',
-            isFavorite: true
-        },
-        {
-            id: 'c2',
-            name: 'Koh Phi Phi',
-            image: 'https://images.unsplash.com/photo-1519451241324-20b4ea2c4220?w=400&q=80',
-            rating: 4.8,
-            location: 'Thailand',
-            price: '$950',
-            priceUnit: '/person',
-            isFavorite: false
-        },
-        {
-            id: 'c3',
-            name: 'Bali Beach',
-            image: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=400&q=80',
-            rating: 4.7,
-            location: 'Indonesia',
-            price: '$799',
-            priceUnit: '/person',
-            isFavorite: false
-        },
-        {
-            id: 'c4',
-            name: 'Santorini',
-            image: 'https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?w=400&q=80',
-            rating: 4.9,
-            location: 'Greece',
-            price: '$1,199',
-            priceUnit: '/person',
-            isFavorite: true
-        }
-    ];
+import { searchTours, POPULAR_DESTINATIONS } from '../api/tourApi';
+import type { TourListingItem } from '../data/tourListingData';
 
 // Category chips with icons
 const categoryChips = [
@@ -83,6 +32,31 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
     const [selectedCategory, setSelectedCategory] = useState('1');
     const [activeTab, setActiveTab] = useState('Popular');
     const [searchQuery, setSearchQuery] = useState('');
+    const [exploreCities, setExploreCities] = useState<TourListingItem[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchDynamicData = async () => {
+            setIsLoading(true);
+            try {
+                // Fetch dynamic data for tours based on default or random destination
+                const defaultDest = POPULAR_DESTINATIONS[Math.floor(Math.random() * POPULAR_DESTINATIONS.length)];
+                const tours = await searchTours({
+                    latitude: defaultDest.lat,
+                    longitude: defaultDest.lng,
+                    radius: 100,
+                    limit: 10
+                });
+                setExploreCities(tours);
+            } catch (error) {
+                console.error('Failed to fetch dynamic data for home screen:', error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchDynamicData();
+    }, []);
 
     const filteredCities = useMemo(() => {
         if (searchQuery.trim()) {
@@ -90,11 +64,12 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
             return exploreCities.filter(
                 (city) =>
                     city.name.toLowerCase().includes(query) ||
-                    city.location.toLowerCase().includes(query)
+                    city.location.toLowerCase().includes(query) ||
+                    city.country.toLowerCase().includes(query)
             );
         }
         return exploreCities;
-    }, [searchQuery]);
+    }, [searchQuery, exploreCities]);
 
     return (
         <div className="home-screen">
@@ -145,45 +120,53 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
 
                 {/* Cities Grid */}
                 <div className="home-cities-grid">
-                    {filteredCities.map((city, index) => (
-                        <motion.div
-                            key={city.id}
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: index * 0.1 }}
-                            className="home-city-card"
-                        >
-                            <div className="home-city-image-container">
-                                <img
-                                    src={city.image}
-                                    alt={city.name}
-                                    className="home-city-image"
-                                />
-                                <button className="home-city-favorite">
-                                    <Heart
-                                        size={16}
-                                        fill={city.isFavorite ? '#FF6B6B' : 'none'}
-                                        stroke={city.isFavorite ? '#FF6B6B' : '#fff'}
+                    {isLoading ? (
+                        Array.from({ length: 4 }).map((_, index) => (
+                            <div key={index} className="home-city-card" style={{ opacity: 0.5, backgroundColor: '#f0f0f0', height: '200px', borderRadius: '16px' }}></div>
+                        ))
+                    ) : filteredCities.length === 0 ? (
+                        <p style={{ gridColumn: '1 / -1', textAlign: 'center', color: '#666', padding: '20px 0' }}>No cities found.</p>
+                    ) : (
+                        filteredCities.map((city, index) => (
+                            <motion.div
+                                key={city.id}
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: index * 0.1 }}
+                                className="home-city-card"
+                            >
+                                <div className="home-city-image-container">
+                                    <img
+                                        src={city.images?.[0] || 'https://images.unsplash.com/photo-1589308078059-be1415eab4c3?w=400&q=80'}
+                                        alt={city.name}
+                                        className="home-city-image"
                                     />
-                                </button>
-                                <div className="home-city-rating">
-                                    <Star size={12} fill="#FFD700" stroke="#FFD700" />
-                                    <span>{city.rating}</span>
+                                    <button className="home-city-favorite">
+                                        <Heart
+                                            size={16}
+                                            fill="none"
+                                            stroke="#fff"
+                                        />
+                                    </button>
+                                    <div className="home-city-rating">
+                                        <Star size={12} fill="#FFD700" stroke="#FFD700" />
+                                        <span>{(city.rating || 4.5).toFixed(1)}</span>
+                                    </div>
                                 </div>
-                            </div>
-                            <div className="home-city-info">
-                                <h3 className="home-city-name">{city.name}</h3>
-                                <div className="home-city-location">
-                                    <MapPin size={12} />
-                                    <span>{city.location}</span>
+                                <div className="home-city-info">
+                                    <h3 className="home-city-name">{city.name}</h3>
+                                    <div className="home-city-location">
+                                        <MapPin size={12} />
+                                        <span>{city.location || city.country}</span>
+                                    </div>
+                                    <div className="home-city-price">
+                                        <span className="price-value">{city.currency}{(city.price || 0).toLocaleString()}</span>
+                                        <span className="price-unit">/person</span>
+                                    </div>
                                 </div>
-                                <div className="home-city-price">
-                                    <span className="price-value">{city.price}</span>
-                                    <span className="price-unit">{city.priceUnit}</span>
-                                </div>
-                            </div>
-                        </motion.div>
-                    ))}
+                            </motion.div>
+                        ))
+                    )}
                 </div>
             </section>
 

@@ -35,6 +35,22 @@ export interface EditableDay {
     items: EditableItem[];
 }
 
+export interface IExpense {
+    id: string;
+    categoryId: string;
+    amount: number;
+    date: string;
+    note?: string;
+}
+
+export interface IPackingItem {
+    id: string;
+    label: string;
+    categoryId: string;
+    checked: boolean;
+    suggestedByWeather?: boolean;
+}
+
 export interface EditableTrip {
     _id?: string;
     tripId: string;
@@ -46,6 +62,8 @@ export interface EditableTrip {
     totalDays: number;
     days: EditableDay[];
     unassigned: EditableItem[];
+    budget?: IExpense[];
+    packing?: IPackingItem[];
     metadata?: {
         algorithmMs?: number;
         source?: string;

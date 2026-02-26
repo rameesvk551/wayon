@@ -37,6 +37,11 @@ export async function getTrip(tripId: string): Promise<EditableTrip> {
     return request<EditableTrip>(`/api/trips/${tripId}`);
 }
 
+// ── Get User's Trips ─────────────────────────────────────────────────────
+export async function getTripsByUser(userId: string): Promise<EditableTrip[]> {
+    return request<EditableTrip[]>(`/api/trips?userId=${userId}`);
+}
+
 // ── Update trip (autosave) ───────────────────────────────────────────────
 export async function updateTrip(tripId: string, updates: Partial<EditableTrip>): Promise<EditableTrip> {
     return request<EditableTrip>(`/api/trips/${tripId}`, {
