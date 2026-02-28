@@ -1,4 +1,5 @@
 import { useRef } from 'react';
+import { motion } from 'framer-motion';
 import type { AttractionCategory, AttractionCategoryId } from '../../types/attraction';
 
 interface CategoryScrollerProps {
@@ -16,24 +17,28 @@ const CategoryScroller: React.FC<CategoryScrollerProps> = ({
 
     return (
         <div className="cat-scroller" ref={scrollRef}>
-            <button
+            <motion.button
                 className={`cat-pill ${activeCategory === null ? 'cat-pill--active' : ''}`}
                 onClick={() => onSelect(null)}
                 type="button"
+                whileTap={{ scale: 0.95 }}
+                layout
             >
                 <span className="cat-pill__icon">✨</span>
                 <span className="cat-pill__label">All</span>
-            </button>
+            </motion.button>
             {categories.map((cat) => (
-                <button
+                <motion.button
                     key={cat.id}
                     className={`cat-pill ${activeCategory === cat.id ? 'cat-pill--active' : ''}`}
                     onClick={() => onSelect(activeCategory === cat.id ? null : cat.id)}
                     type="button"
+                    whileTap={{ scale: 0.95 }}
+                    layout
                 >
                     <span className="cat-pill__icon">{cat.icon}</span>
                     <span className="cat-pill__label">{cat.label}</span>
-                </button>
+                </motion.button>
             ))}
         </div>
     );

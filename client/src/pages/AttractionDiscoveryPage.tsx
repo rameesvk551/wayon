@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, MapPin } from 'lucide-react';
+import { Search, MapPin, Star, Sparkles, ChevronRight, Compass } from 'lucide-react';
 import DestinationCard from '../components/discovery/DestinationCard';
 import CategoryScroller from '../components/discovery/CategoryScroller';
 import { SkeletonDestinationRow } from '../components/discovery/SkeletonLoader';
@@ -13,8 +13,11 @@ import {
     trendingCities,
     attractionCategories,
     popularCityChips,
+    getFeaturedAttractions,
 } from '../data/attractionData';
 import type { AttractionCategoryId } from '../types/attraction';
+
+const featured = getFeaturedAttractions()[0];
 
 const AttractionDiscoveryPage: React.FC = () => {
     const navigate = useNavigate();
@@ -133,17 +136,64 @@ const AttractionDiscoveryPage: React.FC = () => {
 
             {/* ===== TRENDING DESTINATIONS ===== */}
             <section className="disc-section">
-                <h2 className="disc-section__title">🔥 Trending Destinations</h2>
+                <div className="disc-section__header">
+                    <h2 className="disc-section__title" style={{ marginBottom: 0 }}>🔥 Trending Destinations</h2>
+                    <button className="disc-section__see-all" type="button">
+                        See all <ChevronRight size={14} />
+                    </button>
+                </div>
                 {isLoading ? (
                     <SkeletonDestinationRow />
                 ) : (
                     <div className="disc-dest-scroll no-scrollbar">
-                        {trendingCities.map((city) => (
-                            <DestinationCard key={city.id} city={city} onClick={handleCityClick} />
+                        {trendingCities.map((city, index) => (
+                            <motion.div
+                                key={city.id}
+                                initial={{ opacity: 0, x: 30 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ duration: 0.4, delay: index * 0.08 }}
+                            >
+                                <DestinationCard city={city} onClick={handleCityClick} />
+                            </motion.div>
                         ))}
                     </div>
                 )}
             </section>
+
+            {/* ===== FEATURED SPOTLIGHT ===== */}
+            {featured && (
+                <section className="disc-section">
+                    <h2 className="disc-section__title">⭐ Featured Attraction</h2>
+                    <motion.div
+                        className="disc-featured"
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 0.5 }}
+                        onClick={() => navigate(`/attractions/${featured.city}`)}
+                    >
+                        <img
+                            src={featured.image}
+                            alt={featured.name}
+                            className="disc-featured__img"
+                            loading="lazy"
+                        />
+                        <div className="disc-featured__overlay" />
+                        <div className="disc-featured__rating">
+                            <Star size={12} fill="#FBBF24" stroke="#FBBF24" />
+                            <span>{featured.rating}</span>
+                        </div>
+                        <div className="disc-featured__content">
+                            <div className="disc-featured__badge">
+                                <Sparkles size={10} />
+                                Top Rated
+                            </div>
+                            <h3 className="disc-featured__name">{featured.name}</h3>
+                            <p className="disc-featured__desc">{featured.description}</p>
+                        </div>
+                    </motion.div>
+                </section>
+            )}
 
             {/* ===== EXPLORE BY CATEGORY ===== */}
             <section className="disc-section">
@@ -155,11 +205,27 @@ const AttractionDiscoveryPage: React.FC = () => {
                 />
             </section>
 
-            {/* ===== EXPLORE BY CATEGORY (continued) ===== */}
+            {/* ===== CTA CARD ===== */}
             <section className="disc-section disc-section--last">
-                <p style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: '16px 0' }}>
-                    Select a city above to browse attractions
-                </p>
+                <motion.button
+                    className="disc-cta"
+                    type="button"
+                    whileTap={{ scale: 0.98 }}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.5 }}
+                    onClick={() => navigate('/plan/new')}
+                >
+                    <div className="disc-cta__icon">
+                        <Compass size={24} />
+                    </div>
+                    <div className="disc-cta__text">
+                        <div className="disc-cta__title">Plan Your Perfect Trip</div>
+                        <div className="disc-cta__desc">AI-powered itineraries tailored just for you</div>
+                    </div>
+                    <ChevronRight size={20} className="disc-cta__arrow" />
+                </motion.button>
             </section>
 
             {/* Trip Builder */}
