@@ -110,6 +110,12 @@ export class RouteOptimizerService {
                     }
                 }
 
+                // Skip attractions with (0,0) coordinates — indicates failed geocoding
+                if (dto.lat === 0 && dto.lng === 0) {
+                    console.warn(`Skipping attraction ${dto.id} (${dto.name}) — invalid (0,0) coordinates`);
+                    continue;
+                }
+
                 const attraction = new Attraction(dto.id, {
                     name: dto.name,
                     location: geoResult.getValue(),

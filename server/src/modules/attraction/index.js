@@ -13,7 +13,7 @@ import { createAttractionRoutes } from "./routes/attraction.routes.js";
  */
 export default function createAttractionModule() {
     const googlePlacesApiKey = process.env.GOOGLE_PLACES_API_KEY || process.env.GOOGLE_MAPS_API_KEY || "";
-    const fallbackEnabled = (process.env.ENABLE_FALLBACK_PROVIDER || "true").toLowerCase() !== "false";
+    const fallbackEnabled = (process.env.ENABLE_FALLBACK_PROVIDER || "false").toLowerCase() === "true";
     const textSearchTimeout = parseInt(process.env.GOOGLE_PLACES_TIMEOUT || "10000", 10);
     const placeDetailsTimeout = parseInt(process.env.GOOGLE_PLACE_DETAILS_TIMEOUT || "5000", 10);
 
