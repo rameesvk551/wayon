@@ -8,8 +8,10 @@ import type {
   PackingItem,
   WeatherDay,
 } from '../types/tripAssistant.types';
-import { getTripsByUser, updateTrip } from '../../../api/itineraryEditorApi';
+import { getTripsByUser } from '../../../api/itineraryEditorApi';
 import type { EditableTrip } from '../../../types/itinerary-editor';
+import { addExpense as apiAddExpense } from '../../../api/budgetApi';
+import { addPackingItem as apiAddPackingItem, togglePackingItem as apiTogglePackingItem, replacePackingList as apiReplacePackingList } from '../../../api/packingApi';
 
 interface AddExpensePayload {
   categoryId: BudgetCategoryId;
@@ -141,26 +143,27 @@ export const useTripAssistantStore = create<TripAssistantState>((set, get) => ({
     health: false,
   },
   addExpense: ({ categoryId, amount, date, note }) => {
+    const newExpense = {
+      id: uid(),
+      categoryId,
+      amount: Math.max(0, amount),
+      date,
+      note: note?.trim() || undefined,
+    };
+
     set((state) => ({
-      expenses: [
-        {
-          id: uid(),
-          categoryId,
-          amount: Math.max(0, amount),
-          date,
-          note: note?.trim() || undefined,
-        },
-        ...state.expenses,
-      ],
+      expenses: [newExpense, ...state.expenses],
       expandedBudgetCategories: {
         ...state.expandedBudgetCategories,
         [categoryId]: true,
       },
     }));
 
-    const { activeTripId, expenses } = get();
+    const { activeTripId } = get();
     if (activeTripId) {
-      updateTrip(activeTripId, { budget: expenses as any });
+      apiAddExpense(activeTripId, newExpense).catch((e) =>
+        console.error('Failed to persist expense', e)
+      );
     }
   },
   toggleBudgetCategory: (categoryId) =>
@@ -185,31 +188,34 @@ export const useTripAssistantStore = create<TripAssistantState>((set, get) => ({
       ),
     }));
 
-    const { activeTripId, packingItems } = get();
+    const { activeTripId } = get();
     if (activeTripId) {
-      updateTrip(activeTripId, { packing: packingItems as any });
+      apiTogglePackingItem(activeTripId, itemId).catch((e) =>
+        console.error('Failed to toggle packing item', e)
+      );
     }
   },
   addPackingItem: ({ label, categoryId }) => {
+    const newItem = {
+      id: uid(),
+      label: label.trim(),
+      categoryId,
+      checked: false,
+    };
+
     set((state) => ({
-      packingItems: [
-        ...state.packingItems,
-        {
-          id: uid(),
-          label: label.trim(),
-          categoryId,
-          checked: false,
-        },
-      ],
+      packingItems: [...state.packingItems, newItem],
       expandedPackingCategories: {
         ...state.expandedPackingCategories,
         [categoryId]: true,
       },
     }));
 
-    const { activeTripId, packingItems } = get();
+    const { activeTripId } = get();
     if (activeTripId) {
-      updateTrip(activeTripId, { packing: packingItems as any });
+      apiAddPackingItem(activeTripId, newItem).catch((e) =>
+        console.error('Failed to persist packing item', e)
+      );
     }
   },
   addWeatherSuggestionsToPacking: () => {
@@ -245,7 +251,9 @@ export const useTripAssistantStore = create<TripAssistantState>((set, get) => ({
 
     const { activeTripId, packingItems: updatedPacking } = get();
     if (activeTripId) {
-      updateTrip(activeTripId, { packing: updatedPacking as any });
+      apiReplacePackingList(activeTripId, updatedPacking as any).catch((e) =>
+        console.error('Failed to persist weather packing suggestions', e)
+      );
     }
   },
 }));

@@ -26,6 +26,7 @@ const AttractionSearchPage: React.FC = () => {
         toggleMapView,
         setFilterOpen,
         toastMessage,
+        switchCity,
     } = useAttractionStore();
 
     const [isLoading, setIsLoading] = useState(true);
@@ -37,6 +38,13 @@ const AttractionSearchPage: React.FC = () => {
     const [fetchError, setFetchError] = useState<string | null>(null);
 
     const cityName = trendingCities.find((c) => c.id === city)?.name || city || 'All';
+
+    // Clear trip selections when user switches to a different city
+    useEffect(() => {
+        if (cityName && cityName !== 'All') {
+            switchCity(cityName);
+        }
+    }, [cityName, switchCity]);
 
     // Fetch attractions from API when city changes
     useEffect(() => {
@@ -54,7 +62,13 @@ const AttractionSearchPage: React.FC = () => {
             } catch (err: any) {
                 console.error('Failed to fetch attractions:', err);
                 if (!cancelled) {
-                    setFetchError(err.message || 'Failed to load attractions');
+                    const msg = err.message || 'Failed to load attractions';
+                    const isNetworkError = msg === 'Failed to fetch' || msg.includes('NetworkError') || msg.includes('ECONNREFUSED');
+                    setFetchError(
+                        isNetworkError
+                            ? 'Cannot connect to the attractions API. Is the backend server running?'
+                            : msg
+                    );
                 }
             } finally {
                 if (!cancelled) setIsLoading(false);
@@ -217,15 +231,14 @@ const AttractionSearchPage: React.FC = () => {
                         onSelect={setActiveCategory}
                     />
 
-                    {/* Result count */}
-                    <p className="search-result-count">
-                        {filteredAttractions.length} Attraction{filteredAttractions.length !== 1 ? 's' : ''}
-                    </p>
-
-                    {/* Error state */}
+                    {/* Error state — shown prominently before results */}
                     {fetchError && !isLoading && (
-                        <div className="disc-empty">
-                            <p>⚠️ {fetchError}</p>
+                        <div className="disc-empty" style={{ margin: '16px 0', padding: '24px', background: '#fff3cd', borderRadius: '12px', border: '1px solid #ffc107' }}>
+                            <p style={{ fontWeight: 600, marginBottom: 8 }}>⚠️ Could not load attractions</p>
+                            <p style={{ fontSize: '0.85rem', color: '#664d03', marginBottom: 12 }}>{fetchError}</p>
+                            <p style={{ fontSize: '0.8rem', color: '#664d03' }}>
+                                Make sure the backend server is running at {import.meta.env.VITE_ATTRACTION_SERVICE_URL || 'http://localhost:4333'}
+                            </p>
                             <button
                                 className="disc-empty__reset"
                                 onClick={() => window.location.reload()}
@@ -234,6 +247,13 @@ const AttractionSearchPage: React.FC = () => {
                                 Retry
                             </button>
                         </div>
+                    )}
+
+                    {/* Result count — only show when no error */}
+                    {!fetchError && (
+                        <p className="search-result-count">
+                            {filteredAttractions.length} Attraction{filteredAttractions.length !== 1 ? 's' : ''}
+                        </p>
                     )}
 
                     {/* Attraction list */}

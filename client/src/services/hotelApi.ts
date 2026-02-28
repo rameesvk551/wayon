@@ -7,8 +7,8 @@
 
 import type { HotelListingItem } from '../data/hotelListingData';
 
-// Backend API base URL — points to the hotel microservice
-const HOTEL_API_URL = import.meta.env.VITE_HOTEL_API_URL || 'http://localhost:4005';
+// Backend API base URL — now points to the unified ai-trip-planning server
+const HOTEL_API_URL = import.meta.env.VITE_HOTEL_API_URL || 'http://localhost:4333';
 
 /**
  * Backend Hotel response type (from hotel-service domain model)

@@ -12,7 +12,7 @@ import type { TourListingItem } from '../data/tourListingData';
 
 // ── Backend base URL ─────────────────────────────────────────────────────
 
-const TOUR_API_URL = import.meta.env.VITE_TOUR_SERVICE_URL || 'http://localhost:4004';
+const TOUR_API_URL = import.meta.env.VITE_TOUR_SERVICE_URL || 'http://localhost:4333';
 
 // ── Backend response types ───────────────────────────────────────────────
 
@@ -161,7 +161,7 @@ export function searchTours(params: {
         if (params.keyword) queryParams.set('keyword', params.keyword);
         if (params.limit) queryParams.set('limit', String(params.limit));
 
-        const res = await fetch(`${TOUR_API_URL}/tours/search?${queryParams}`);
+        const res = await fetch(`${TOUR_API_URL}/api/tours/search?${queryParams}`);
 
         if (!res.ok) {
             throw new Error(`Tour search failed: ${res.status}`);
@@ -183,7 +183,7 @@ export function getTourById(id: string): Promise<TourListingItem | null> {
     const cacheKey = `tour:${id}`;
 
     return cachedFetch(cacheKey, async () => {
-        const res = await fetch(`${TOUR_API_URL}/tours/${encodeURIComponent(id)}`);
+        const res = await fetch(`${TOUR_API_URL}/api/tours/${encodeURIComponent(id)}`);
         if (!res.ok) return null;
 
         const data: DetailResponse = await res.json();

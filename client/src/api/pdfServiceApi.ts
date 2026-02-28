@@ -1,12 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════════════
 // PDF SERVICE — API Client
-// Connects to pdf-service microservice (port 4055)
+// Connects to pdf module on ai-trip-planning server
 // ═══════════════════════════════════════════════════════════════════════════
 
 import type { Attraction } from '../types/attraction';
 import type { OptimizedStop } from './routeOptimizerApi';
 
-const BASE_URL = import.meta.env.VITE_PDF_SERVICE_URL || 'http://localhost:4055';
+const BASE_URL = import.meta.env.VITE_PDF_SERVICE_URL || 'http://localhost:4333';
 
 // ── Build PDF request payload from optimized route ────────────────────────
 export function buildPdfPayload(
@@ -101,7 +101,7 @@ export async function generateItineraryPdf(
 ): Promise<PdfResult> {
     const payload = buildPdfPayload(attractions, optimizedOrder, destination);
 
-    const res = await fetch(`${BASE_URL}/api/v1/generate-itinerary-pdf`, {
+    const res = await fetch(`${BASE_URL}/api/pdf/generate-itinerary-pdf`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',

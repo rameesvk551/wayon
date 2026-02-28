@@ -1,11 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════════════
 // VISA SERVICE — API Client
-// Connects to visa-service microservice (port 4003)
+// Connects to visa module on ai-trip-planning server
 // ═══════════════════════════════════════════════════════════════════════════
 
 import type { VisaInfo, VisaStatus } from '../data/visaData';
 
-const BASE_URL = import.meta.env.VITE_VISA_SERVICE_URL || 'http://localhost:4003';
+const BASE_URL = import.meta.env.VITE_VISA_SERVICE_URL || 'http://localhost:4333/api/visa';
 
 // ── Backend response shapes ───────────────────────────────────────────────
 
@@ -118,7 +118,7 @@ export function checkVisa(from: string, to: string): Promise<VisaInfo> {
 
     return cachedFetch(cacheKey, async () => {
         const res = await fetch(
-            `${BASE_URL}/visa?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`
+            `${BASE_URL}?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`
         );
         if (!res.ok) throw new Error(`Visa check failed: ${res.status}`);
 
@@ -139,7 +139,7 @@ export function getVisaMap(passportCode: string): Promise<{
     const cacheKey = `map:${passportCode}`;
 
     return cachedFetch(cacheKey, async () => {
-        const res = await fetch(`${BASE_URL}/visa/map`, {
+        const res = await fetch(`${BASE_URL}/map`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ passport: passportCode }),
@@ -160,7 +160,7 @@ export function getVisaMap(passportCode: string): Promise<{
  */
 export function getPassports(): Promise<PassportEntry[]> {
     return cachedFetch('passports', async () => {
-        const res = await fetch(`${BASE_URL}/visa/passports`);
+        const res = await fetch(`${BASE_URL}/passports`);
         if (!res.ok) throw new Error(`Passport list failed: ${res.status}`);
 
         const data: PassportListResponse = await res.json();
@@ -173,7 +173,7 @@ export function getPassports(): Promise<PassportEntry[]> {
  */
 export function getDestinations(): Promise<DestinationEntry[]> {
     return cachedFetch('destinations', async () => {
-        const res = await fetch(`${BASE_URL}/visa/destinations`);
+        const res = await fetch(`${BASE_URL}/destinations`);
         if (!res.ok) throw new Error(`Destination list failed: ${res.status}`);
 
         const data: DestinationListResponse = await res.json();

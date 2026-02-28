@@ -1,0 +1,1381 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{trip.title}} - Interactive Travel Planner</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:wght@400;500;600;700;800;900&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    /* ═══════════════════════════════════════════════════════════
+       INTERACTIVE TRAVEL PLANNER
+       Map-Based Storytelling with Animated Leader Lines
+       ═══════════════════════════════════════════════════════════ */
+
+    :root {
+      --bg-page: #f7f9fc;
+      --bg-white: #ffffff;
+      --bg-surface: #f1f5f9;
+      --bg-dark: #0a1628;
+      --bg-dark-card: rgba(255,255,255,0.06);
+
+      --brand-600: {{branding.primaryColor}};
+      --brand-500: #2563eb;
+      --brand-400: #3b82f6;
+      --brand-300: #60a5fa;
+      --brand-200: #93c5fd;
+      --brand-100: #dbeafe;
+      --brand-50: #eff6ff;
+      --accent: {{branding.accentColor}};
+
+      --text-primary: #0f172a;
+      --text-secondary: #334155;
+      --text-tertiary: #64748b;
+      --text-muted: #94a3b8;
+      --border-light: #e2e8f0;
+
+      --font-display: 'Playfair Display', Georgia, serif;
+      --font-body: 'Inter', -apple-system, sans-serif;
+      --font-label: 'DM Sans', 'Inter', sans-serif;
+
+      --r-sm: 10px;
+      --r-md: 16px;
+      --r-lg: 24px;
+      --r-full: 999px;
+
+      --shadow-md: 0 4px 6px rgba(15,23,42,0.04), 0 8px 20px rgba(15,23,42,0.06);
+      --shadow-lg: 0 8px 12px rgba(15,23,42,0.04), 0 16px 40px rgba(15,23,42,0.08);
+      --shadow-xl: 0 12px 20px rgba(15,23,42,0.06), 0 24px 56px rgba(15,23,42,0.10);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font-body);
+      color: var(--text-primary);
+      background: var(--bg-page);
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    /* ─── Cover Hero ─── */
+    .hero {
+      min-height: 100vh;
+      background: linear-gradient(165deg, #0a1628 0%, #0f2340 35%, #162f5a 65%, #1a365d 100%);
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -20%;
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, rgba(37,99,235,0.15) 0%, transparent 70%);
+      border-radius: 50%;
+      animation: heroGlow 8s ease-in-out infinite alternate;
+    }
+
+    @keyframes heroGlow {
+      0% { transform: translate(0, 0) scale(1); opacity: 0.5; }
+      100% { transform: translate(-40px, 30px) scale(1.2); opacity: 0.8; }
+    }
+
+    .hero__topbar {
+      padding: 28px 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: relative;
+      z-index: 2;
+    }
+
+    .hero__brand {
+      font-family: var(--font-label);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.4);
+    }
+
+    .hero__date {
+      font-family: var(--font-label);
+      font-size: 11px;
+      color: rgba(255,255,255,0.35);
+    }
+
+    .hero__title-section {
+      padding: 32px 40px 0;
+      position: relative;
+      z-index: 2;
+    }
+
+    .hero__pre-title {
+      font-family: var(--font-label);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 10px;
+    }
+
+    .hero__destination {
+      font-family: var(--font-display);
+      font-size: clamp(40px, 6vw, 64px);
+      font-weight: 800;
+      line-height: 1.05;
+      margin-bottom: 16px;
+      opacity: 0;
+      animation: fadeInUp 0.8s ease forwards 0.2s;
+    }
+
+    .hero__accent-line {
+      width: 120px;
+      height: 4px;
+      border-radius: 2px;
+      background: linear-gradient(90deg, var(--accent), var(--brand-300));
+      margin-bottom: 20px;
+      opacity: 0;
+      animation: fadeInUp 0.6s ease forwards 0.4s;
+    }
+
+    .hero__pills {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+      opacity: 0;
+      animation: fadeInUp 0.6s ease forwards 0.6s;
+    }
+
+    .hero__pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 22px;
+      border-radius: var(--r-md);
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+      font-size: 14px;
+      font-weight: 700;
+      color: #fff;
+      backdrop-filter: blur(8px);
+      transition: all 0.3s ease;
+      cursor: default;
+    }
+
+    .hero__pill:hover {
+      background: rgba(255,255,255,0.14);
+      transform: translateY(-2px);
+    }
+
+    /* ─── Storytelling Grid ─── */
+    .story-grid {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 240px 1fr 240px;
+      gap: 24px;
+      padding: 20px 40px;
+      position: relative;
+      z-index: 2;
+    }
+
+    @media (max-width: 1100px) {
+      .story-grid { grid-template-columns: 1fr; }
+      .story-sidebar { display: none; }
+    }
+
+    .story-sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding-top: 12px;
+    }
+
+    .story-sidebar__label {
+      font-family: var(--font-label);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.35);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 4px;
+    }
+
+    /* ─── Destination Cards ─── */
+    .dest-card {
+      padding: 16px 18px;
+      border-radius: var(--r-md);
+      background: rgba(255,255,255,0.06);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,0.10);
+      cursor: pointer;
+      transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+      opacity: 0;
+      transform: translateX(-20px);
+    }
+
+    .dest-card--right {
+      transform: translateX(20px);
+    }
+
+    .dest-card.visible {
+      opacity: 1;
+      transform: translateX(0);
+    }
+
+    .dest-card:hover, .dest-card.active {
+      background: rgba(255,255,255,0.12);
+      border-color: rgba(255,255,255,0.22);
+      transform: translateY(-4px) scale(1.02);
+      box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+    }
+
+    .dest-card.active {
+      border-color: var(--accent);
+      box-shadow: 0 0 20px rgba(14,165,233,0.2), 0 8px 30px rgba(0,0,0,0.2);
+    }
+
+    .dest-card__marker {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 800;
+      margin-right: 6px;
+    }
+
+    .dest-card__label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      color: var(--accent);
+      margin-bottom: 4px;
+    }
+
+    .dest-card__title {
+      font-size: 17px;
+      font-weight: 800;
+      color: #fff;
+      line-height: 1.25;
+      margin-bottom: 3px;
+    }
+
+    .dest-card__subtitle {
+      font-size: 11px;
+      color: rgba(255,255,255,0.45);
+      margin-bottom: 8px;
+    }
+
+    .dest-card__cat-tag {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: var(--r-full);
+      font-size: 9px;
+      font-weight: 600;
+      background: rgba(255,255,255,0.10);
+      color: rgba(255,255,255,0.7);
+    }
+
+    /* ─── Map Container ─── */
+    .map-wrap {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .map-frame {
+      border-radius: var(--r-lg);
+      overflow: hidden;
+      border: 2px solid rgba(255,255,255,0.12);
+      box-shadow: var(--shadow-xl), 0 0 60px rgba(37,99,235,0.08);
+      position: relative;
+      transition: all 0.4s ease;
+    }
+
+    .map-frame:hover {
+      border-color: rgba(255,255,255,0.20);
+      box-shadow: var(--shadow-xl), 0 0 80px rgba(37,99,235,0.12);
+    }
+
+    .map-frame__img {
+      width: 100%;
+      height: 420px;
+      background-size: cover;
+      background-position: center;
+      background-color: #1a365d;
+      transition: transform 0.6s ease;
+    }
+
+    .map-frame:hover .map-frame__img {
+      transform: scale(1.02);
+    }
+
+    .map-frame__overlay {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 12px 20px;
+      background: linear-gradient(to top, rgba(0,0,0,0.55), transparent);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .map-badge {
+      padding: 5px 14px;
+      border-radius: 8px;
+      font-size: 10px;
+      font-weight: 600;
+      background: rgba(0,0,0,0.45);
+      backdrop-filter: blur(4px);
+      color: rgba(255,255,255,0.85);
+    }
+
+    .day-legend {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .day-legend__item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .day-legend__item:hover {
+      transform: scale(1.1);
+    }
+
+    .day-legend__dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+      transition: box-shadow 0.2s;
+    }
+
+    .day-legend__item:hover .day-legend__dot {
+      box-shadow: 0 0 12px currentColor;
+    }
+
+    .day-legend__text {
+      font-family: var(--font-label);
+      font-size: 11px;
+      font-weight: 600;
+      color: rgba(255,255,255,0.6);
+    }
+
+    /* ─── Animated Leader Lines (SVG) ─── */
+    .leader-lines-svg {
+      position: absolute;
+      top: 0;
+      left: -24px;
+      right: -24px;
+      width: calc(100% + 48px);
+      height: 100%;
+      pointer-events: none;
+      z-index: 3;
+    }
+
+    .leader-path {
+      fill: none;
+      stroke-width: 2;
+      stroke-dasharray: 8 5;
+      opacity: 0;
+      transition: opacity 0.4s ease;
+      animation: dashFlow 20s linear infinite;
+    }
+
+    .leader-path.visible {
+      opacity: 0.5;
+    }
+
+    .leader-path.active {
+      opacity: 0.85;
+      stroke-width: 3;
+      filter: drop-shadow(0 0 4px currentColor);
+    }
+
+    @keyframes dashFlow {
+      to { stroke-dashoffset: -100; }
+    }
+
+    .leader-endpoint {
+      r: 5;
+      opacity: 0;
+      transition: all 0.3s ease;
+    }
+
+    .leader-endpoint.visible {
+      opacity: 0.6;
+    }
+
+    .leader-endpoint.active {
+      opacity: 1;
+      r: 7;
+      filter: drop-shadow(0 0 6px currentColor);
+    }
+
+    /* ─── Footer Tags ─── */
+    .hero__footer {
+      padding: 20px 40px 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: relative;
+      z-index: 2;
+    }
+
+    .cat-tags {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .cat-tag {
+      padding: 6px 16px;
+      border-radius: var(--r-full);
+      font-size: 12px;
+      font-weight: 500;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.08);
+      color: rgba(255,255,255,0.55);
+      transition: all 0.3s ease;
+      cursor: default;
+    }
+
+    .cat-tag:hover {
+      background: rgba(255,255,255,0.10);
+      color: rgba(255,255,255,0.75);
+      transform: translateY(-2px);
+    }
+
+    .hero__credit {
+      font-size: 10px;
+      color: rgba(255,255,255,0.25);
+    }
+
+    /* ═══════════════════════════════════════
+       ITINERARY SECTION
+       ═══════════════════════════════════════ */
+
+    .itinerary {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 60px 40px;
+    }
+
+    .itinerary__header {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+
+    .itinerary__pretitle {
+      font-family: var(--font-label);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    .itinerary__title {
+      font-family: var(--font-display);
+      font-size: 36px;
+      font-weight: 800;
+      color: var(--text-primary);
+      margin-bottom: 10px;
+    }
+
+    .itinerary__subtitle {
+      font-size: 14px;
+      color: var(--text-tertiary);
+    }
+
+    /* ─── Day Section ─── */
+    .day-section {
+      margin-bottom: 48px;
+      opacity: 0;
+      transform: translateY(30px);
+      transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .day-section.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .day-banner {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      padding: 20px 24px;
+      border-radius: var(--r-lg);
+      margin-bottom: 24px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .day-banner::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      opacity: 0.08;
+      border-radius: var(--r-lg);
+    }
+
+    .day-banner__num {
+      font-family: var(--font-display);
+      font-size: 48px;
+      font-weight: 900;
+      line-height: 1;
+      opacity: 0.85;
+    }
+
+    .day-banner__info { flex: 1; }
+
+    .day-banner__city {
+      font-family: var(--font-display);
+      font-size: 24px;
+      font-weight: 800;
+      line-height: 1.2;
+    }
+
+    .day-banner__date {
+      font-size: 13px;
+      font-weight: 500;
+      opacity: 0.6;
+      margin-top: 3px;
+    }
+
+    .day-banner__stats {
+      display: flex;
+      gap: 8px;
+    }
+
+    .stat-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 14px;
+      border-radius: var(--r-full);
+      font-size: 11px;
+      font-weight: 600;
+      background: var(--brand-50);
+      color: var(--brand-600);
+      border: 1px solid var(--brand-100);
+    }
+
+    .stat-tag--green {
+      background: #ecfdf5;
+      color: #059669;
+      border-color: #a7f3d020;
+    }
+
+    /* ─── Day Map ─── */
+    .day-map {
+      border-radius: var(--r-lg);
+      overflow: hidden;
+      box-shadow: var(--shadow-md);
+      margin-bottom: 24px;
+      position: relative;
+    }
+
+    .day-map__img {
+      width: 100%;
+      height: 220px;
+      background-size: cover;
+      background-position: center;
+      background-color: var(--bg-surface);
+      transition: transform 0.5s ease;
+    }
+
+    .day-map:hover .day-map__img {
+      transform: scale(1.03);
+    }
+
+    .day-map__overlay {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 10px 18px;
+      background: linear-gradient(to top, rgba(15,23,42,0.5), transparent);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .day-map__label {
+      font-family: var(--font-label);
+      font-size: 12px;
+      font-weight: 600;
+      color: rgba(255,255,255,0.85);
+    }
+
+    .day-map__provider {
+      font-size: 10px;
+      color: rgba(255,255,255,0.45);
+    }
+
+    /* ─── Distance Flow ─── */
+    .dist-flow {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 12px 16px;
+      background: var(--bg-surface);
+      border-radius: var(--r-sm);
+      border: 1px solid var(--border-light);
+      margin-bottom: 24px;
+    }
+
+    .dist-flow__segment {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+    }
+
+    .dist-flow__name {
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    .dist-flow__arrow {
+      color: var(--brand-400);
+      font-weight: 700;
+    }
+
+    .dist-flow__meta {
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+
+    /* ─── Activity Grid ─── */
+    .act-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .act-card {
+      background: var(--bg-white);
+      border: 1px solid var(--border-light);
+      border-radius: var(--r-md);
+      overflow: hidden;
+      transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+      cursor: default;
+    }
+
+    .act-card:hover {
+      transform: translateY(-6px);
+      box-shadow: var(--shadow-lg);
+      border-color: var(--brand-200);
+    }
+
+    .act-card__placeholder {
+      width: 100%;
+      height: 90px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.3s;
+    }
+
+    .act-card__icon-wrap {
+      width: 40px;
+      height: 40px;
+      border-radius: var(--r-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.3s;
+    }
+
+    .act-card:hover .act-card__icon-wrap {
+      transform: scale(1.15) rotate(5deg);
+    }
+
+    .act-card__body {
+      padding: 14px 16px 16px;
+    }
+
+    .act-card__header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 6px;
+    }
+
+    .act-card__mini-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .act-card__name {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-primary);
+      line-height: 1.3;
+    }
+
+    .act-card__loc {
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-top: 1px;
+    }
+
+    .act-card__desc {
+      font-size: 12px;
+      color: var(--text-tertiary);
+      line-height: 1.5;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+
+    .act-card__tags {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .micro-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 10px;
+      border-radius: var(--r-full);
+      font-size: 10px;
+      font-weight: 600;
+      background: var(--bg-surface);
+      color: var(--text-tertiary);
+    }
+
+    .micro-tag--brand {
+      background: var(--brand-50);
+      color: var(--brand-600);
+    }
+
+    /* ─── Transport & Hotel ─── */
+    .extras-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    @media (max-width: 700px) {
+      .extras-row { grid-template-columns: 1fr; }
+    }
+
+    .transport-card,
+    .hotel-card {
+      padding: 18px 20px;
+      border-radius: var(--r-md);
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      transition: all 0.3s ease;
+    }
+
+    .transport-card {
+      background: linear-gradient(135deg, var(--bg-surface), #e8edf4);
+      border: 1px solid var(--border-light);
+    }
+
+    .hotel-card {
+      background: linear-gradient(135deg, #fefce8, #fef3c7);
+      border: 1px solid #fde68a;
+    }
+
+    .transport-card:hover,
+    .hotel-card:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .icon-circle {
+      width: 42px;
+      height: 42px;
+      border-radius: var(--r-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .icon-circle--sky { background: #f0f9ff; color: #0ea5e9; }
+    .icon-circle--amber { background: #fffbeb; color: #d97706; }
+
+    .extras__title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .extras__meta {
+      font-size: 12px;
+      color: var(--text-tertiary);
+      margin-top: 3px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .route-arrow {
+      display: inline-block;
+      color: var(--brand-400);
+      font-weight: 700;
+      margin: 0 4px;
+    }
+
+    .stars { display: flex; gap: 2px; color: #f59e0b; font-size: 13px; }
+
+    /* ─── Progress Bar ─── */
+    .progress-bar {
+      padding: 20px 0;
+      border-top: 1px solid var(--border-light);
+    }
+
+    .progress-dots {
+      display: flex;
+      gap: 6px;
+    }
+
+    .progress-dot {
+      flex: 1;
+      height: 5px;
+      border-radius: 3px;
+      background: var(--bg-surface);
+      transition: background 0.3s;
+    }
+
+    .progress-dot--active { background: var(--brand-500); }
+    .progress-dot--past { background: var(--brand-200); }
+
+    .progress-labels {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 8px;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .progress-labels span:nth-child(2) {
+      font-weight: 600;
+      color: var(--brand-500);
+    }
+
+    /* ─── Itinerary Panel (Mobile expandable) ─── */
+    .itin-panel {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: 420px;
+      max-width: 90vw;
+      height: 100vh;
+      background: var(--bg-white);
+      box-shadow: -8px 0 40px rgba(0,0,0,0.15);
+      z-index: 1000;
+      transform: translateX(100%);
+      transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+      overflow-y: auto;
+    }
+
+    .itin-panel.open { transform: translateX(0); }
+
+    .itin-panel__header {
+      padding: 24px;
+      border-bottom: 1px solid var(--border-light);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      background: var(--bg-white);
+      z-index: 1;
+    }
+
+    .itin-panel__title {
+      font-family: var(--font-display);
+      font-size: 20px;
+      font-weight: 800;
+    }
+
+    .itin-panel__close {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 1px solid var(--border-light);
+      background: var(--bg-white);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      color: var(--text-tertiary);
+      transition: all 0.2s;
+    }
+
+    .itin-panel__close:hover {
+      background: var(--bg-surface);
+      color: var(--text-primary);
+    }
+
+    .itin-panel__body { padding: 24px; }
+
+    .backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      z-index: 999;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+    }
+
+    .backdrop.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    /* ─── Animations ─── */
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .icon-svg {
+      width: 16px;
+      height: 16px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .icon-svg--sm { width: 13px; height: 13px; }
+    .icon-svg--lg { width: 20px; height: 20px; }
+  </style>
+</head>
+<body>
+  {{!-- ═══════════ HERO SECTION ═══════════ --}}
+  <section class="hero" id="hero">
+    <div class="hero__topbar">
+      <div class="hero__brand">
+        {{#if branding.logoUrl}}<img src="{{branding.logoUrl}}" alt="Logo" style="height: 24px; margin-right: 8px; vertical-align: middle;" />{{/if}}
+        Travel Itinerary
+      </div>
+      <div class="hero__date">{{trip.dateRange.start}} &mdash; {{trip.dateRange.end}}</div>
+    </div>
+
+    <div class="hero__title-section">
+      <div class="hero__pre-title">Your Trip To</div>
+      <h1 class="hero__destination">{{trip.destination}}</h1>
+      <div class="hero__accent-line"></div>
+      <div class="hero__pills">
+        <div class="hero__pill">
+          <svg class="icon-svg" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          {{trip.totalDays}} Days
+        </div>
+        <div class="hero__pill">
+          <svg class="icon-svg" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          {{trip.destination}}
+        </div>
+      </div>
+    </div>
+
+    {{!-- Story Grid: left cards | map | right cards --}}
+    <div class="story-grid" id="storyGrid">
+      {{!-- Left Column --}}
+      <div class="story-sidebar" id="leftSidebar">
+        <div class="story-sidebar__label">
+          <svg class="icon-svg icon-svg--sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+          Highlights
+        </div>
+        {{#each leftMarkers}}
+          <div class="dest-card" data-marker-index="{{@index}}" data-side="left">
+            <div class="dest-card__label">
+              <span class="dest-card__marker">{{label}}</span>
+              {{#if category}}{{category}}{{/if}}
+            </div>
+            <div class="dest-card__title">{{title}}</div>
+            {{#if subtitle}}<div class="dest-card__subtitle">{{subtitle}}</div>{{/if}}
+            {{#if category}}<div class="dest-card__cat-tag">{{category}}</div>{{/if}}
+          </div>
+        {{/each}}
+      </div>
+
+      {{!-- Center Map --}}
+      <div class="map-wrap" id="mapWrap">
+        <svg class="leader-lines-svg" id="leaderLinesSvg" viewBox="0 0 600 500" preserveAspectRatio="none">
+          {{#each leaderLines}}
+            <path d="{{path}}" class="leader-path" stroke="{{color}}" data-line-index="{{@index}}" />
+            <circle cx="{{endX}}" cy="{{endY}}" class="leader-endpoint" fill="{{color}}" data-line-index="{{@index}}" />
+          {{/each}}
+        </svg>
+
+        <div class="map-frame">
+          <div class="map-frame__img" style="background-image: url('{{{mapImage}}}');"></div>
+          <div class="map-frame__overlay">
+            <div class="map-badge">
+              <svg class="icon-svg icon-svg--sm" style="vertical-align: middle; margin-right: 3px;" viewBox="0 0 24 24"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+              Route Map
+            </div>
+            <div class="map-badge">{{trip.totalDays}}-Day Journey</div>
+          </div>
+        </div>
+
+        <div class="day-legend" id="dayLegend">
+          {{#each dayLegend}}
+            <div class="day-legend__item" data-day="{{dayNumber}}">
+              <span class="day-legend__dot" style="background: {{colorHex}}; color: {{colorHex}};"></span>
+              <span class="day-legend__text">Day {{dayNumber}}</span>
+            </div>
+          {{/each}}
+        </div>
+      </div>
+
+      {{!-- Right Column --}}
+      <div class="story-sidebar" id="rightSidebar">
+        <div class="story-sidebar__label">
+          <svg class="icon-svg icon-svg--sm" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          Top Picks
+        </div>
+        {{#each rightMarkers}}
+          <div class="dest-card dest-card--right" data-marker-index="{{@index}}" data-side="right">
+            <div class="dest-card__label">
+              <span class="dest-card__marker">{{label}}</span>
+              {{#if category}}{{category}}{{/if}}
+            </div>
+            <div class="dest-card__title">{{title}}</div>
+            {{#if subtitle}}<div class="dest-card__subtitle">{{subtitle}}</div>{{/if}}
+            {{#if category}}<div class="dest-card__cat-tag">{{category}}</div>{{/if}}
+          </div>
+        {{/each}}
+      </div>
+    </div>
+
+    {{!-- Footer Tags --}}
+    <div class="hero__footer">
+      <div class="cat-tags">
+        {{#each categoryTags}}
+          <div class="cat-tag">{{icon}} {{label}}</div>
+        {{/each}}
+        {{#unless categoryTags.length}}
+          <div class="cat-tag">🍽️ Local Food</div>
+          <div class="cat-tag">🏛️ Culture</div>
+          <div class="cat-tag">🌿 Nature</div>
+          <div class="cat-tag">⛰️ Adventure</div>
+        {{/unless}}
+      </div>
+      <div class="hero__credit">Powered by AI Trip Planner</div>
+    </div>
+  </section>
+
+  {{!-- ═══════════ ITINERARY SECTION ═══════════ --}}
+  <section class="itinerary" id="itinerary">
+    <div class="itinerary__header">
+      <div class="itinerary__pretitle">Day-by-Day Journey</div>
+      <h2 class="itinerary__title">Your Complete Itinerary</h2>
+      <p class="itinerary__subtitle">{{trip.totalDays}} days exploring {{trip.destination}} &bull; {{trip.dateRange.start}} to {{trip.dateRange.end}}</p>
+    </div>
+
+    {{#each days}}
+    <div class="day-section" data-day="{{dayNumber}}">
+      {{!-- Day Banner --}}
+      <div class="day-banner" style="background: linear-gradient(135deg, {{#if dayColorHex}}{{dayColorHex}}12{{else}}#dbeafe{{/if}}, {{#if dayColorHex}}{{dayColorHex}}05{{else}}#eff6ff{{/if}}); border: 1px solid {{#if dayColorHex}}{{dayColorHex}}18{{else}}#bfdbfe{{/if}};">
+        <div class="day-banner__num" style="color: {{#if dayColorHex}}{{dayColorHex}}{{else}}var(--brand-500){{/if}};">{{dayNumber}}</div>
+        <div class="day-banner__info">
+          <div class="day-banner__city">{{city}}</div>
+          <div class="day-banner__date">{{date}}</div>
+        </div>
+        <div class="day-banner__stats">
+          <div class="stat-tag">⭐ {{activities.length}} Activities</div>
+          {{#if distanceSummary}}
+            <div class="stat-tag stat-tag--green">🕐 {{distanceSummary.totalDistanceLabel}} • {{distanceSummary.totalTimeLabel}}</div>
+          {{/if}}
+        </div>
+      </div>
+
+      {{!-- Day Map --}}
+      {{#if dayMapImage}}
+        <div class="day-map">
+          <div class="day-map__img" style="background-image: url('{{{dayMapImage}}}');"></div>
+          <div class="day-map__overlay">
+            <div class="day-map__label">Day {{dayNumber}} Route • {{city}}</div>
+            {{#if dayRouteProvider}}<div class="day-map__provider">via {{dayRouteProvider}}</div>{{/if}}
+          </div>
+        </div>
+      {{/if}}
+
+      {{!-- Distance Segments --}}
+      {{#if distanceSegments.length}}
+        <div class="dist-flow">
+          {{#each distanceSegments}}
+            <div class="dist-flow__segment">
+              <span class="dist-flow__name">{{from}}</span>
+              <span class="dist-flow__arrow">→</span>
+              <span class="dist-flow__name">{{to}}</span>
+              <span class="dist-flow__meta">({{distanceLabel}}, ~{{timeLabel}})</span>
+            </div>
+          {{/each}}
+        </div>
+      {{/if}}
+
+      {{!-- Activities Grid --}}
+      <div class="act-grid">
+        {{#each activities}}
+          <div class="act-card">
+            {{#if imageUrl}}
+              <img src="{{imageUrl}}" alt="{{name}}" style="width: 100%; height: 100px; object-fit: cover;" />
+            {{else}}
+              <div class="act-card__placeholder" style="background: {{categoryBg category}};">
+                <div class="act-card__icon-wrap" style="background: {{categoryColor category}}15;">
+                  <span style="color: {{categoryColor category}};">{{{categoryIconSvg category}}}</span>
+                </div>
+              </div>
+            {{/if}}
+            <div class="act-card__body">
+              <div class="act-card__header">
+                <div class="act-card__mini-icon" style="background: {{categoryBg category}}; color: {{categoryColor category}};">
+                  {{{categoryIconSvg category}}}
+                </div>
+                <div>
+                  <div class="act-card__name">{{name}}</div>
+                  {{#if location}}<div class="act-card__loc">📍 {{location}}</div>{{/if}}
+                </div>
+              </div>
+              {{#if description}}<div class="act-card__desc">{{description}}</div>{{/if}}
+              <div class="act-card__tags">
+                {{#if startTime}}<span class="micro-tag">🕐 {{startTime}}{{#if endTime}} - {{endTime}}{{/if}}</span>{{/if}}
+                {{#if duration}}<span class="micro-tag">⏱️ {{duration}}</span>{{/if}}
+                {{#if price}}<span class="micro-tag micro-tag--brand">{{formatPrice price}}</span>{{/if}}
+                {{#if category}}<span class="micro-tag" style="background: {{categoryBg category}}; color: {{categoryColor category}};">{{category}}</span>{{/if}}
+              </div>
+            </div>
+          </div>
+        {{/each}}
+      </div>
+
+      {{!-- Transport & Hotel --}}
+      {{#if transport}}{{#if hotel}}
+        <div class="extras-row">
+      {{/if}}{{/if}}
+      {{#unless transport}}{{#if hotel}}
+        <div class="extras-row" style="grid-template-columns: 1fr;">
+      {{/if}}{{/unless}}
+      {{#if transport}}{{#unless hotel}}
+        <div class="extras-row" style="grid-template-columns: 1fr;">
+      {{/unless}}{{/if}}
+
+      {{#if transport}}
+        <div class="transport-card">
+          <div class="icon-circle icon-circle--sky">
+            <svg class="icon-svg icon-svg--lg" viewBox="0 0 24 24"><path d="M14 16H9m10-6H5a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2z"/><circle cx="7.5" cy="17.5" r="2.5"/><circle cx="16.5" cy="17.5" r="2.5"/></svg>
+          </div>
+          <div>
+            <div class="extras__title">{{transport.from}} <span class="route-arrow">→</span> {{transport.to}}</div>
+            <div class="extras__meta">
+              {{#if transport.type}}<span class="micro-tag">{{transport.type}}</span>{{/if}}
+              {{#if transport.duration}}<span>{{transport.duration}}</span>{{/if}}
+              {{#if transport.carrier}}<span>• {{transport.carrier}}</span>{{/if}}
+              {{#if transport.price}}<span style="color: var(--brand-600); font-weight: 600;">{{formatPrice transport.price}}</span>{{/if}}
+            </div>
+          </div>
+        </div>
+      {{/if}}
+
+      {{#if hotel}}
+        <div class="hotel-card">
+          <div class="icon-circle icon-circle--amber">
+            <svg class="icon-svg icon-svg--lg" viewBox="0 0 24 24"><path d="M3 21V7a2 2 0 012-2h14a2 2 0 012 2v14"/><path d="M3 11h18"/></svg>
+          </div>
+          <div>
+            <div class="extras__title">{{hotel.name}}</div>
+            <div class="extras__meta">
+              {{#if hotel.rating}}<span class="stars">{{starRating hotel.rating}}</span>{{/if}}
+              {{#if hotel.pricePerNight}}<span style="color: #d97706; font-weight: 600;">{{formatPrice hotel.pricePerNight}}/night</span>{{/if}}
+            </div>
+          </div>
+        </div>
+      {{/if}}
+
+      {{#if transport}}</div>{{/if}}
+      {{#unless transport}}{{#if hotel}}</div>{{/if}}{{/unless}}
+
+      {{!-- Progress Bar --}}
+      <div class="progress-bar">
+        <div class="progress-dots">
+          {{#progressDots ../days.length dayNumber}}{{/progressDots}}
+        </div>
+        <div class="progress-labels">
+          <span>Day 1</span>
+          <span>Day {{dayNumber}} of {{../days.length}}</span>
+          <span>Day {{../days.length}}</span>
+        </div>
+      </div>
+    </div>
+    {{/each}}
+  </section>
+
+  {{!-- ─── Side Panel for Card Click ─── --}}
+  <div class="backdrop" id="backdrop"></div>
+  <div class="itin-panel" id="itinPanel">
+    <div class="itin-panel__header">
+      <div class="itin-panel__title" id="panelTitle">Destination</div>
+      <button class="itin-panel__close" id="panelClose">&times;</button>
+    </div>
+    <div class="itin-panel__body" id="panelBody"></div>
+  </div>
+
+  <script>
+    /* ═══════════════════════════════════════
+       INTERACTIVE BEHAVIORS
+       ═══════════════════════════════════════ */
+
+    document.addEventListener('DOMContentLoaded', () => {
+      // 1. Stagger-reveal destination cards
+      const cards = document.querySelectorAll('.dest-card');
+      cards.forEach((card, index) => {
+        setTimeout(() => card.classList.add('visible'), 200 + index * 120);
+      });
+
+      // 2. Show leader lines after cards appear
+      const leaderPaths = document.querySelectorAll('.leader-path');
+      const leaderEndpoints = document.querySelectorAll('.leader-endpoint');
+      setTimeout(() => {
+        leaderPaths.forEach(p => p.classList.add('visible'));
+        leaderEndpoints.forEach(e => e.classList.add('visible'));
+      }, 800);
+
+      // 3. Hover interactions on destination cards
+      cards.forEach((card, index) => {
+        card.addEventListener('mouseenter', () => {
+          leaderPaths.forEach(p => p.classList.remove('active'));
+          leaderEndpoints.forEach(e => e.classList.remove('active'));
+          const lineIndex = card.getAttribute('data-marker-index');
+          const side = card.getAttribute('data-side');
+          const offset = side === 'right'
+            ? document.querySelectorAll('[data-side="left"]').length
+            : 0;
+          const li = parseInt(lineIndex) + offset;
+          const path = document.querySelector(`.leader-path[data-line-index="${li}"]`);
+          const ep = document.querySelector(`.leader-endpoint[data-line-index="${li}"]`);
+          if (path) path.classList.add('active');
+          if (ep) ep.classList.add('active');
+        });
+        card.addEventListener('mouseleave', () => {
+          leaderPaths.forEach(p => p.classList.remove('active'));
+          leaderEndpoints.forEach(e => e.classList.remove('active'));
+        });
+      });
+
+      // 4. Click card → open side panel
+      const panel = document.getElementById('itinPanel');
+      const backdrop = document.getElementById('backdrop');
+      const panelTitle = document.getElementById('panelTitle');
+      const panelBody = document.getElementById('panelBody');
+      const panelClose = document.getElementById('panelClose');
+
+      cards.forEach(card => {
+        card.addEventListener('click', () => {
+          const title = card.querySelector('.dest-card__title')?.textContent || '';
+          const subtitle = card.querySelector('.dest-card__subtitle')?.textContent || '';
+          const category = card.querySelector('.dest-card__cat-tag')?.textContent || '';
+
+          panelTitle.textContent = title;
+          panelBody.innerHTML = `
+            <div style="margin-bottom: 16px;">
+              <div style="font-size: 13px; color: var(--text-tertiary); margin-bottom: 12px;">${subtitle}</div>
+              ${category ? `<span class="micro-tag">${category}</span>` : ''}
+            </div>
+            <div style="padding: 16px; background: var(--bg-surface); border-radius: var(--r-sm); font-size: 13px; color: var(--text-secondary);">
+              Click on an activity in the itinerary below to explore more details about <strong>${title}</strong>.
+            </div>
+            <div style="margin-top: 20px;">
+              <a href="#itinerary" style="display: inline-block; padding: 10px 24px; background: var(--brand-500); color: #fff; border-radius: var(--r-sm); text-decoration: none; font-weight: 600; font-size: 13px;">
+                View in Itinerary ↓
+              </a>
+            </div>
+          `;
+
+          cards.forEach(c => c.classList.remove('active'));
+          card.classList.add('active');
+          panel.classList.add('open');
+          backdrop.classList.add('open');
+        });
+      });
+
+      const closePanel = () => {
+        panel.classList.remove('open');
+        backdrop.classList.remove('open');
+        cards.forEach(c => c.classList.remove('active'));
+      };
+      panelClose.addEventListener('click', closePanel);
+      backdrop.addEventListener('click', closePanel);
+
+      // 5. Scroll-reveal day sections
+      const daySections = document.querySelectorAll('.day-section');
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+          }
+        });
+      }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+      daySections.forEach(section => observer.observe(section));
+
+      // 6. Day legend hover → highlight day section
+      const legendItems = document.querySelectorAll('.day-legend__item');
+      legendItems.forEach(item => {
+        item.addEventListener('click', () => {
+          const dayNum = item.getAttribute('data-day');
+          const section = document.querySelector(`.day-section[data-day="${dayNum}"]`);
+          if (section) {
+            section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        });
+      });
+    });
+  </script>
+</body>
+</html>

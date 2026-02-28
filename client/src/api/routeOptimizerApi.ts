@@ -1,11 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════════════
 // ROUTE OPTIMIZER — API Client
-// Connects to route-optimizer microservice (port 3007)
+// Connects to route-optimizer module on ai-trip-planning server
 // ═══════════════════════════════════════════════════════════════════════════
 
 import type { Attraction } from '../types/attraction';
 
-const BASE_URL = import.meta.env.VITE_ROUTE_OPTIMIZER_URL || 'http://localhost:4000';
+const BASE_URL = import.meta.env.VITE_ROUTE_OPTIMIZER_URL || 'http://localhost:4333';
 
 // ── Request / Response types ──────────────────────────────────────────────
 export interface OptimizeRoutePlace {
@@ -100,7 +100,7 @@ export async function optimizeRoute(
         },
     };
 
-    const res = await fetch(`${BASE_URL}/api/v1/optimize-route`, {
+    const res = await fetch(`${BASE_URL}/api/route-optimizer/optimize`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -207,7 +207,7 @@ export async function generateMultiDayItinerary(
         },
     };
 
-    const res = await fetch(`${BASE_URL}/api/v1/generate-itinerary`, {
+    const res = await fetch(`${BASE_URL}/api/route-optimizer/generate-itinerary`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

@@ -1,0 +1,167 @@
+{{!-- ═══════════════════════════════════════════════════════════════════
+     INFOGRAPHIC COVER PAGE
+     Map-Based Storytelling with Leader Lines & Destination Cards
+     ═══════════════════════════════════════════════════════════════════ --}}
+
+<section class="page page--cover">
+  {{!-- ─── Top Branding Bar ─── --}}
+  <div style="padding: 28px 36px 0; display: flex; justify-content: space-between; align-items: center;">
+    <div class="flex items-center gap-10">
+      {{#if branding.logoUrl}}
+        <img src="{{branding.logoUrl}}" alt="Logo" style="height: 28px; opacity: 0.9;" />
+      {{/if}}
+      <div class="label-upper" style="color: rgba(255,255,255,0.4);">Travel Itinerary</div>
+    </div>
+    <div class="label-sm" style="color: rgba(255,255,255,0.35);">{{trip.dateRange.start}} &mdash; {{trip.dateRange.end}}</div>
+  </div>
+
+  {{!-- ─── Hero Destination Title ─── --}}
+  <div style="padding: 32px 36px 0;">
+    <div class="label-upper" style="color: {{branding.accentColor}}; margin-bottom: 10px; font-size: 12px; letter-spacing: 0.3em;">
+      Your Trip To
+    </div>
+    <div class="heading-hero text-white" style="margin-bottom: 16px;">
+      {{trip.destination}}
+    </div>
+    {{!-- Gradient accent line --}}
+    <div style="width: 120px; height: 4px; border-radius: 2px; background: linear-gradient(90deg, {{branding.accentColor}}, #60a5fa); margin-bottom: 20px;"></div>
+
+    {{!-- Trip Stats Pills --}}
+    <div class="flex gap-10" style="margin-bottom: 12px;">
+      <div class="pill pill--glass">
+        <svg class="icon-svg" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        {{trip.totalDays}} Days
+      </div>
+      <div class="pill pill--glass">
+        <svg class="icon-svg" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        {{trip.dateRange.start}} &mdash; {{trip.dateRange.end}}
+      </div>
+      {{#if leftMarkers.length}}
+      <div class="pill pill--glass">
+        <svg class="icon-svg" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        {{totalMarkerCount}} Destinations
+      </div>
+      {{/if}}
+    </div>
+  </div>
+
+  {{!-- ═══════════════════════════════════════════
+       MAP STORYTELLING SECTION
+       3-Column: Left Cards | Map | Right Cards
+       with SVG Leader Lines Overlay
+       ═══════════════════════════════════════════ --}}
+  <div style="flex: 1; padding: 16px 36px 0; position: relative;">
+    <div style="display: grid; grid-template-columns: 200px 1fr 200px; gap: 18px; height: 100%; align-items: start;">
+
+      {{!-- ─── Left Destination Cards ─── --}}
+      <div class="flex flex-col gap-10" style="padding-top: 8px;">
+        <div class="label-upper" style="color: rgba(255,255,255,0.35); margin-bottom: 2px;">
+          <svg class="icon-svg icon-svg--sm" style="vertical-align: middle; margin-right: 4px;" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+          Highlights
+        </div>
+        {{#each leftMarkers}}
+          <div class="dest-card" data-marker-id="{{id}}">
+            <div class="dest-card__label" style="color: {{../branding.accentColor}};">
+              <span style="display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 50%; background: {{../branding.accentColor}}; color: #fff; font-size: 9px; font-weight: 800; margin-right: 5px;">{{label}}</span>
+              {{#if category}}{{category}}{{/if}}
+            </div>
+            <div class="dest-card__title">{{title}}</div>
+            {{#if subtitle}}<div class="dest-card__subtitle">{{subtitle}}</div>{{/if}}
+            {{!-- Activity Icons Row --}}
+            <div class="dest-card__icons">
+              {{#each ../infographicIcons}}
+                {{#if (eq ../id ../../leftMarkers.[0].id)}}{{/if}}
+              {{/each}}
+              {{#if category}}
+                <div class="activity-icon activity-icon--sm activity-icon--glass">
+                  {{{categoryIconSvg category}}}
+                </div>
+              {{/if}}
+            </div>
+          </div>
+        {{/each}}
+      </div>
+
+      {{!-- ─── Central Map with Leader Lines ─── --}}
+      <div style="position: relative; display: flex; flex-direction: column; gap: 12px;">
+        {{!-- SVG Leader Lines Overlay --}}
+        <svg class="leader-lines-overlay" viewBox="0 0 600 500" preserveAspectRatio="none" style="position: absolute; top: 0; left: -18px; right: -18px; width: calc(100% + 36px); height: 100%; z-index: 3;">
+          {{!-- Left leader lines --}}
+          {{#each leaderLines}}
+            <path d="{{path}}" class="leader-line" stroke="{{color}}" />
+            <circle cx="{{endX}}" cy="{{endY}}" class="leader-dot" fill="{{color}}" />
+          {{/each}}
+        </svg>
+
+        {{!-- Map Image --}}
+        <div class="map-frame" style="position: relative; z-index: 1;">
+          <div class="map-frame__image" style="height: 420px; background-image: url('{{{mapImage}}}');"></div>
+          <div class="map-frame__overlay">
+            <div class="map-frame__badge">
+              <svg class="icon-svg icon-svg--sm" style="vertical-align: middle; margin-right: 3px;" viewBox="0 0 24 24"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+              Route Map
+            </div>
+            <div class="map-frame__badge">
+              {{trip.totalDays}}-Day Journey
+            </div>
+          </div>
+        </div>
+
+        {{!-- Journey Flow Indicator --}}
+        <div class="flex items-center justify-between" style="padding: 0 8px;">
+          {{#each dayLegend}}
+            <div class="flex items-center gap-4">
+              <span style="width: 10px; height: 10px; border-radius: 50%; background: {{colorHex}}; display: inline-block; box-shadow: 0 0 8px {{colorHex}}66;"></span>
+              <span class="label-sm" style="color: rgba(255,255,255,0.6);">Day {{dayNumber}}</span>
+            </div>
+          {{/each}}
+        </div>
+      </div>
+
+      {{!-- ─── Right Destination Cards ─── --}}
+      <div class="flex flex-col gap-10" style="padding-top: 8px;">
+        <div class="label-upper" style="color: rgba(255,255,255,0.35); margin-bottom: 2px;">
+          <svg class="icon-svg icon-svg--sm" style="vertical-align: middle; margin-right: 4px;" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          Top Picks
+        </div>
+        {{#each rightMarkers}}
+          <div class="dest-card" data-marker-id="{{id}}">
+            <div class="dest-card__label" style="color: {{../branding.accentColor}};">
+              <span style="display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 50%; background: {{../branding.accentColor}}; color: #fff; font-size: 9px; font-weight: 800; margin-right: 5px;">{{label}}</span>
+              {{#if category}}{{category}}{{/if}}
+            </div>
+            <div class="dest-card__title">{{title}}</div>
+            {{#if subtitle}}<div class="dest-card__subtitle">{{subtitle}}</div>{{/if}}
+            <div class="dest-card__icons">
+              {{#if category}}
+                <div class="activity-icon activity-icon--sm activity-icon--glass">
+                  {{{categoryIconSvg category}}}
+                </div>
+              {{/if}}
+            </div>
+          </div>
+        {{/each}}
+      </div>
+    </div>
+  </div>
+
+  {{!-- ─── Bottom Category Tags Bar ─── --}}
+  <div style="padding: 16px 36px 28px; display: flex; justify-content: space-between; align-items: center;">
+    <div class="flex gap-8 flex-wrap">
+      {{#each categoryTags}}
+        <div style="padding: 5px 14px; border-radius: var(--r-full); font-size: 11px; font-weight: 500; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); color: rgba(255,255,255,0.55); display: flex; align-items: center; gap: 6px;">
+          {{{icon}}}
+          {{label}}
+        </div>
+      {{/each}}
+      {{!-- Fallback tags if none computed --}}
+      {{#unless categoryTags.length}}
+        <div style="padding: 5px 14px; border-radius: var(--r-full); font-size: 11px; font-weight: 500; background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.55);">&#127860; Local Food</div>
+        <div style="padding: 5px 14px; border-radius: var(--r-full); font-size: 11px; font-weight: 500; background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.55);">&#127963; Culture</div>
+        <div style="padding: 5px 14px; border-radius: var(--r-full); font-size: 11px; font-weight: 500; background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.55);">&#127795; Nature</div>
+        <div style="padding: 5px 14px; border-radius: var(--r-full); font-size: 11px; font-weight: 500; background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.55);">&#9968; Adventure</div>
+      {{/unless}}
+    </div>
+    <div class="text-xs" style="color: rgba(255,255,255,0.25);">Powered by AI Trip Planner</div>
+  </div>
+</section>

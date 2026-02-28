@@ -66,6 +66,11 @@ const config = {
       path: process.env.ITINERARY_PATH || "/api/v1/generate-itinerary",
       method: (process.env.ITINERARY_METHOD || "POST").toUpperCase(),
     },
+    visa: {
+      rapidApiKey: process.env.RAPIDAPI_KEY || "",
+      rapidApiHost:
+        process.env.RAPIDAPI_HOST || "visa-requirement.p.rapidapi.com",
+    },
   },
 };
 

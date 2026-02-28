@@ -23,12 +23,14 @@ export const HotelListSection: React.FC = () => {
     const displayedHotels = getFilteredHotels();
     const totalFiltered = displayedHotels.length;
 
-    // Fetch hotels on mount if empty
+    // Fetch hotels on mount if empty (use ref to prevent infinite loop when API returns empty)
+    const hasFetchedRef = useRef(false);
     useEffect(() => {
-        if (hotels.length === 0 && !isLoading && !error) {
+        if (hotels.length === 0 && !hasFetchedRef.current) {
+            hasFetchedRef.current = true;
             fetchHotels();
         }
-    }, [hotels.length, isLoading, error, fetchHotels]);
+    }, []);
 
     const observerRef = useRef<HTMLDivElement>(null);
     const pullRef = useRef<HTMLDivElement>(null);

@@ -1,11 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════════════
 // ATTRACTION SERVICE — API Client
-// Connects to attraction-service microservice (port 4007)
+// Connects to attraction module on ai-trip-planning server
 // ═══════════════════════════════════════════════════════════════════════════
 
 import type { Attraction } from '../types/attraction';
 
-const BASE_URL = import.meta.env.VITE_ATTRACTION_SERVICE_URL || 'http://localhost:4007';
+const BASE_URL = import.meta.env.VITE_ATTRACTION_SERVICE_URL || 'http://localhost:4333';
 
 // ── Backend PlaceResult shape ──────────────────────────────────────────────
 export interface PlaceResult {

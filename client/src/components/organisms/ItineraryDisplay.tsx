@@ -197,7 +197,7 @@ export const ItineraryDisplay: React.FC<ItineraryDisplayProps> = ({
     const handleGeneratePdf = async () => {
         setPdfLoading(true);
         try {
-            const pdfServiceUrl = 'http://localhost:4010';
+            const pdfServiceUrl = import.meta.env.VITE_PDF_SERVICE_URL || 'http://localhost:4333';
             const payload = {
                 destination: itinerary.destination,
                 totalDays: itinerary.totalDays,
@@ -231,7 +231,7 @@ export const ItineraryDisplay: React.FC<ItineraryDisplayProps> = ({
                 output: { format: 'A4', includeInfographicCover: true },
             };
 
-            const response = await fetch(`${pdfServiceUrl}/api/v1/generate-itinerary-pdf`, {
+            const response = await fetch(`${pdfServiceUrl}/api/pdf/generate-itinerary-pdf`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', Accept: 'application/pdf' },
                 body: JSON.stringify(payload),
@@ -277,7 +277,7 @@ export const ItineraryDisplay: React.FC<ItineraryDisplayProps> = ({
                 <p className="itinerary-subtitle">
                     {itinerary.totalDays} days of adventure planned just for you
                 </p>
-                
+
                 {/* Quick Stats */}
                 <div className="itinerary-stats">
                     <div className="stat-item">

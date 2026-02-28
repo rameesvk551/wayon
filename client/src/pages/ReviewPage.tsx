@@ -18,7 +18,7 @@ const ReviewPage: React.FC = () => {
 
     const handleExportPDF = async () => {
         const pdfServiceUrl =
-            import.meta.env.VITE_PDF_SERVICE_URL || 'http://localhost:4055';
+            import.meta.env.VITE_PDF_SERVICE_URL || 'http://localhost:4333';
 
         const markers = cities
             .map((city, index) => ({
@@ -66,15 +66,15 @@ const ReviewPage: React.FC = () => {
                 heroImageUrl: day.cityImage,
                 transport: day.transport
                     ? {
-                          type: day.transport.type,
-                          from: day.transport.from,
-                          to: day.transport.to,
-                          departureTime: day.transport.departureTime,
-                          arrivalTime: day.transport.arrivalTime,
-                          duration: day.transport.duration,
-                          price: day.transport.price,
-                          carrier: day.transport.carrier
-                      }
+                        type: day.transport.type,
+                        from: day.transport.from,
+                        to: day.transport.to,
+                        departureTime: day.transport.departureTime,
+                        arrivalTime: day.transport.arrivalTime,
+                        duration: day.transport.duration,
+                        price: day.transport.price,
+                        carrier: day.transport.carrier
+                    }
                     : undefined,
                 activities: day.activities.map((activity) => ({
                     name: activity.name,
@@ -89,18 +89,18 @@ const ReviewPage: React.FC = () => {
                 })),
                 hotel: day.hotel
                     ? {
-                          name: day.hotel.name,
-                          imageUrl: day.hotel.image,
-                          rating: day.hotel.rating,
-                          pricePerNight: day.hotel.pricePerNight
-                      }
+                        name: day.hotel.name,
+                        imageUrl: day.hotel.image,
+                        rating: day.hotel.rating,
+                        pricePerNight: day.hotel.pricePerNight
+                    }
                     : undefined
             })),
             output: { format: 'A4', includeInfographicCover: true }
         };
 
         try {
-            const response = await fetch(`${pdfServiceUrl}/api/v1/generate-itinerary-pdf`, {
+            const response = await fetch(`${pdfServiceUrl}/api/pdf/generate-itinerary-pdf`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

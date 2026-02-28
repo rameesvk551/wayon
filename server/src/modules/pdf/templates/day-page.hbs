@@ -1,0 +1,207 @@
+{{!-- ═══════════════════════════════════════════════════════════════════
+     DAY PAGE - Journey Storytelling Layout
+     Map context + Activity cards with icons + Transport/Hotel
+     ═══════════════════════════════════════════════════════════════════ --}}
+
+<section class="page page--padded">
+  {{!-- Page Header --}}
+  <div class="page-header">
+    <div class="page-header__brand">{{trip.destination}} &bull; Day {{dayNumber}}</div>
+    <div class="page-header__page">Day {{dayNumber}} of {{totalDays}}</div>
+  </div>
+
+  {{!-- Day Banner --}}
+  <div class="day-banner" style="background: linear-gradient(135deg, {{#if dayColorHex}}{{dayColorHex}}12{{else}}#dbeafe{{/if}}, {{#if dayColorHex}}{{dayColorHex}}06{{else}}#eff6ff{{/if}}); border: 1px solid {{#if dayColorHex}}{{dayColorHex}}20{{else}}#bfdbfe{{/if}};">
+    <div class="day-banner__number" style="color: {{#if dayColorHex}}{{dayColorHex}}{{else}}var(--brand-500){{/if}};">
+      {{dayNumber}}
+    </div>
+    <div class="day-banner__info">
+      <div class="day-banner__city" style="color: var(--text-primary);">{{city}}</div>
+      <div class="day-banner__date" style="color: var(--text-tertiary);">{{date}}</div>
+    </div>
+    <div class="day-banner__stats">
+      <div class="tag tag--brand">
+        <svg class="icon-svg icon-svg--sm" viewBox="0 0 24 24" style="stroke: var(--brand-600);"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        {{activities.length}} Activities
+      </div>
+      {{#if distanceSummary}}
+        <div class="tag" style="background: #ecfdf5; color: var(--accent-emerald); border: 1px solid #a7f3d020;">
+          <svg class="icon-svg icon-svg--sm" viewBox="0 0 24 24" style="stroke: var(--accent-emerald);"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          {{distanceSummary.totalDistanceLabel}} &bull; {{distanceSummary.totalTimeLabel}}
+        </div>
+      {{/if}}
+    </div>
+  </div>
+
+  {{!-- Day Map (if available) --}}
+  {{#if dayMapImage}}
+    <div class="card card--elevated mb-20" style="border-radius: var(--r-lg); overflow: hidden;">
+      <div style="position: relative;">
+        <div style="width: 100%; height: 200px; background-image: url('{{{dayMapImage}}}'); background-size: cover; background-position: center; background-color: var(--bg-muted);"></div>
+        <div style="position: absolute; bottom: 0; left: 0; right: 0; padding: 8px 16px; background: linear-gradient(to top, rgba(15,23,42,0.5), transparent);">
+          <div class="flex justify-between items-center">
+            <span class="label-sm" style="color: rgba(255,255,255,0.85);">Day {{dayNumber}} Route &bull; {{city}}</span>
+            {{#if dayRouteProvider}}
+              <span class="text-xs" style="color: rgba(255,255,255,0.5);">via {{dayRouteProvider}}</span>
+            {{/if}}
+          </div>
+        </div>
+      </div>
+    </div>
+  {{/if}}
+
+  {{!-- Distance Segments Journey Flow --}}
+  {{#if distanceSegments.length}}
+    <div class="mb-16">
+      <div class="flex flex-wrap gap-6" style="padding: 10px 14px; background: var(--bg-surface); border-radius: var(--r-sm); border: 1px solid var(--border-light);">
+        {{#each distanceSegments}}
+          <div class="flex items-center gap-4" style="font-size: 11px;">
+            <span class="label-sm" style="color: var(--text-secondary);">{{from}}</span>
+            <svg width="20" height="8" viewBox="0 0 20 8" style="flex-shrink: 0;">
+              <line x1="0" y1="4" x2="14" y2="4" stroke="var(--brand-400)" stroke-width="1.5" stroke-dasharray="3 2"/>
+              <polygon points="14,1 20,4 14,7" fill="var(--brand-400)"/>
+            </svg>
+            <span class="label-sm" style="color: var(--text-secondary);">{{to}}</span>
+            <span class="text-xs" style="color: var(--text-muted);">({{distanceLabel}}, ~{{timeLabel}})</span>
+          </div>
+        {{/each}}
+      </div>
+    </div>
+  {{/if}}
+
+  {{!-- ═══════════════════════════════════════
+       ACTIVITIES GRID
+       Icon-driven cards with visual hierarchy
+       ═══════════════════════════════════════ --}}
+  <div class="section-label mb-8">
+    <svg class="icon-svg icon-svg--sm" style="vertical-align: middle; margin-right: 4px;" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+    Activities &amp; Experiences
+  </div>
+
+  <div class="grid-2 mb-20">
+    {{#each activities}}
+      <div class="act-card card--elevated">
+        {{!-- Activity Image or Category Placeholder --}}
+        {{#if imageUrl}}
+          <img src="{{imageUrl}}" alt="{{name}}" class="act-card__image" />
+        {{else}}
+          <div class="act-card__placeholder" style="height: 80px;">
+            <div class="activity-icon activity-icon--lg" style="background: {{categoryBg category}}; color: {{categoryColor category}};">
+              {{{categoryIconSvg category}}}
+            </div>
+          </div>
+        {{/if}}
+
+        <div class="act-card__body">
+          {{!-- Activity Header --}}
+          <div class="flex items-center gap-8 mb-4">
+            <div class="activity-icon" style="background: {{categoryBg category}}; color: {{categoryColor category}};">
+              {{{categoryIconSvg category}}}
+            </div>
+            <div>
+              <div class="act-card__name">{{name}}</div>
+              {{#if location}}
+                <div class="text-xs" style="margin-top: 1px;">
+                  <svg class="icon-svg icon-svg--sm" style="width: 10px; height: 10px; vertical-align: middle; margin-right: 2px;" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                  {{location}}
+                </div>
+              {{/if}}
+            </div>
+          </div>
+
+          {{!-- Description --}}
+          {{#if description}}
+            <div class="act-card__desc">{{description}}</div>
+          {{/if}}
+
+          {{!-- Meta Tags --}}
+          <div class="act-card__meta">
+            {{#if startTime}}
+              <span class="tag" style="font-size: 9px; padding: 2px 8px;">
+                <svg class="icon-svg" style="width: 10px; height: 10px;" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                {{startTime}}{{#if endTime}} - {{endTime}}{{/if}}
+              </span>
+            {{/if}}
+            {{#if duration}}
+              <span class="tag" style="font-size: 9px; padding: 2px 8px;">{{duration}}</span>
+            {{/if}}
+            {{#if price}}
+              <span class="tag tag--brand" style="font-size: 9px; padding: 2px 8px;">
+                {{formatPrice price}}
+              </span>
+            {{/if}}
+            {{#if category}}
+              <span class="tag" style="font-size: 9px; padding: 2px 8px; background: {{categoryBg category}}; color: {{categoryColor category}};">
+                {{category}}
+              </span>
+            {{/if}}
+          </div>
+        </div>
+      </div>
+    {{/each}}
+  </div>
+
+  {{!-- ─── Transport & Hotel Row ─── --}}
+  <div style="display: grid; grid-template-columns: {{#if hotel}}1fr 1fr{{else}}1fr{{/if}}; gap: 14px;">
+    {{!-- Transport --}}
+    {{#if transport}}
+      <div class="transport-card">
+        <div class="activity-icon activity-icon--sky">
+          <svg class="icon-svg" viewBox="0 0 24 24"><path d="M14 16H9m10-6H5a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2z"/><circle cx="7.5" cy="17.5" r="2.5"/><circle cx="16.5" cy="17.5" r="2.5"/></svg>
+        </div>
+        <div style="flex: 1;">
+          <div class="heading-sm mb-4">
+            {{transport.from}}
+            <svg width="24" height="8" viewBox="0 0 24 8" style="vertical-align: middle; margin: 0 6px;">
+              <line x1="0" y1="4" x2="18" y2="4" stroke="var(--brand-400)" stroke-width="1.5" stroke-dasharray="3 2"/>
+              <polygon points="18,1 24,4 18,7" fill="var(--brand-400)"/>
+            </svg>
+            {{transport.to}}
+          </div>
+          <div class="flex gap-8 text-sm items-center">
+            {{#if transport.type}}<span class="tag" style="font-size: 9px; padding: 2px 8px;">{{transport.type}}</span>{{/if}}
+            {{#if transport.duration}}<span>{{transport.duration}}</span>{{/if}}
+            {{#if transport.carrier}}<span>&bull; {{transport.carrier}}</span>{{/if}}
+            {{#if transport.price}}<span class="label-sm" style="color: var(--brand-600);">{{formatPrice transport.price}}</span>{{/if}}
+          </div>
+        </div>
+      </div>
+    {{/if}}
+
+    {{!-- Hotel --}}
+    {{#if hotel}}
+      <div class="hotel-card">
+        <div class="flex items-center gap-12">
+          <div class="activity-icon activity-icon--lg activity-icon--amber">
+            <svg class="icon-svg icon-svg--lg" viewBox="0 0 24 24"><path d="M3 21V7a2 2 0 012-2h14a2 2 0 012 2v14"/><path d="M3 11h18"/><rect x="7" y="7" width="4" height="4"/><rect x="13" y="7" width="4" height="4"/><rect x="7" y="13" width="4" height="4"/><rect x="13" y="13" width="4" height="4"/></svg>
+          </div>
+          <div>
+            <div class="heading-sm">{{hotel.name}}</div>
+            <div class="flex items-center gap-8 text-sm" style="margin-top: 4px;">
+              {{#if hotel.rating}}
+                <span class="stars">
+                  {{starRating hotel.rating}}
+                </span>
+              {{/if}}
+              {{#if hotel.pricePerNight}}
+                <span class="label-sm" style="color: var(--accent-amber);">{{formatPrice hotel.pricePerNight}}/night</span>
+              {{/if}}
+            </div>
+          </div>
+        </div>
+      </div>
+    {{/if}}
+  </div>
+
+  {{!-- Journey Progress Bar --}}
+  <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border-light);">
+    <div class="flex items-center gap-4">
+      {{#progressDots totalDays dayNumber}}{{/progressDots}}
+    </div>
+    <div class="flex justify-between text-xs" style="margin-top: 6px;">
+      <span>Day 1</span>
+      <span style="font-weight: 600; color: var(--brand-500);">Day {{dayNumber}} of {{totalDays}}</span>
+      <span>Day {{totalDays}}</span>
+    </div>
+  </div>
+</section>

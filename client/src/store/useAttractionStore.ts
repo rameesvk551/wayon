@@ -20,6 +20,7 @@ const PACE_TO_MINUTES: Record<TripPace, number> = {
 
 interface AttractionStore {
     // Trip builder state
+    currentCity: string | null;
     tripAttractions: TripAttraction[];
     isTripSheetOpen: boolean;
     toastMessage: string | null;
@@ -44,6 +45,7 @@ interface AttractionStore {
     isResultSheetOpen: boolean;
 
     // Actions - Trip
+    switchCity: (city: string) => void;
     addAttraction: (attraction: Attraction) => void;
     removeAttraction: (id: string) => void;
     reorderAttractions: (from: number, to: number) => void;
@@ -82,6 +84,7 @@ const defaultFilters: AttractionFilter = {
 };
 
 export const useAttractionStore = create<AttractionStore>((set, get) => ({
+    currentCity: null,
     tripAttractions: [],
     isTripSheetOpen: false,
     toastMessage: null,
@@ -98,6 +101,26 @@ export const useAttractionStore = create<AttractionStore>((set, get) => ({
     pdfResult: null,
     buildError: null,
     isResultSheetOpen: false,
+
+    switchCity: (city) => {
+        const { currentCity } = get();
+        const normalized = city.trim().toLowerCase();
+        const currentNormalized = currentCity?.trim().toLowerCase() ?? null;
+        if (currentNormalized && currentNormalized !== normalized) {
+            // City changed — clear previous trip selections and itinerary results
+            set({
+                currentCity: city,
+                tripAttractions: [],
+                isTripSheetOpen: false,
+                itineraryResult: null,
+                pdfResult: null,
+                buildError: null,
+                isResultSheetOpen: false,
+            });
+        } else {
+            set({ currentCity: city });
+        }
+    },
 
     addAttraction: (attraction) => {
         const { tripAttractions } = get();
@@ -130,7 +153,7 @@ export const useAttractionStore = create<AttractionStore>((set, get) => ({
         });
     },
 
-    clearTrip: () => set({ tripAttractions: [], isTripSheetOpen: false }),
+    clearTrip: () => set({ tripAttractions: [], isTripSheetOpen: false, currentCity: null }),
     setTripSheetOpen: (open) => set({ isTripSheetOpen: open }),
     dismissToast: () => set({ toastMessage: null }),
     setTripSettings: (partial) =>
