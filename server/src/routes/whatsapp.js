@@ -26,8 +26,78 @@ import {
     sendReengagementTemplate,
     sendItineraryReadyTemplate,
 } from "../services/whatsapp/whatsapp.templates.js";
+import {
+    dispatchCommand,
+    registerServices,
+} from "../services/whatsapp/whatsapp.commands.js";
+
+// ── Module service imports for direct WhatsApp commands ──────
+import { HotelService } from "../modules/hotel/services/hotel.service.js";
+import { AttractionService } from "../modules/attraction/services/attraction.service.js";
+import { TourService } from "../modules/tour/services/tour.service.js";
+import { VisaService } from "../modules/visa/services/visa.service.js";
+import { InMemoryVisaRepository } from "../modules/visa/repository/inmemory.repository.js";
+import { RapidApiVisaProvider } from "../modules/visa/helpers/rapidapi.provider.js";
+import { CachedVisaRepository } from "../modules/visa/repository/visa.repository.js";
+import { BudgetTrackerService } from "../modules/budget-tracker/services/budget-tracker.service.js";
+import { PackingAssistantService } from "../modules/packing-assistant/services/packing-assistant.service.js";
+import { MultiModalRouterService } from "../modules/transportation/services/multi-modal-router.service.js";
+import { FallbackAttractionsProvider } from "../modules/attraction/helpers/fallback-attractions.provider.js";
 
 const router = Router();
+
+// ── Bootstrap module services for command dispatcher ──────────
+(function bootstrapCommandServices() {
+    try {
+        // Hotel service (no providers in lightweight bootstrap, but still functional)
+        const hotelService = new HotelService([]);
+
+        // Attraction service (fallback provider)
+        const attractionProviders = [];
+        const fallbackEnabled = (process.env.ENABLE_FALLBACK_PROVIDER || "true").toLowerCase() !== "false";
+        if (fallbackEnabled) {
+            attractionProviders.push(new FallbackAttractionsProvider(true));
+        }
+        const attractionService = new AttractionService(attractionProviders);
+
+        // Tour service (no providers in lightweight bootstrap)
+        const tourService = new TourService([]);
+
+        // Visa service
+        const rapidApiKey = process.env.RAPIDAPI_KEY || "";
+        const rapidApiHost = process.env.RAPIDAPI_HOST || "visa-requirement.p.rapidapi.com";
+        let visaRepository;
+        if (rapidApiKey) {
+            const provider = new RapidApiVisaProvider(rapidApiKey, rapidApiHost);
+            visaRepository = new CachedVisaRepository(provider);
+        } else {
+            visaRepository = new InMemoryVisaRepository();
+        }
+        const visaService = new VisaService(visaRepository);
+
+        // Budget & Packing services
+        const editorBaseUrl = process.env.ITINERARY_EDITOR_SERVICE || "http://localhost:4015";
+        const budgetService = new BudgetTrackerService(editorBaseUrl);
+        const packingService = new PackingAssistantService(editorBaseUrl);
+
+        // Transportation service
+        const transportationService = new MultiModalRouterService();
+
+        registerServices({
+            hotel: hotelService,
+            attraction: attractionService,
+            tour: tourService,
+            visa: visaService,
+            budget: budgetService,
+            packing: packingService,
+            transportation: transportationService,
+        });
+
+        console.log("📱 WhatsApp command services registered successfully");
+    } catch (error) {
+        console.error("⚠️  Failed to bootstrap WhatsApp command services:", error.message);
+    }
+})();
 
 // Logging utilities
 const LOG_COLORS = {
@@ -218,7 +288,18 @@ router.post("/webhook", async (req, res) => {
 
         logWhatsApp("info", `📱 Message from ${phoneNumber}`, { type: message.type, text: messageText.slice(0, 100) });
 
-        // Process message with AI agent
+        // ── Step 1: Try command dispatch (instant module access) ──
+        const commandResult = await dispatchCommand(messageText);
+        if (commandResult) {
+            logWhatsApp("info", `⚡ Command dispatched: /${commandResult.command}`);
+            logWhatsApp("info", `📤 Sending ${commandResult.messages.length} command response(s) to ${phoneNumber}`);
+            await sendConvertedMessages(phoneNumber, commandResult.messages);
+            logWhatsApp("success", `✅ Command response sent successfully`);
+            return;
+        }
+
+        // ── Step 2: Fall through to AI agent for natural language ──
+        logWhatsApp("info", `🤖 No command matched — routing to AI agent`);
         const { replyText, ui } = await processWhatsAppMessage(phoneNumber, messageText, messageId);
 
         // Convert response to WhatsApp format
