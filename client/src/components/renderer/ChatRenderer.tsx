@@ -36,89 +36,116 @@ type BlockRendererFn = (
 ) => React.ReactNode;
 
 const blockRenderers: Record<UIBlock['type'], BlockRendererFn> = {
-    title: (block) => <TitleBlock text={block.text} level={block.level} />,
-    text: (block) => <TextBlock content={block.content} format={block.format} />,
-    card: (block) => (
-        <CardBlock
-            title={block.title}
-            subtitle={block.subtitle}
-            image={block.image}
-            meta={block.meta}
-            actions={block.actions}
-            badge={block.badge}
-            badgeVariant={block.badgeVariant}
-        />
-    ),
-    list: (block) => <ListBlock items={block.items} ordered={block.ordered} />,
-    timeline: (block) => <TimelineBlock title={block.title} items={block.items} />,
-    image: (block) => (
-        <ImageBlock
-            src={block.src}
-            alt={block.alt}
-            caption={block.caption}
-            layout={block.layout}
-        />
-    ),
-    map: (block) => (
-        <MapBlock
-            markers={block.markers}
-            routes={block.routes}
-            center={block.center}
-            zoom={block.zoom}
-        />
-    ),
-    alert: (block) => (
-        <AlertBlock
-            level={block.level}
-            text={block.text}
-            title={block.title}
-            dismissible={block.dismissible}
-        />
-    ),
-    actions: (block, onAction) => (
-        <ActionsBlock
-            items={block.items}
-            layout={block.layout}
-            onAction={onAction}
-        />
-    ),
-    divider: (block) => <DividerBlock spacing={block.spacing} />,
-    weather: (block) => (
-        <WeatherBlock
-            location={block.location}
-            temperature={block.temperature}
-            condition={block.condition}
-            humidity={block.humidity}
-            wind={block.wind}
-            uvIndex={block.uvIndex}
-            feelsLike={block.feelsLike}
-        />
-    ),
-    hotel_carousel: (block, onAction) => (
-        <HotelCarouselBlock
-            title={block.title}
-            hotels={block.hotels}
-            onHotelClick={(id) => onAction?.(`hotel-view-${id}`)}
-            onBookClick={(id) => onAction?.(`hotel-book-${id}`)}
-        />
-    ),
-    flight_carousel: (block, onAction) => (
-        <FlightCarouselBlock
-            title={block.title}
-            flights={block.flights}
-            onFlightClick={(id) => onAction?.(`flight-view-${id}`)}
-            onBookClick={(id) => onAction?.(`flight-book-${id}`)}
-        />
-    ),
-    attraction_carousel: (block, onAction, onAttractionsSubmit) => (
-        <AttractionCarouselBlock
-            title={block.title}
-            destination={block.destination}
-            attractions={block.attractions}
-            onAttractionClick={(attr) => onAction?.(`attraction-view-${attr.id}`)}
-            onBuildItinerary={onAttractionsSubmit}
-        />
-    ),
+    title: (block) => { const b = block as any; return <TitleBlock text={b.text} level={b.level} />; },
+    text: (block) => { const b = block as any; return <TextBlock content={b.content} format={b.format} />; },
+    card: (block) => {
+        const b = block as any;
+        return (
+            <CardBlock
+                title={b.title}
+                subtitle={b.subtitle}
+                image={b.image}
+                meta={b.meta}
+                actions={b.actions}
+                badge={b.badge}
+                badgeVariant={b.badgeVariant}
+            />
+        );
+    },
+    list: (block) => { const b = block as any; return <ListBlock items={b.items} ordered={b.ordered} />; },
+    timeline: (block) => { const b = block as any; return <TimelineBlock title={b.title} items={b.items} />; },
+    image: (block) => {
+        const b = block as any;
+        return (
+            <ImageBlock
+                src={b.src}
+                alt={b.alt}
+                caption={b.caption}
+                layout={b.layout}
+            />
+        );
+    },
+    map: (block) => {
+        const b = block as any;
+        return (
+            <MapBlock
+                markers={b.markers}
+                routes={b.routes}
+                center={b.center}
+                zoom={b.zoom}
+            />
+        );
+    },
+    alert: (block) => {
+        const b = block as any;
+        return (
+            <AlertBlock
+                level={b.level}
+                text={b.text}
+                title={b.title}
+                dismissible={b.dismissible}
+            />
+        );
+    },
+    actions: (block, onAction) => {
+        const b = block as any;
+        return (
+            <ActionsBlock
+                items={b.items}
+                layout={b.layout}
+                onAction={onAction}
+            />
+        );
+    },
+    divider: (block) => { const b = block as any; return <DividerBlock spacing={b.spacing} />; },
+    weather: (block) => {
+        const b = block as any;
+        return (
+            <WeatherBlock
+                location={b.location}
+                temperature={b.temperature}
+                condition={b.condition}
+                humidity={b.humidity}
+                wind={b.wind}
+                uvIndex={b.uvIndex}
+                feelsLike={b.feelsLike}
+            />
+        );
+    },
+    hotel_carousel: (block, onAction) => {
+        const b = block as any;
+        return (
+            <HotelCarouselBlock
+                title={b.title}
+                hotels={b.hotels}
+                onHotelClick={(id: string) => onAction?.(`hotel-view-${id}`)}
+                onBookClick={(id: string) => onAction?.(`hotel-book-${id}`)}
+            />
+        );
+    },
+    flight_carousel: (block, onAction) => {
+        const b = block as any;
+        return (
+            <FlightCarouselBlock
+                title={b.title}
+                flights={b.flights}
+                onFlightClick={(id: string) => onAction?.(`flight-view-${id}`)}
+                onBookClick={(id: string) => onAction?.(`flight-book-${id}`)}
+            />
+        );
+    },
+    attraction_carousel: (block, onAction, onAttractionsSubmit) => {
+        const b = block as any;
+        return (
+            <AttractionCarouselBlock
+                title={b.title}
+                destination={b.destination}
+                attractions={b.attractions}
+                onAttractionClick={(attr: any) => onAction?.(`attraction-view-${attr.id}`)}
+                onBuildItinerary={onAttractionsSubmit}
+            />
+        );
+    },
     collect_input: () => null
 };
 

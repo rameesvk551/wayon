@@ -5,7 +5,6 @@
 import type {
     EditableTrip,
     VersionEntry,
-    ApiResponse,
     ReorderPayload,
     AddItemInput,
 } from '../types/itinerary-editor';

@@ -1,5 +1,4 @@
 import React from 'react';
-import CarouselWrapper from './CarouselWrapper';
 
 export interface TopDestination {
   id: number;

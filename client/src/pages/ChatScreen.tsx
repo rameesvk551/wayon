@@ -95,7 +95,7 @@ interface ChatScreenProps {
     onNavigate?: (tab: string) => void;
 }
 
-export const ChatScreen: React.FC<ChatScreenProps> = ({ onNavigate }) => {
+export const ChatScreen: React.FC<ChatScreenProps> = ({ onNavigate: _onNavigate }) => {
     const [messages, setMessages] = useState<Message[]>(() => ([
         {
             id: '1',
@@ -594,7 +594,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onNavigate }) => {
         try {
             const data = await streamChat(buildPrompt());
             const structured = data.structured || null;
-            const itinerary = structured?.itinerary || data.itinerary || data?.fallback?.itinerary;
+            const itinerary: any = structured?.itinerary || data.itinerary || data?.fallback?.itinerary;
             const structuredBlocks = structured ? buildBlocksFromStructured(structured) : undefined;
             const blocks = mergeBlocks(structuredBlocks, getUiResponse(data));
             const responseText = structured?.reply || data.message || 'I have your trip updates ready.';
@@ -672,7 +672,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ onNavigate }) => {
         try {
             const data = await streamChat(message);
             const structured = data.structured || null;
-            const itinerary = structured?.itinerary || data.itinerary || data?.fallback?.itinerary;
+            const itinerary: any = structured?.itinerary || data.itinerary || data?.fallback?.itinerary;
             const structuredBlocks = structured ? buildBlocksFromStructured(structured) : undefined;
             const ui = getUiResponse(data);
             const blocks = mergeBlocks(structuredBlocks, ui);

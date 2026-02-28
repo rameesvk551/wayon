@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { HotelSearchBar } from '../components/organisms/HotelSearchBar';
 import { FilterBar } from '../components/organisms/FilterBar';

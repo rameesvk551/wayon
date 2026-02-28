@@ -76,7 +76,6 @@ const PlanPage: React.FC = () => {
                     {/* Fixed AI Input at Bottom */}
                     <InlineAIInput
                         onSubmit={handleAISubmit}
-                        onActionClick={handleAIAction}
                         isLoading={isAILoading}
                         placeholder="Ask AI to modify your trip..."
                     />

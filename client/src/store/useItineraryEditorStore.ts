@@ -10,7 +10,6 @@
 import { create } from 'zustand';
 import type {
     EditableTrip,
-    EditableDay,
     EditableItem,
     SaveStatus,
     VersionEntry,
