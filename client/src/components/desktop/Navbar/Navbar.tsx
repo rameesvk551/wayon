@@ -13,10 +13,11 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { label: 'Home', href: '/' },
-  { label: 'Visa Explorer', href: '/visa-explorer' },
-  { label: 'Trip Planner', href: '/trip-planner' },
-  { label: 'Blog', href: '/blog' },
-  { label: 'Volunteering', href: '/volunteering' },
+  { label: 'Attractions', href: '/attractions' },
+  { label: 'Hotels', href: '/hotels' },
+  { label: 'Tours', href: '/tours' },
+  { label: 'Visa', href: '/visa-explorer' },
+  { label: 'AI Planner', href: '/chat' },
 ];
 
 const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
@@ -25,7 +26,10 @@ const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
   const [search, setSearch] = useState('');
 
   const activePath = useMemo(() => {
-    const active = navItems.find((item) => location.pathname.startsWith(item.href));
+    if (location.pathname === '/') return '/';
+    // Match the most specific path first
+    const sorted = [...navItems].filter(i => i.href !== '/').sort((a, b) => b.href.length - a.href.length);
+    const active = sorted.find((item) => location.pathname.startsWith(item.href));
     return active?.href ?? '';
   }, [location.pathname]);
 

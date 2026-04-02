@@ -1,0 +1,657 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   DESKTOP LAYOUT SYSTEM — Applied at >=1024px
+   All pages get Navbar + Content + Footer via DesktopLayout component.
+   This CSS handles the layout shell and all per-page desktop optimizations.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ───────── LAYOUT SHELL ───────── */
+.desktop-layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg-primary, #f8fafc);
+}
+
+.desktop-layout--full-height {
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.desktop-layout__main {
+  flex: 1;
+  padding-top: 64px; /* navbar height */
+}
+
+.desktop-layout__main--full-height {
+  flex: 1;
+  padding-top: 64px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.desktop-layout__main--padded {
+  padding-left: 2rem;
+  padding-right: 2rem;
+  padding-top: 80px;
+  padding-bottom: 2rem;
+}
+
+.desktop-layout__main--full-width .desktop-layout__container {
+  max-width: none;
+}
+
+.desktop-layout__container {
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* ───────── BREADCRUMB ───────── */
+.desktop-layout__breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 0;
+  margin-bottom: 8px;
+  font-size: 0.85rem;
+  font-family: 'Sora', sans-serif;
+}
+
+.desktop-layout__breadcrumb-home {
+  color: var(--color-primary, #3b82f6);
+  cursor: pointer;
+}
+
+.desktop-layout__breadcrumb-home:hover {
+  text-decoration: underline;
+}
+
+.desktop-layout__breadcrumb-sep {
+  color: var(--color-text-muted, #94a3b8);
+}
+
+.desktop-layout__breadcrumb-current {
+  color: var(--color-text-secondary, #64748b);
+  font-weight: 500;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PER-PAGE DESKTOP OVERRIDES (1024px+)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media (min-width: 1024px) {
+
+  /* ───────── CHAT / AI ASSISTANT ───────── */
+  .mobile-chat-screen {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    max-width: none;
+    background: var(--color-bg-primary, #f8fafc);
+  }
+
+  .mobile-chat-screen .mobile-chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    max-width: 900px;
+    margin: 0 auto;
+    width: 100%;
+    padding: 2rem 1.5rem;
+  }
+
+  .mobile-chat-screen .inline-ai-input,
+  .mobile-chat-screen .chat-input-container,
+  .mobile-chat-screen > div:last-child:not(.mobile-chat-messages) {
+    max-width: 900px;
+    margin: 0 auto;
+    width: 100%;
+    padding: 1rem 1.5rem;
+    border-top: 1px solid var(--color-border, #e2e8f0);
+    background: white;
+  }
+
+  /* Chat messages wider on desktop */
+  .chat-message {
+    max-width: 720px;
+  }
+
+  .chat-message--ai {
+    max-width: 780px;
+  }
+
+  /* Interactive cards wider */
+  .interactive-card {
+    max-width: 700px;
+  }
+
+  /* ───────── HOTEL LISTING ───────── */
+  .hotel-listing-page {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 1.5rem 2rem;
+    min-height: auto;
+  }
+
+  .hotel-listing-sticky-header {
+    position: static;
+    border-radius: 16px;
+    overflow: hidden;
+    margin-bottom: 1rem;
+  }
+
+  .hotel-listing-content {
+    padding-bottom: 0;
+  }
+
+  /* Hotel cards grid */
+  .hotel-list-section {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .hotel-card {
+    margin-bottom: 0;
+  }
+
+  /* ───────── TOUR LISTING ───────── */
+  .tour-listing-page {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 1.5rem 2rem;
+    min-height: auto;
+  }
+
+  .tour-listing-sticky-header {
+    position: static;
+    border-radius: 16px;
+    overflow: hidden;
+    margin-bottom: 1rem;
+  }
+
+  .tour-listing-content {
+    padding-bottom: 0;
+  }
+
+  .tour-list-section {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .tour-card {
+    margin-bottom: 0;
+  }
+
+  /* ───────── TOUR DETAIL ───────── */
+  .tour-detail-page {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 2rem;
+  }
+
+  .tour-detail-main {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 2rem;
+    padding: 2rem 0;
+  }
+
+  .tour-detail-main > *:nth-child(1),
+  .tour-detail-main > *:nth-child(2) {
+    grid-column: 1;
+  }
+
+  .tour-detail-main > *:last-child {
+    grid-column: 1 / -1;
+  }
+
+  /* Move booking card to sidebar area */
+  .tour-booking-card {
+    position: sticky;
+    top: 80px;
+    grid-column: 2;
+    grid-row: 1 / 3;
+    align-self: start;
+  }
+
+  .tour-hero-gallery {
+    border-radius: 16px;
+    overflow: hidden;
+  }
+
+  /* ───────── VISA CHECKER ───────── */
+  .visa-checker-page {
+    max-width: 700px;
+    margin: 2rem auto;
+    padding: 0 2rem;
+    min-height: auto;
+  }
+
+  .visa-checker-card {
+    padding: 2.5rem;
+    border-radius: 20px;
+  }
+
+  /* ───────── VISA EXPLORER ───────── */
+  .visa-explorer-page {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 1.5rem 2rem;
+    min-height: auto;
+  }
+
+  .visa-explorer-entry {
+    max-width: 600px;
+    margin: 3rem auto;
+  }
+
+  .visa-explorer-dashboard {
+    width: 100%;
+  }
+
+  .visa-stats-bar {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+  }
+
+  .visa-tabs-container {
+    overflow-x: auto;
+  }
+
+  .visa-explorer-results--grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+  }
+
+  .visa-explorer-results--list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .visa-explorer-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .visa-explorer-search {
+    flex: 1;
+    min-width: 280px;
+  }
+
+  /* ───────── ATTRACTION DISCOVERY ───────── */
+  .discovery-page {
+    max-width: 1400px;
+    margin: 0 auto;
+    min-height: auto;
+  }
+
+  .disc-hero {
+    border-radius: 0 0 24px 24px;
+    overflow: hidden;
+    max-height: 420px;
+  }
+
+  .disc-hero__content {
+    padding: 3rem 4rem;
+  }
+
+  .disc-hero__title {
+    font-size: 2.5rem;
+  }
+
+  .disc-search {
+    max-width: 640px;
+  }
+
+  .disc-section {
+    padding: 1.5rem 2rem;
+  }
+
+  .disc-dest-scroll {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1.25rem;
+    overflow: visible;
+    padding: 0;
+  }
+
+  .disc-featured {
+    max-width: 800px;
+    height: 360px;
+  }
+
+  .disc-cta {
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  /* ───────── ATTRACTION SEARCH ───────── */
+  .search-page {
+    max-width: 1400px;
+    margin: 0 auto;
+    min-height: auto;
+  }
+
+  .search-topbar {
+    position: static;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 1rem 2rem;
+    border-bottom: 1px solid var(--color-border, #e2e8f0);
+    background: white;
+    border-radius: 16px 16px 0 0;
+  }
+
+  .search-body {
+    padding: 1rem 2rem;
+  }
+
+  .search-attraction-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1.25rem;
+  }
+
+  .attraction-card {
+    margin-bottom: 0;
+  }
+
+  /* ───────── ATTRACTION DETAIL ───────── */
+  .detail-page {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 0 2rem 2rem;
+    min-height: auto;
+  }
+
+  .detail-hero {
+    border-radius: 20px;
+    overflow: hidden;
+    max-height: 450px;
+    margin-top: 1.5rem;
+  }
+
+  .detail-hero__img {
+    border-radius: 20px;
+  }
+
+  .detail-info {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.5rem 0;
+  }
+
+  .detail-info__name {
+    font-size: 2rem;
+    width: 100%;
+  }
+
+  .detail-quick-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin: 0 0 1.5rem;
+  }
+
+  .detail-trip-btn {
+    position: static;
+    max-width: 320px;
+    margin: 1.5rem 0;
+    border-radius: 14px;
+  }
+
+  /* ───────── BUDGET TRACKER ───────── */
+  .sb-page {
+    max-width: 900px;
+    margin: 0 auto;
+    min-height: auto;
+    padding: 1.5rem 0;
+  }
+
+  .sb-header {
+    background: transparent;
+    position: static;
+    padding: 0 0 1rem;
+    border-bottom: 1px solid var(--color-border, #e2e8f0);
+  }
+
+  /* ───────── PACKING ASSISTANT ───────── */
+  .trip-assistant-page {
+    max-width: 900px;
+    margin: 0 auto;
+    min-height: auto;
+    padding: 1.5rem 2rem;
+  }
+
+  /* ───────── ITINERARY EDITOR ───────── */
+  .ie-page {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .ie-header {
+    padding: 0.75rem 2rem;
+    position: static;
+  }
+
+  .ie-board {
+    flex: 1;
+    overflow-x: auto;
+    padding: 1rem 2rem;
+  }
+
+  .ie-day-col {
+    min-width: 320px;
+    max-width: 380px;
+  }
+
+  .ie-footer {
+    position: static;
+    padding: 0.75rem 2rem;
+    border-top: 1px solid var(--color-border, #e2e8f0);
+  }
+
+  /* ───────── PLAN PAGE (Split view) ───────── */
+  .plan-page-split {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ───────── REVIEW PAGE ───────── */
+  /* Already has max-w-5xl and desktop styles via Tailwind */
+
+  /* ───────── FAVORITES ───────── */
+  .mobile-screen {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1.5rem 0;
+    min-height: auto;
+  }
+
+  .mobile-favorites-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.25rem;
+  }
+
+  .mobile-empty-state {
+    padding: 4rem 2rem;
+  }
+
+  /* ───────── PROFILE ───────── */
+  .mobile-user-card {
+    max-width: 700px;
+    margin: 0 auto 1.5rem;
+    border-radius: 16px;
+  }
+
+  .mobile-stats-card {
+    max-width: 700px;
+    margin: 0 auto 1.5rem;
+  }
+
+  .mobile-menu-card {
+    max-width: 700px;
+    margin: 0 auto 1.5rem;
+  }
+
+  .mobile-logout-btn {
+    max-width: 700px;
+    margin: 1.5rem auto;
+    display: flex;
+  }
+
+  /* ───────── TRIPS ───────── */
+  .mobile-trips-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .mobile-trip-card {
+    margin-bottom: 0;
+  }
+
+  .mobile-simple-header {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1.5rem 0;
+  }
+
+  .mobile-trips-header {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1rem 0;
+  }
+
+  .mobile-tabs {
+    max-width: 1200px;
+    margin: 0 auto 1rem;
+  }
+
+  /* ───────── GENERAL DESKTOP POLISH ───────── */
+
+  /* Don't show mobile bottom nav */
+  .mnav,
+  .mnav-container,
+  .mobile-bottom-nav {
+    display: none !important;
+  }
+
+  /* Remove bottom padding that was for mobile nav */
+  .hotel-listing-page,
+  .tour-listing-page,
+  .visa-explorer-page,
+  .visa-checker-page,
+  .discovery-page,
+  .search-page,
+  .detail-page {
+    padding-bottom: 0;
+  }
+
+  /* Fix sticky headers inside layout (they already have navbar) */
+  .hotel-listing-sticky-header,
+  .tour-listing-sticky-header {
+    z-index: 10;
+  }
+
+  /* Cards hover effect */
+  .hotel-card:hover,
+  .tour-card:hover,
+  .attraction-card:hover,
+  .mobile-trip-card:hover,
+  .mobile-favorite-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  /* Buttons hover */
+  .visa-check-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(99, 102, 241, 0.3);
+  }
+
+  /* Filter bottom sheets become side panels on desktop */
+  .filter-bottom-sheet,
+  .tour-filter-bottom-sheet {
+    width: 420px;
+    max-width: 420px;
+    left: auto;
+    right: 0;
+    border-radius: 20px 0 0 20px;
+  }
+
+  .filter-bottom-sheet__overlay,
+  .tour-filter-bottom-sheet__overlay {
+    backdrop-filter: blur(4px);
+  }
+
+  /* Toast position adjusted for no bottom nav */
+  .toast-notification {
+    bottom: 40px;
+  }
+
+  /* Better scrollbars on desktop */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #c1c8d0;
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #a0a8b4;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   EXTRA-WIDE DESKTOP (1440px+)
+   ═══════════════════════════════════════════════════════════════════════════ */
+@media (min-width: 1440px) {
+  .hotel-list-section,
+  .tour-list-section {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .search-attraction-list {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .disc-dest-scroll {
+    grid-template-columns: repeat(5, 1fr);
+  }
+
+  .visa-explorer-results--grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .mobile-chat-screen .mobile-chat-messages {
+    max-width: 1000px;
+  }
+
+  .mobile-trips-list {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}

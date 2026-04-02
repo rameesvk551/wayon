@@ -10,11 +10,18 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const location = useLocation();
 
   const navItems = [
-    { path: '/travel-hub', label: 'Travel Hub', icon: '🏠' },
+    { path: '/', label: 'Home', icon: '🏠' },
+    { path: '/attractions', label: 'Attractions', icon: '🏛️' },
+    { path: '/hotels', label: 'Hotels', icon: '🏨' },
+    { path: '/tours', label: 'Tours', icon: '🎫' },
     { path: '/visa-explorer', label: 'Visa Explorer', icon: '🛂' },
-    { path: '/trip-planner', label: 'Trip Planner', icon: '✈️' },
-    { path: '/blog', label: 'Blog', icon: '📝' },
-    { path: '/volunteering', label: 'Volunteering', icon: '🤝' },
+    { path: '/visa-checker', label: 'Visa Checker', icon: '✈️' },
+    { path: '/chat', label: 'AI Planner', icon: '🤖' },
+    { path: '/budget-tracker', label: 'Budget Tracker', icon: '💰' },
+    { path: '/packing-assistant', label: 'Packing List', icon: '🎒' },
+    { path: '/trips', label: 'My Trips', icon: '📋' },
+    { path: '/favorites', label: 'Favorites', icon: '❤️' },
+    { path: '/profile', label: 'Profile', icon: '👤' },
   ];
 
   const isActive = (path: string) => location.pathname.startsWith(path);

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
 import DesktopHome from './pages/DesktopHome';
+import DesktopLayout from './components/layouts/DesktopLayout';
 import { MobileLayout } from './components/layouts/MobileLayout';
 import StandaloneMobileLayout from './components/layouts/StandaloneMobileLayout';
 
@@ -21,12 +22,12 @@ import ItineraryEditorPage from './pages/ItineraryEditorPage';
 import AttractionDiscoveryPage from './pages/AttractionDiscoveryPage';
 import AttractionSearchPage from './pages/AttractionSearchPage';
 import AttractionDetailPage from './pages/AttractionDetailPage';
+import { FavoritesScreen } from './pages/FavoritesScreen';
+import { ProfileScreen } from './pages/ProfileScreen';
+import { TripsScreen } from './pages/TripsScreen';
+import useIsDesktop from './hooks/useIsDesktop';
 import './index.css';
-
-// Layout wrapper for non-auth pages
-const WithHeader: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <>{children}</>
-);
+import './styles/desktop.css';
 
 // Main Mobile App with Tab Navigation
 const MobileApp: React.FC = () => {
@@ -97,8 +98,9 @@ const MobileNavWrapper: React.FC<{ children: React.ReactNode; activeTab: string 
     const routes: Record<string, string> = {
       home: '/',
       discover: '/attractions',
-      hotels: '/',
-      bot: '/',
+      hotels: '/hotels',
+      tours: '/tours',
+      bot: '/chat',
     };
     navigate(routes[tab] || '/');
   };
@@ -109,55 +111,175 @@ const MobileNavWrapper: React.FC<{ children: React.ReactNode; activeTab: string 
   );
 };
 
+/** Responsive wrapper: shows DesktopLayout on >=1024px, passes through on mobile */
+const Responsive: React.FC<{
+  children: React.ReactNode;
+  mobileWrapper?: 'standalone' | 'nav';
+  mobileActiveTab?: string;
+  desktopNoFooter?: boolean;
+  desktopFullWidth?: boolean;
+  desktopNoPadding?: boolean;
+  desktopFullHeight?: boolean;
+}> = ({
+  children,
+  mobileWrapper,
+  mobileActiveTab = 'home',
+  desktopNoFooter,
+  desktopFullWidth,
+  desktopNoPadding,
+  desktopFullHeight,
+}) => {
+  const isDesktop = useIsDesktop();
+
+  if (isDesktop) {
+    return (
+      <DesktopLayout
+        noFooter={desktopNoFooter}
+        fullWidth={desktopFullWidth}
+        noPadding={desktopNoPadding}
+        fullHeight={desktopFullHeight}
+      >
+        {children}
+      </DesktopLayout>
+    );
+  }
+
+  if (mobileWrapper === 'standalone') {
+    return <StandaloneMobileLayout>{children}</StandaloneMobileLayout>;
+  }
+  if (mobileWrapper === 'nav') {
+    return (
+      <MobileNavWrapper activeTab={mobileActiveTab}>
+        {children}
+      </MobileNavWrapper>
+    );
+  }
+  return <>{children}</>;
+};
+
 function App() {
-  const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024);
-
-  useEffect(() => {
-    const handleResize = () => setIsDesktop(window.innerWidth >= 1024);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  const ResponsiveRoot = () => {
-    return isDesktop ? <DesktopHome /> : <MobileApp />;
-  };
+  const isDesktop = useIsDesktop();
 
   return (
     <BrowserRouter>
       <Routes>
-        {/* Main Home Route: Desktop vs Mobile */}
-        <Route path="/" element={<ResponsiveRoot />} />
+        {/* ══════ HOME ══════ */}
+        <Route path="/" element={isDesktop ? <DesktopHome /> : <MobileApp />} />
 
-        {/* Legacy Routes with Header */}
-        <Route path="/discover" element={<WithHeader><DiscoverPage /></WithHeader>} />
-        <Route path="/plan/:tripId" element={<WithHeader><PlanPage /></WithHeader>} />
-        <Route path="/plan/new" element={<WithHeader><PlanPage /></WithHeader>} />
-        <Route path="/review/:tripId" element={<WithHeader><ReviewPage /></WithHeader>} />
-        <Route path="/hotels" element={<WithHeader><HotelListingPage /></WithHeader>} />
-        <Route path="/budget-tracker" element={<StandaloneMobileLayout><BudgetTrackerPage /></StandaloneMobileLayout>} />
-        <Route path="/packing-assistant" element={<StandaloneMobileLayout><PackingAssistantPage /></StandaloneMobileLayout>} />
-        <Route path="/tours" element={<ToursListingPage />} />
-        <Route path="/tours/:tourId" element={<TourDetailPage />} />
+        {/* ══════ AI CHAT / PLANNER ══════ */}
+        <Route path="/chat" element={
+          <Responsive desktopFullHeight desktopNoFooter desktopNoPadding mobileWrapper="nav" mobileActiveTab="bot">
+            <MapProvider>
+              <ChatScreen />
+            </MapProvider>
+          </Responsive>
+        } />
+
+        {/* ══════ DISCOVER ══════ */}
+        <Route path="/discover" element={
+          <Responsive desktopNoPadding mobileWrapper="nav" mobileActiveTab="discover">
+            <DiscoverPage />
+          </Responsive>
+        } />
+
+        {/* ══════ TRIP PLANNING ══════ */}
+        <Route path="/plan/:tripId" element={
+          <Responsive desktopFullHeight desktopNoFooter desktopNoPadding>
+            <PlanPage />
+          </Responsive>
+        } />
+        <Route path="/plan/new" element={
+          <Responsive desktopFullHeight desktopNoFooter desktopNoPadding>
+            <PlanPage />
+          </Responsive>
+        } />
+        <Route path="/review/:tripId" element={
+          <Responsive desktopNoPadding>
+            <ReviewPage />
+          </Responsive>
+        } />
+
+        {/* ══════ HOTELS ══════ */}
+        <Route path="/hotels" element={
+          <Responsive desktopNoPadding mobileWrapper="nav" mobileActiveTab="hotels">
+            <HotelListingPage />
+          </Responsive>
+        } />
+
+        {/* ══════ TOURS ══════ */}
+        <Route path="/tours" element={
+          <Responsive desktopNoPadding mobileWrapper="nav" mobileActiveTab="tours">
+            <ToursListingPage />
+          </Responsive>
+        } />
+        <Route path="/tours/:tourId" element={
+          <Responsive desktopNoPadding>
+            <TourDetailPage />
+          </Responsive>
+        } />
+
+        {/* ══════ ATTRACTIONS ══════ */}
         <Route path="/attractions" element={
-          <MobileNavWrapper activeTab="discover">
+          <Responsive desktopNoPadding mobileWrapper="nav" mobileActiveTab="discover">
             <AttractionDiscoveryPage />
-          </MobileNavWrapper>
+          </Responsive>
         } />
         <Route path="/attractions/:city" element={
-          <MobileNavWrapper activeTab="discover">
+          <Responsive desktopNoPadding mobileWrapper="nav" mobileActiveTab="discover">
             <AttractionSearchPage />
-          </MobileNavWrapper>
+          </Responsive>
         } />
         <Route path="/attractions/:city/:id" element={
-          <AttractionDetailPage />
+          <Responsive desktopNoPadding>
+            <AttractionDetailPage />
+          </Responsive>
         } />
-        <Route path="/visa-checker" element={<VisaCheckerPage />} />
-        <Route path="/visa-explorer" element={<VisaExplorerPage />} />
-        <Route path="/itinerary/:tripId/edit" element={<ItineraryEditorPage />} />
 
-        {/* Auth Routes (no header) */}
-        {/* <Route path="/login" element={<LoginPage />} /> */}
-        {/* <Route path="/signup" element={<SignupPage />} /> */}
+        {/* ══════ VISA ══════ */}
+        <Route path="/visa-checker" element={
+          <Responsive>
+            <VisaCheckerPage />
+          </Responsive>
+        } />
+        <Route path="/visa-explorer" element={
+          <Responsive desktopNoPadding>
+            <VisaExplorerPage />
+          </Responsive>
+        } />
+
+        {/* ══════ TOOLS ══════ */}
+        <Route path="/budget-tracker" element={
+          <Responsive mobileWrapper="standalone">
+            <BudgetTrackerPage />
+          </Responsive>
+        } />
+        <Route path="/packing-assistant" element={
+          <Responsive mobileWrapper="standalone">
+            <PackingAssistantPage />
+          </Responsive>
+        } />
+        <Route path="/itinerary/:tripId/edit" element={
+          <Responsive desktopFullHeight desktopNoFooter desktopNoPadding>
+            <ItineraryEditorPage />
+          </Responsive>
+        } />
+
+        {/* ══════ USER PAGES ══════ */}
+        <Route path="/favorites" element={
+          <Responsive>
+            <FavoritesScreen />
+          </Responsive>
+        } />
+        <Route path="/profile" element={
+          <Responsive>
+            <ProfileScreen />
+          </Responsive>
+        } />
+        <Route path="/trips" element={
+          <Responsive>
+            <TripsScreen />
+          </Responsive>
+        } />
       </Routes>
     </BrowserRouter>
   );
